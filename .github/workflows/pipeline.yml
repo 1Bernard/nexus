@@ -1,0 +1,84 @@
+name: Elixir CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test and Lint (nexus)
+
+    env:
+      MIX_ENV: test
+      DB_USER: ${{ secrets.DB_USER || vars.DB_USER || 'postgres' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD || vars.DB_PASSWORD || 'postgres_password' }}
+      DB_NAME: ${{ secrets.DB_NAME || vars.DB_NAME || 'nexus_test' }}
+      DB_HOST: localhost
+
+    services:
+      db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: ${{ env.DB_USER }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.19.5" # Matches your local Elixir version
+          otp-version: "28.1" # Matches your local OTP version
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Check Code Format
+        run: mix format --check-formatted
+
+      - name: Security Scan (Sobelow)
+        run: mix sobelow --config
+
+      - name: Verify PostgreSQL connection
+        run: |
+          echo "Waiting for PostgreSQL..."
+          sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+          until pg_isready -h localhost -U $DB_USER; do
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Initialize Database and EventStore
+        run: |
+          # Ensure DB exists
+          mix ecto.create
+          # Manually create the event_store schema
+          PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "CREATE SCHEMA IF NOT EXISTS event_store;"
+
+          mix event_store.init
+          mix ecto.migrate
+
+      - name: Run Feature Tests (Gherkin/Cabbage)
+        run: mix test.features
