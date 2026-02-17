@@ -7,7 +7,7 @@ import Config
 # Run `mix help test` for more information.
 config :nexus, Nexus.Repo,
   username: System.get_env("DB_USER") || "postgres",
-  password: System.get_env("DB_PASSWORD") || "postgres",
+  password: System.get_env("DB_PASSWORD") || "postgres_password",
   hostname: System.get_env("DB_HOST") || "localhost",
   database: System.get_env("DB_NAME") || "nexus_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
@@ -18,7 +18,7 @@ config :nexus, Nexus.EventStore,
   serializer: Commanded.Serialization.JsonSerializer,
   types: EventStore.PostgresTypes,
   username: System.get_env("DB_USER") || "postgres",
-  password: System.get_env("DB_PASSWORD") || "postgres",
+  password: System.get_env("DB_PASSWORD") || "postgres_password",
   hostname: System.get_env("DB_HOST") || "localhost",
   database: System.get_env("DB_NAME") || "nexus_test",
   pool_size: 10
