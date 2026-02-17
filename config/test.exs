@@ -6,12 +6,22 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :nexus, Nexus.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "nexus_test#{System.get_env("MIX_TEST_PARTITION")}",
+  username: System.get_env("DB_USER") || "postgres",
+  password: System.get_env("DB_PASSWORD") || "postgres",
+  hostname: System.get_env("DB_HOST") || "localhost",
+  database: System.get_env("DB_NAME") || "nexus_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
+
+config :nexus, Nexus.EventStore,
+  column_data_type: "jsonb",
+  serializer: Commanded.Serialization.JsonSerializer,
+  types: EventStore.PostgresTypes,
+  username: System.get_env("DB_USER") || "postgres",
+  password: System.get_env("DB_PASSWORD") || "postgres",
+  hostname: System.get_env("DB_HOST") || "localhost",
+  database: System.get_env("DB_NAME") || "nexus_test",
+  pool_size: 10
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
