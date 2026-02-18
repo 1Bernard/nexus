@@ -10,7 +10,15 @@ defmodule Nexus.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      preferred_cli_env: [
+        test: :test,
+        "test.features": :test,
+        "event_store.setup": :test,
+        "event_store.create": :test,
+        "event_store.init": :test,
+        "event_store.drop": :test
+      ]
     ]
   end
 
@@ -94,9 +102,25 @@ defmodule Nexus.MixProject do
     [
       setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "event_store.setup": [
+        "event_store.create -e Nexus.EventStore",
+        "event_store.init -e Nexus.EventStore"
+      ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "test.features": ["test --only feature"],
+      test: [
+        "ecto.create --quiet",
+        "event_store.create --quiet -e Nexus.EventStore",
+        "event_store.init --quiet -e Nexus.EventStore",
+        "ecto.migrate --quiet",
+        "test"
+      ],
+      "test.features": [
+        "ecto.create --quiet",
+        "event_store.create --quiet -e Nexus.EventStore",
+        "event_store.init --quiet -e Nexus.EventStore",
+        "ecto.migrate --quiet",
+        "test --only feature"
+      ],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind nexus", "esbuild nexus"],
       "assets.deploy": ["tailwind nexus --minify", "esbuild nexus --minify", "phx.digest"]

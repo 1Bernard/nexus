@@ -69,15 +69,7 @@ jobs:
           done
           echo "PostgreSQL is ready!"
 
-      - name: Initialize Database and EventStore
+      - name: Initialize and Run Feature Tests (Gherkin/Cabbage)
         run: |
-          # Ensure DB exists
-          mix ecto.create
-          # Manually create the event_store schema
-          PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "CREATE SCHEMA IF NOT EXISTS event_store;"
-
-          mix event_store.init
-          mix ecto.migrate
-
-      - name: Run Feature Tests (Gherkin/Cabbage)
-        run: mix test.features
+          # The test.features alias now handles ecto.create, event_store.create/init, and ecto.migrate
+          mix test.features
