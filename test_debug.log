@@ -1,0 +1,61 @@
+Compiling 33 files (.ex)
+    warning: module attribute @sap_base_url was set but never used
+    │
+ 11 │   @sap_base_url "https://api.sap.institutional.com/v1"
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/nexus/erp/adapters/sap_adapter.ex:11: Nexus.ERP.Adapters.SapAdapter (module)
+
+Generated nexus app
+15:49:01.550 [info] [Identity] ETS Challenge Store Initialized at auth_challenges
+15:49:01.551 [info] [Treasury] ETS Price Cache Initialized
+15:49:01.567 [debug] Attempting to start Postgrex
+15:49:01.567 [debug] Successfully started Postgrex (#PID<0.617.0>)
+15:49:01.567 [debug] Attempting to start Postgrex
+15:49:01.568 [debug] Successfully started Postgrex (#PID<0.630.0>)
+15:49:01.571 [debug] Attempting to start Postgrex.Notifications
+15:49:01.573 [debug] Successfully started Postgrex.Notifications (#PID<0.650.0>)
+Running ExUnit with seed: 602256, max_cases: 20
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   alias Nexus.Identity.AuthChallengeStore
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/identity/biometric_verification_test.exs:6: Nexus.Identity.BiometricVerificationTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   alias Nexus.Identity.AuthChallengeStore
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/identity/biometric_verification_test.exs:6: Nexus.Identity.BiometricVerificationTest (module)
+
+15:49:01.717 [debug] QUERY OK db=22.4ms queue=0.9ms
+TRUNCATE event_store.events, event_store.streams, event_store.snapshots RESTART IDENTITY CASCADE []
+15:49:01.720 [debug] QUERY OK db=3.3ms queue=0.1ms
+TRUNCATE projection_versions CASCADE []
+REPO PID: #PID<0.575.0>
+EVENTSTORE PID: #PID<0.615.0>
+APP PID: #PID<0.614.0>
+15:49:01.728 [debug] Subscription "Identity.Projectors.UserProjector"@"$all" attempting to connect subscriber #PID<0.714.0>
+15:49:01.733 [debug] Locating aggregate process for `Nexus.Identity.Aggregates.User` with UUID "60ab588d-249e-4fa4-9079-e5e05bfe7e6d"
+15:49:01.742 [debug] Subscription "Identity.Projectors.UserProjector"@"$all" catching-up
+15:49:01.742 [debug] Nexus.Identity.Projectors.UserProjector has successfully subscribed to event store
+15:49:06.740 [debug] Nexus.Identity.Projectors.UserProjector is shutting down due to :shutdown
+15:49:06.750 [debug] Nexus.Identity.Aggregates.User<60ab588d-249e-4fa4-9079-e5e05bfe7e6d@0> executing command: %Nexus.Identity.Commands.RegisterUser{user_id: "60ab588d-249e-4fa4-9079-e5e05bfe7e6d", email: "bernard@nexus.com", role: "trader", public_key: "institutional_pub_key"}
+
+
+  1) scenario Successful Biometric Verification Successful Biometric Verification (Nexus.Identity.BiometricVerificationTest)
+     test/nexus/identity/biometric_verification_test.exs:6
+     ** (MatchError) no match of right hand side value:
+
+         {:error, :aggregate_execution_timeout}
+
+     code: :ok = Nexus.App.dispatch(command)
+     stacktrace:
+       test/nexus/identity/biometric_verification_test.exs:51: (test)
+
+
+Finished in 5.1 seconds (0.00s async, 5.1s sync)
+1 scenario, 1 failure

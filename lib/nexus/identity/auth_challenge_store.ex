@@ -57,9 +57,11 @@ defmodule Nexus.Identity.AuthChallengeStore do
 
   @impl true
   def init(_opts) do
-    # We create the table here. If the process crashes, the supervisor restarts it.
-    # {read_concurrency: true} is used for high-performance concurrent lookups.
-    :ets.new(@table, [:named_table, :public, :set, {:read_concurrency, true}])
+    # Ensure the table is created only if it doesn't exist
+    if :ets.whereis(@table) == :undefined do
+      :ets.new(@table, [:named_table, :public, :set, {:read_concurrency, true}])
+    end
+
     Logger.info("[Identity] ETS Challenge Store Initialized at #{@table}")
     {:ok, %{}}
   end

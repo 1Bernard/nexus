@@ -8,15 +8,30 @@ defmodule Nexus.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      # 1. Infrastructure (Database & Event Store)
       NexusWeb.Telemetry,
       Nexus.Repo,
       {DNSCluster, query: Application.get_env(:nexus, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Nexus.PubSub},
-      # High-performance challenge store for biometric handshakes
+      {Finch, name: Nexus.Finch},
+
+      # 2. Domain Supervisors (The "Monolith" Segregation)
       Nexus.Identity.AuthChallengeStore,
-      # Start to serve requests, typically the last entry
+      Nexus.Treasury.Gateways.PriceCache,
+
+      # 3. Commanded Application (Command Dispatcher)
+      Nexus.App,
+
+      # 4. Web Transport
       NexusWeb.Endpoint
     ]
+
+    children =
+      if Mix.env() == :test do
+        children
+      else
+        children ++ [Nexus.Identity.Projectors.UserProjector]
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

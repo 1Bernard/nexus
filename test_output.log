@@ -1,0 +1,214 @@
+    warning: module attribute @sap_base_url was set but never used
+    │
+ 11 │   @sap_base_url "https://api.sap.institutional.com/v1"
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/nexus/erp/adapters/sap_adapter.ex:11: Nexus.ERP.Adapters.SapAdapter (module)
+
+Running ExUnit with seed: 909057, max_cases: 20
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   alias Nexus.Identity.AuthChallengeStore
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/identity/biometric_verification_test.exs:6: Nexus.Identity.BiometricVerificationTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   alias Nexus.Identity.AuthChallengeStore
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/identity/biometric_verification_test.exs:6: Nexus.Identity.BiometricVerificationTest (module)
+
+15:42:25.961 [error] Nexus.Identity.Projectors.UserProjector failed to handle event:
+%Commanded.EventStore.RecordedEvent{
+  event_id: "7c10b966-0925-44b8-940a-e208e6594671",
+  event_number: 1,
+  stream_id: "user_123",
+  stream_version: 1,
+  causation_id: "e87b08a2-4374-4fc6-b65f-db4ff54bc6d4",
+  correlation_id: "ae67de5b-1f39-42c9-b1f2-b5c47723fefa",
+  event_type: "Elixir.Nexus.Identity.Events.UserRegistered",
+  data: %Nexus.Identity.Events.UserRegistered{
+    user_id: "user_123",
+    email: "bernard@nexus.com",
+    role: "trader",
+    public_key: "institutional_pub_key",
+    registered_at: "2026-02-18T15:35:15.519556Z"
+  },
+  created_at: ~U[2026-02-18 15:35:15.524769Z],
+  metadata: %{}
+}, due to:
+** (DBConnection.OwnershipError) cannot find ownership process for #PID<0.437.0> (:proc_lib)
+using mode :manual.
+
+When using ownership, you must manage connections in one
+of the four ways:
+
+* By explicitly checking out a connection
+* By explicitly allowing a spawned process
+* By running the pool in shared mode
+* By using :caller option with allowed process
+
+The first two options require every new process to explicitly
+check a connection out or be allowed by calling checkout or
+allow respectively.
+
+The third option requires a {:shared, pid} mode to be set.
+If using shared mode in tests, make sure your tests are not
+async.
+
+The fourth option requires [caller: pid] to be used when
+checking out a connection from the pool. The caller process
+should already be allowed on a connection.
+
+If you are reading this error, it means you have not done one
+of the steps above or that the owner process has crashed.
+
+    (db_connection 2.9.0) lib/db_connection.ex:1105: DBConnection.rollback_or_raise/1
+    (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+    (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Identity.Projectors.UserProjector.update_projection/3
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1221: Commanded.Event.Handler.delegate_event_to_handler/2
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1062: Commanded.Event.Handler.handle_event/3
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (commanded 1.4.9) lib/commanded/event/handler.ex:969: Commanded.Event.Handler.handle_info/2
+    (stdlib 7.1) gen_server.erl:2434: :gen_server.try_handle_info/3
+    (stdlib 7.1) gen_server.erl:2420: :gen_server.handle_msg/3
+    (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+
+15:42:25.964 [warning] Nexus.Identity.Projectors.UserProjector has requested to stop: %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.437.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+15:42:25.964 [error] GenServer {Nexus.App.LocalRegistry, {Nexus.App, Commanded.Event.Handler, "Identity.Projectors.UserProjector"}} terminating
+** (stop) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.437.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+Last message: {:events, [%Commanded.EventStore.RecordedEvent{event_id: "7c10b966-0925-44b8-940a-e208e6594671", event_number: 1, stream_id: "user_123", stream_version: 1, causation_id: "e87b08a2-4374-4fc6-b65f-db4ff54bc6d4", correlation_id: "ae67de5b-1f39-42c9-b1f2-b5c47723fefa", event_type: "Elixir.Nexus.Identity.Events.UserRegistered", data: %Nexus.Identity.Events.UserRegistered{user_id: "user_123", email: "bernard@nexus.com", role: "trader", public_key: "institutional_pub_key", registered_at: "2026-02-18T15:35:15.519556Z"}, created_at: ~U[2026-02-18 15:35:15.524769Z], metadata: %{}}]}
+15:42:25.968 [error] GenServer {Nexus.EventStore.EventStore.Subscriptions.Registry, {"$all", "Identity.Projectors.UserProjector"}} terminating
+** (stop) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.437.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+Last message: {:DOWN, #Reference<0.1580418444.1730412546.112683>, :process, #PID<0.437.0>, %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.437.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}}
+15:42:25.969 [error] GenServer {Nexus.App.LocalRegistry, {Nexus.App, Commanded.Event.Handler, "Identity.Projectors.UserProjector"}} terminating
+** (stop) exited in: GenServer.call(#PID<0.439.0>, {:connect, #PID<0.471.0>, [retry_interval: 60000, hibernate_after: 15000, partition_by: nil, concurrency_limit: 1, name: Nexus.EventStore, mapper: &Commanded.EventStore.Adapters.EventStore.Mapper.from_recorded_event/1, conn: Nexus.EventStore.Postgrex, event_store: Nexus.EventStore, query_timeout: 15000, schema: "event_store", serializer: Commanded.Serialization.JsonSerializer, stream_uuid: "$all", subscription_name: "Identity.Projectors.UserProjector", start_from: 0]}, 5000)
+    ** (EXIT) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.437.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+    (elixir 1.19.5) lib/gen_server.ex:1142: GenServer.call/3
+    (commanded 1.4.9) lib/commanded/event_store.ex:289: anonymous fn/2 in Commanded.EventStore.span/3
+    (telemetry 1.3.0) /Users/bernard/dev/nexus/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (commanded 1.4.9) lib/commanded/event_store/subscription.ex:58: Commanded.EventStore.Subscription.subscribe/2
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1024: Commanded.Event.Handler.subscribe_to_events/1
+    (commanded 1.4.9) lib/commanded/event/handler.ex:887: Commanded.Event.Handler.handle_continue/2
+    (stdlib 7.1) gen_server.erl:2424: :gen_server.try_handle_continue/3
+    (stdlib 7.1) gen_server.erl:2291: :gen_server.loop/4
+    (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+Last message: {:continue, :subscribe_to_events}
+15:42:25.979 [error] Nexus.Identity.Projectors.UserProjector failed to handle event:
+%Commanded.EventStore.RecordedEvent{
+  event_id: "7c10b966-0925-44b8-940a-e208e6594671",
+  event_number: 1,
+  stream_id: "user_123",
+  stream_version: 1,
+  causation_id: "e87b08a2-4374-4fc6-b65f-db4ff54bc6d4",
+  correlation_id: "ae67de5b-1f39-42c9-b1f2-b5c47723fefa",
+  event_type: "Elixir.Nexus.Identity.Events.UserRegistered",
+  data: %Nexus.Identity.Events.UserRegistered{
+    user_id: "user_123",
+    email: "bernard@nexus.com",
+    role: "trader",
+    public_key: "institutional_pub_key",
+    registered_at: "2026-02-18T15:35:15.519556Z"
+  },
+  created_at: ~U[2026-02-18 15:35:15.524769Z],
+  metadata: %{}
+}, due to:
+** (DBConnection.OwnershipError) cannot find ownership process for #PID<0.473.0> (:proc_lib)
+using mode :manual.
+
+When using ownership, you must manage connections in one
+of the four ways:
+
+* By explicitly checking out a connection
+* By explicitly allowing a spawned process
+* By running the pool in shared mode
+* By using :caller option with allowed process
+
+The first two options require every new process to explicitly
+check a connection out or be allowed by calling checkout or
+allow respectively.
+
+The third option requires a {:shared, pid} mode to be set.
+If using shared mode in tests, make sure your tests are not
+async.
+
+The fourth option requires [caller: pid] to be used when
+checking out a connection from the pool. The caller process
+should already be allowed on a connection.
+
+If you are reading this error, it means you have not done one
+of the steps above or that the owner process has crashed.
+
+    (db_connection 2.9.0) lib/db_connection.ex:1105: DBConnection.rollback_or_raise/1
+    (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+    (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Identity.Projectors.UserProjector.update_projection/3
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1221: Commanded.Event.Handler.delegate_event_to_handler/2
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1062: Commanded.Event.Handler.handle_event/3
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (commanded 1.4.9) lib/commanded/event/handler.ex:969: Commanded.Event.Handler.handle_info/2
+    (stdlib 7.1) gen_server.erl:2434: :gen_server.try_handle_info/3
+    (stdlib 7.1) gen_server.erl:2420: :gen_server.handle_msg/3
+    (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+
+15:42:25.979 [warning] Nexus.Identity.Projectors.UserProjector has requested to stop: %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.473.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+15:42:25.979 [error] GenServer {Nexus.App.LocalRegistry, {Nexus.App, Commanded.Event.Handler, "Identity.Projectors.UserProjector"}} terminating
+** (stop) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.473.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+Last message: {:events, [%Commanded.EventStore.RecordedEvent{event_id: "7c10b966-0925-44b8-940a-e208e6594671", event_number: 1, stream_id: "user_123", stream_version: 1, causation_id: "e87b08a2-4374-4fc6-b65f-db4ff54bc6d4", correlation_id: "ae67de5b-1f39-42c9-b1f2-b5c47723fefa", event_type: "Elixir.Nexus.Identity.Events.UserRegistered", data: %Nexus.Identity.Events.UserRegistered{user_id: "user_123", email: "bernard@nexus.com", role: "trader", public_key: "institutional_pub_key", registered_at: "2026-02-18T15:35:15.519556Z"}, created_at: ~U[2026-02-18 15:35:15.524769Z], metadata: %{}}]}
+15:42:25.982 [error] GenServer {Nexus.EventStore.EventStore.Subscriptions.Registry, {"$all", "Identity.Projectors.UserProjector"}} terminating
+** (stop) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.473.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+Last message: {:DOWN, #Reference<0.1580418444.1730412547.113198>, :process, #PID<0.473.0>, %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.473.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}}
+15:42:25.982 [error] GenServer {Nexus.App.LocalRegistry, {Nexus.App, Commanded.Event.Handler, "Identity.Projectors.UserProjector"}} terminating
+** (stop) exited in: GenServer.call(#PID<0.474.0>, {:connect, #PID<0.475.0>, [retry_interval: 60000, hibernate_after: 15000, partition_by: nil, concurrency_limit: 1, name: Nexus.EventStore, mapper: &Commanded.EventStore.Adapters.EventStore.Mapper.from_recorded_event/1, conn: Nexus.EventStore.Postgrex, event_store: Nexus.EventStore, query_timeout: 15000, schema: "event_store", serializer: Commanded.Serialization.JsonSerializer, stream_uuid: "$all", subscription_name: "Identity.Projectors.UserProjector", start_from: 0]}, 5000)
+    ** (EXIT) %DBConnection.OwnershipError{message: "cannot find ownership process for #PID<0.473.0> (:proc_lib)\nusing mode :manual.\n\nWhen using ownership, you must manage connections in one\nof the four ways:\n\n* By explicitly checking out a connection\n* By explicitly allowing a spawned process\n* By running the pool in shared mode\n* By using :caller option with allowed process\n\nThe first two options require every new process to explicitly\ncheck a connection out or be allowed by calling checkout or\nallow respectively.\n\nThe third option requires a {:shared, pid} mode to be set.\nIf using shared mode in tests, make sure your tests are not\nasync.\n\nThe fourth option requires [caller: pid] to be used when\nchecking out a connection from the pool. The caller process\nshould already be allowed on a connection.\n\nIf you are reading this error, it means you have not done one\nof the steps above or that the owner process has crashed.\n"}
+    (elixir 1.19.5) lib/gen_server.ex:1142: GenServer.call/3
+    (commanded 1.4.9) lib/commanded/event_store.ex:289: anonymous fn/2 in Commanded.EventStore.span/3
+    (telemetry 1.3.0) /Users/bernard/dev/nexus/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (commanded 1.4.9) lib/commanded/event_store/subscription.ex:58: Commanded.EventStore.Subscription.subscribe/2
+    (commanded 1.4.9) lib/commanded/event/handler.ex:1024: Commanded.Event.Handler.subscribe_to_events/1
+    (commanded 1.4.9) lib/commanded/event/handler.ex:887: Commanded.Event.Handler.handle_continue/2
+    (stdlib 7.1) gen_server.erl:2424: :gen_server.try_handle_continue/3
+    (stdlib 7.1) gen_server.erl:2291: :gen_server.loop/4
+    (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+Last message: {:continue, :subscribe_to_events}
+
+
+  1) scenario Successful Biometric Verification Successful Biometric Verification (Nexus.Identity.BiometricVerificationTest)
+     test/nexus/identity/biometric_verification_test.exs:6
+     ** (MatchError) no match of right hand side value:
+
+         {:error,
+          {%RuntimeError{
+             message: "could not lookup Ecto repo Nexus.Repo because it was not started or it does not exist"
+           },
+           [
+             {Ecto.Repo.Registry, :lookup, 1,
+              [
+                file: ~c"lib/ecto/repo/registry.ex",
+                line: 22,
+                error_info: %{module: Exception}
+              ]},
+             {Ecto.Adapters.SQL.Sandbox, :lookup_meta!, 1,
+              [file: ~c"lib/ecto/adapters/sql/sandbox.ex", line: 640]},
+             {Ecto.Adapters.SQL.Sandbox, :checkout, 2,
+              [file: ~c"lib/ecto/adapters/sql/sandbox.ex", line: 544]},
+             {Ecto.Adapters.SQL.Sandbox, :"-start_owner!/2-fun-0-", 3,
+              [file: ~c"lib/ecto/adapters/sql/sandbox.ex", line: 454]},
+             {Agent.Server, :init, 1, [file: ~c"lib/agent/server.ex", line: 12]},
+             {:gen_server, :init_it, 2, [file: ~c"gen_server.erl", line: 2276]},
+             {:gen_server, :init_it, 6, [file: ~c"gen_server.erl", line: 2236]},
+             {:proc_lib, :init_p_do_apply, 3, [file: ~c"proc_lib.erl", line: 333]}
+           ]}}
+
+     stacktrace:
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql/sandbox.ex:451: Ecto.Adapters.SQL.Sandbox.start_owner!/2
+       (nexus 0.1.0) test/support/data_case.ex:41: Nexus.DataCase.setup_sandbox/1
+       (nexus 0.1.0) test/support/data_case.ex:32: Nexus.DataCase.__ex_unit_setup_0/1
+       (nexus 0.1.0) test/support/data_case.ex:1: Nexus.DataCase.__ex_unit__/2
+       test/nexus/identity/biometric_verification_test.exs:1: Nexus.Identity.BiometricVerificationTest.__ex_unit__/2
+
+
+Finished in 0.1 seconds (0.00s async, 0.1s sync)
+1 scenario, 1 failure
