@@ -12,8 +12,8 @@ defmodule Nexus.Application do
       Nexus.Repo,
       {DNSCluster, query: Application.get_env(:nexus, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Nexus.PubSub},
-      # Start a worker by calling: Nexus.Worker.start_link(arg)
-      # {Nexus.Worker, arg},
+      # High-performance challenge store for biometric handshakes
+      Nexus.Identity.AuthChallengeStore,
       # Start to serve requests, typically the last entry
       NexusWeb.Endpoint
     ]

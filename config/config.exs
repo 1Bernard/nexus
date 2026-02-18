@@ -81,6 +81,11 @@ config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# 5. Rate Limiting (Hammer)
+# Configure Hammer with an ETS backend for high-performance rate limiting.
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000, cleanup_interval_ms: 60_000]}
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
