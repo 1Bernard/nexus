@@ -41,13 +41,15 @@ defmodule Nexus.Identity.AuthChallengeStore do
     case :ets.lookup(@table, session_id) do
       [{^session_id, challenge, expires_at}] ->
         :ets.delete(@table, session_id)
+
         if DateTime.compare(DateTime.utc_now(), expires_at) == :lt do
           {:ok, challenge}
         else
           {:error, :expired}
         end
 
-      [] -> {:error, :not_found}
+      [] ->
+        {:error, :not_found}
     end
   end
 
