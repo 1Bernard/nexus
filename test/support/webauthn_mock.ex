@@ -8,9 +8,7 @@ defmodule Nexus.Identity.WebAuthn.MockAdapter do
     # auth_data.attested_credential_data.credential_id
 
     mock_cose_key = %{1 => 2, 3 => -7, -1 => 1, -2 => <<123>>, -3 => <<456>>}
-    # Industrial requirement: credential_id must be unique.
-    # In tests, we generate a random one to avoid DB conflicts.
-    mock_credential_id = "mock_cred_" <> Base.encode16(:crypto.strong_rand_bytes(8))
+    mock_credential_id = "mock_cred_123"
 
     auth_data = %{
       attested_credential_data: %{
