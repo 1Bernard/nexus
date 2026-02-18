@@ -28,6 +28,7 @@ defmodule Nexus.DataCase do
   end
 
   setup tags do
+    alias Ecto.Adapters.SQL.Sandbox
     Nexus.DataCase.setup_sandbox(tags)
     :ok
   end
@@ -36,8 +37,9 @@ defmodule Nexus.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Nexus.Repo, shared: not tags[:async])
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+    alias Ecto.Adapters.SQL.Sandbox
+    pid = Sandbox.start_owner!(Nexus.Repo, shared: not tags[:async])
+    on_exit(fn -> Sandbox.stop_owner(pid) end)
   end
 
   @doc """

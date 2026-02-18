@@ -84,7 +84,9 @@ defmodule Nexus.MixProject do
       # --- Testing & BDD ---
       # Gherkin BDD implementation
       {:cabbage, "~> 0.4.0"},
-      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
     ]
   end
 

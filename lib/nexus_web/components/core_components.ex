@@ -179,9 +179,11 @@ defmodule NexusWeb.CoreComponents do
   end
 
   def input(%{type: "checkbox"} = assigns) do
+    alias Phoenix.HTML.Form
+
     assigns =
       assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+        Form.normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""
