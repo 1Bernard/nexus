@@ -8,8 +8,6 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
   alias Nexus.ERP.Adapters.RateLimiter
   require Logger
 
-  @sap_base_url "https://api.sap.institutional.com/v1"
-
   @doc """
   Enriches a local invoice with data from the SAP master record.
   """
