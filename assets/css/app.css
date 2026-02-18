@@ -100,6 +100,74 @@
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 /* Make LiveView wrapper divs transparent for layout */
-[data-phx-session], [data-phx-teleported-src] { display: contents }
+[data-phx-session],
+[data-phx-teleported-src] {
+  display: contents;
+}
 
-/* This file is for your main application CSS */
+/* SecureFlow ID - Industrial Biometric Animations */
+@keyframes scan-progress {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0.2;
+  }
+  20% {
+    transform: translateY(20%);
+    opacity: 0.9;
+  }
+  80% {
+    transform: translateY(80%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(180%);
+    opacity: 0;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-scan-beam {
+  animation: scan-progress 2.2s ease-in-out infinite;
+}
+
+.pulse-soft {
+  animation: gentle-pulse 2s infinite;
+}
+
+.fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scroll-soft::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scroll-soft::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}

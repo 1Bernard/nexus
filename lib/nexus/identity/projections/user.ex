@@ -8,14 +8,17 @@ defmodule Nexus.Identity.Projections.User do
   schema "users" do
     field :email, :string
     field :role, :string
-    field :public_key, :string
+    field :cose_key, :binary
+    field :credential_id, :binary
 
     timestamps()
   end
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:id, :email, :role, :public_key])
-    |> validate_required([:id, :email, :role, :public_key])
+    |> cast(attrs, [:id, :email, :role, :cose_key, :credential_id])
+    |> validate_required([:id, :email, :role, :cose_key, :credential_id])
+    |> unique_constraint(:email)
+    |> unique_constraint(:credential_id)
   end
 end

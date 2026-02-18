@@ -18,6 +18,8 @@ defmodule NexusWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/biometric", Identity.BiometricLive
+    live "/dashboard", DashboardLive
   end
 
   # Other scopes may use custom stacks.
@@ -37,7 +39,7 @@ defmodule NexusWeb.Router do
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: NexusWeb.Telemetry
+      live_dashboard "/telemetry", metrics: NexusWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end

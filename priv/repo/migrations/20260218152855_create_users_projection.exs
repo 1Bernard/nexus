@@ -6,7 +6,8 @@ defmodule Nexus.Repo.Migrations.CreateUsersProjection do
       add :id, :binary_id, primary_key: true
       add :email, :string, null: false
       add :role, :string
-      add :public_key, :text
+      add :cose_key, :binary
+      add :credential_id, :binary
 
       timestamps(type: :utc_datetime_usec, inserted_at: :created_at)
     end

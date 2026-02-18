@@ -3,7 +3,7 @@ defmodule Nexus.Identity.Aggregates.User do
   The Domain Aggregate for User Identity.
   Responsible for validating Biometric Handshakes and emitting Facts.
   """
-  defstruct [:id, :email, :role, :status, :public_key]
+  defstruct [:id, :email, :role, :status, :cose_key, :credential_id]
 
   alias Nexus.Identity.Commands.RegisterUser
   alias Nexus.Identity.Events.UserRegistered
@@ -11,29 +11,70 @@ defmodule Nexus.Identity.Aggregates.User do
   # --- Command Handlers ---
 
   def execute(%__MODULE__{id: nil}, %RegisterUser{} = cmd) do
-    %UserRegistered{
-      user_id: cmd.user_id,
-      email: cmd.email,
-      role: cmd.role,
-      public_key: cmd.public_key,
-      registered_at: DateTime.utc_now()
-    }
+    # 1. Retrieve the challenge from the store (this would happen in the controller usually,
+    # but since this is an aggregate we might need to pass it in or verify it here if we trust the caller)
+    # Actually, Commanded best practice is to verify in the controller/handler and pass verified data.
+    # However, to keep it "Internal" to the aggregate logic:
+
+    case Nexus.Identity.AuthChallengeStore.pop_challenge(cmd.user_id) do
+      {:ok, challenge} ->
+        case Nexus.Identity.WebAuthn.register(
+               cmd.attestation_object,
+               cmd.client_data_json,
+               challenge
+             ) do
+          {:ok, {auth_data, _result}} ->
+            cose_key = auth_data.attested_credential_data.credential_public_key
+            credential_id = auth_data.attested_credential_data.credential_id
+
+            %UserRegistered{
+              user_id: cmd.user_id,
+              email: cmd.email,
+              role: cmd.role,
+              cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
+              credential_id: Base.encode64(credential_id),
+              registered_at: DateTime.utc_now()
+            }
+
+          {:error, reason} ->
+            {:error, {:webauthn_error, reason}}
+        end
+
+      {:error, reason} ->
+        {:error, {:challenge_error, reason}}
+    end
   end
 
   def execute(
-        %__MODULE__{id: id, public_key: _pk} = state,
+        %__MODULE__{id: id, cose_key: cose_key_bin} = _state,
         %Nexus.Identity.Commands.VerifyBiometric{} = cmd
       ) do
-    # Simulation: Verify signature matches the "protocol"
-    # Actually we should verify against challenge, but for this BDD phase:
-    if cmd.user_id == id do
-      %Nexus.Identity.Events.BiometricVerified{
-        user_id: id,
-        handshake_id: cmd.challenge_id,
-        verified_at: DateTime.utc_now()
-      }
-    else
-      {:error, :unauthorized}
+    case Nexus.Identity.AuthChallengeStore.pop_challenge(cmd.challenge_id) do
+      {:ok, challenge} ->
+        _cose_key = :erlang.binary_to_term(Base.decode64!(cose_key_bin))
+
+        # Wax.authenticate(raw_id, authenticator_data, sig, client_data_json, challenge)
+        # Note: raw_id must match the registered credential_id
+        case Nexus.Identity.WebAuthn.authenticate(
+               cmd.raw_id,
+               cmd.authenticator_data,
+               cmd.signature,
+               cmd.client_data_json,
+               challenge
+             ) do
+          {:ok, _} ->
+            %Nexus.Identity.Events.BiometricVerified{
+              user_id: id,
+              handshake_id: cmd.challenge_id,
+              verified_at: DateTime.utc_now()
+            }
+
+          {:error, reason} ->
+            {:error, {:webauthn_error, reason}}
+        end
+
+      {:error, reason} ->
+        {:error, {:challenge_error, reason}}
     end
   end
 
@@ -49,7 +90,8 @@ defmodule Nexus.Identity.Aggregates.User do
       | id: ev.user_id,
         email: ev.email,
         role: ev.role,
-        public_key: ev.public_key,
+        cose_key: ev.cose_key,
+        credential_id: ev.credential_id,
         status: :registered
     }
   end

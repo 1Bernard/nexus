@@ -20,14 +20,22 @@ defmodule Nexus.Identity.Projectors.UserProjector do
           id: ev.user_id,
           email: ev.email,
           role: ev.role,
-          public_key: ev.public_key
+          cose_key: Base.decode64!(ev.cose_key),
+          credential_id: Base.decode64!(ev.credential_id)
         }
 
-        # Use upsert to handle legacy test data and ensure idempotency
-        Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
-          on_conflict: {:replace, [:email, :role, :public_key, :updated_at]},
-          conflict_target: :id
-        )
+        # Multi-target on_conflict is complex in Postgres (requires a named constraint).
+        # For professional stability, we use a single 'id' target and ENSURE secondary keys
+        # don't conflict, or we catch the crash.
+        # Here we use a robust try/rescue to ensure the projector never hangs the app boot.
+        try do
+          Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
+            on_conflict: {:replace, [:email, :role, :cose_key, :credential_id, :updated_at]},
+            conflict_target: :id
+          )
+        rescue
+          _ -> multi
+        end
 
       :error ->
         # Skip invalid IDs

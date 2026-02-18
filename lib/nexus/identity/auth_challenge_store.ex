@@ -20,15 +20,19 @@ defmodule Nexus.Identity.AuthChallengeStore do
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   @doc """
-  Stores a biometric challenge for a specific session.
+  Stores a biometric challenge (usually a Wax.Challenge) for a specific session.
 
   Calculates an expiration timestamp (TTL) to prevent memory leaks,
   which is an essential requirement for SOC2 compliance.
   """
   def store_challenge(session_id, challenge) do
-    # TTL of 60 seconds is industry standard for WebAuthn
-    expires_at = DateTime.utc_now() |> DateTime.add(60, :second)
+    # TTL of 10 minutes (600s) to tolerate deliberate user interaction / OS prompts
+    expires_at = DateTime.utc_now() |> DateTime.add(600, :second)
     :ets.insert(@table, {session_id, challenge, expires_at})
+
+    Logger.debug(
+      "[Identity] Challenge stored for session #{session_id} (expires at #{expires_at})"
+    )
   end
 
   @doc """
@@ -41,14 +45,21 @@ defmodule Nexus.Identity.AuthChallengeStore do
     case :ets.lookup(@table, session_id) do
       [{^session_id, challenge, expires_at}] ->
         :ets.delete(@table, session_id)
+        now = DateTime.utc_now()
 
-        if DateTime.compare(DateTime.utc_now(), expires_at) == :lt do
+        if DateTime.compare(now, expires_at) == :lt do
+          Logger.debug("[Identity] Challenge popped successfully for #{session_id}")
           {:ok, challenge}
         else
+          Logger.warning(
+            "[Identity] Challenge expired for #{session_id} (expired at #{expires_at}, now is #{now})"
+          )
+
           {:error, :expired}
         end
 
       [] ->
+        Logger.error("[Identity] Challenge not found for session #{session_id}")
         {:error, :not_found}
     end
   end

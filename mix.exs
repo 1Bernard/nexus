@@ -18,7 +18,8 @@ defmodule Nexus.MixProject do
         "event_store.create": :test,
         "event_store.init": :test,
         "event_store.drop": :test
-      ]
+      ],
+      listeners: [Phoenix.CodeReloader]
     ]
   end
 

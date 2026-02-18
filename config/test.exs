@@ -9,7 +9,7 @@ config :nexus, Nexus.Repo,
   username: System.get_env("DB_USER") || "postgres",
   password: System.get_env("DB_PASSWORD") || "postgres_password",
   hostname: System.get_env("DB_HOST") || "localhost",
-  database: System.get_env("DB_NAME") || "nexus_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: System.get_env("DB_NAME") || "nexus_test_industrial",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 

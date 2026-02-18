@@ -86,6 +86,7 @@ defmodule NexusWeb do
       import Phoenix.HTML
       # Core UI components
       import NexusWeb.CoreComponents
+      import NexusWeb.NexusComponents
 
       # Common modules used in templates
       alias NexusWeb.Layouts
