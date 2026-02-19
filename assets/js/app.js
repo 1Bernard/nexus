@@ -58,6 +58,8 @@ Hooks.WebAuthnHook = {
     this.scanInterval = null;
     this.progress = 0;
     this.scanning = false;
+    this.retryCount = 0;
+    this.maxRetries = 2;
 
     // Standardize pointer events to avoid context menu / scroll interference
     this.el.addEventListener("pointerdown", (e) => {
@@ -73,7 +75,12 @@ Hooks.WebAuthnHook = {
 
   startScan(e) {
     if (this.scanning) return;
-    
+    if (this.retryCount >= this.maxRetries) {
+      const hint = document.getElementById("biometricHint");
+      if (hint) hint.innerHTML = '<span class="text-rose-400">❌ too many attempts — reload to retry</span>';
+      return;
+    }
+
     // Attempt to lock the pointer to this element
     try {
       this.el.setPointerCapture(e.pointerId);
@@ -84,6 +91,30 @@ Hooks.WebAuthnHook = {
     this.scanning = true;
     this.progress = 0;
     this.el.style.setProperty("--scan-p", "0");
+
+    // === INSTANT CLIENT-SIDE VISUAL FEEDBACK ===
+    const outerRing = document.getElementById("sensorOuterRing");
+    const ping = document.getElementById("sensorPing");
+    const beam = document.getElementById("scanBeam");
+    const iconWrapper = document.getElementById("sensorIconWrapper");
+    const hint = document.getElementById("biometricHint");
+
+    if (outerRing) {
+      outerRing.classList.remove("border-white/5");
+      outerRing.classList.add("border-indigo-500/40", "scale-110");
+    }
+    if (ping) ping.classList.remove("hidden");
+    if (beam) {
+      beam.classList.remove("opacity-0");
+      beam.classList.add("opacity-100", "animate-scan-beam");
+    }
+    if (iconWrapper) {
+      iconWrapper.classList.remove("text-slate-300");
+      iconWrapper.classList.add("text-indigo-400");
+    }
+    if (hint) hint.innerHTML = '<span class="text-indigo-400">🔗 scanning ⋯ hold still</span>';
+
+    // Server notification (fire-and-forget for state tracking)
     this.pushEvent("biometric_start", {});
 
     this.scanInterval = setInterval(() => {
@@ -101,20 +132,66 @@ Hooks.WebAuthnHook = {
 
   stopScan(e) {
     if (!this.scanning) return;
-    
+    if (this.progress >= 100) return; // Already finishing
+
     if (e?.pointerId) {
       try { this.el.releasePointerCapture(e.pointerId); } catch(err) {}
     }
-    
+
     clearInterval(this.scanInterval);
     this.scanning = false;
-    
-    // Reset local visual state immediately
-    this.el.style.setProperty("--scan-p", "0");
+    this.retryCount++;
 
-    if (this.progress < 100) {
-      this.pushEvent("biometric_reset", {retry_count: 1});
+    // === INSTANT VISUAL RESET ===
+    this.resetVisuals();
+
+    // Retry feedback with color-coded hints
+    const hint = document.getElementById("biometricHint");
+    if (hint) {
+      if (this.retryCount < this.maxRetries) {
+        hint.innerHTML = `<span class="text-amber-400">⚠️ incomplete scan (${this.retryCount}/${this.maxRetries}) — press & hold again</span>`;
+      } else {
+        hint.innerHTML = '<span class="text-rose-400">❌ too many attempts — reload to retry</span>';
+      }
     }
+
+    // Reset progress bar
+    this.el.style.setProperty("--scan-p", "0");
+    this.pushEvent("biometric_reset", {retry_count: this.retryCount});
+  },
+
+  resetVisuals() {
+    const outerRing = document.getElementById("sensorOuterRing");
+    const ping = document.getElementById("sensorPing");
+    const beam = document.getElementById("scanBeam");
+    const iconWrapper = document.getElementById("sensorIconWrapper");
+
+    if (outerRing) {
+      outerRing.classList.remove("border-indigo-500/40", "scale-110");
+      outerRing.classList.add("border-white/5");
+    }
+    if (ping) ping.classList.add("hidden");
+    if (beam) {
+      beam.classList.remove("opacity-100", "animate-scan-beam");
+      beam.classList.add("opacity-0");
+    }
+    if (iconWrapper) {
+      iconWrapper.classList.remove("text-indigo-400", "text-emerald-400");
+      iconWrapper.classList.add("text-slate-300");
+    }
+
+    // Reset progress ring color
+    const progressRing = document.getElementById("progressRing");
+    if (progressRing) {
+      progressRing.classList.remove("text-emerald-500");
+      progressRing.classList.add("text-indigo-500");
+    }
+
+    // Reset icon visibility
+    const fp = document.getElementById("fingerprintIcon");
+    const sc = document.getElementById("shieldCheckIcon");
+    if (fp) fp.classList.remove("hidden");
+    if (sc) sc.classList.add("hidden");
   },
 
   destroyed() {
@@ -124,6 +201,37 @@ Hooks.WebAuthnHook = {
   async finishScan() {
     clearInterval(this.scanInterval);
     this.scanning = false;
+
+    // === INSTANT SUCCESS VISUALS (before WebAuthn prompt) ===
+    const iconWrapper = document.getElementById("sensorIconWrapper");
+    const fp = document.getElementById("fingerprintIcon");
+    const sc = document.getElementById("shieldCheckIcon");
+    const beam = document.getElementById("scanBeam");
+    const hint = document.getElementById("biometricHint");
+    const progressRing = document.getElementById("progressRing");
+
+    // Swap icons
+    if (fp) fp.classList.add("hidden");
+    if (sc) sc.classList.remove("hidden");
+
+    // Color transitions
+    if (iconWrapper) {
+      iconWrapper.classList.remove("text-slate-300", "text-indigo-400");
+      iconWrapper.classList.add("text-emerald-400");
+    }
+    if (progressRing) {
+      progressRing.classList.remove("text-indigo-500");
+      progressRing.classList.add("text-emerald-500");
+    }
+
+    // Hide beam
+    if (beam) {
+      beam.classList.remove("opacity-100", "animate-scan-beam");
+      beam.classList.add("opacity-0");
+    }
+
+    // Success hint
+    if (hint) hint.innerHTML = '<span class="text-emerald-400">✓ biometric verified</span>';
 
     const challengeBase64URL = this.el.closest("[data-challenge]")?.dataset.challenge;
 
@@ -165,6 +273,7 @@ Hooks.WebAuthnHook = {
 
     } catch (err) {
       console.error("Biometric failed:", err);
+      this.resetVisuals();
       this.pushEvent("biometric_reset", {error: err.message});
     }
   }

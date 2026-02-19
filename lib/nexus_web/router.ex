@@ -17,8 +17,7 @@ defmodule NexusWeb.Router do
   scope "/", NexusWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
-    live "/biometric", Identity.BiometricLive
+    live "/", Identity.BiometricLive
     live "/dashboard", DashboardLive
   end
 

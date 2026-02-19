@@ -43,14 +43,20 @@ defmodule NexusWeb.Identity.BiometricComponents do
   def sensor_ring(assigns) do
     ~H"""
     <div class="relative my-6 flex items-center justify-center">
-      <div class={[
-        "absolute w-64 h-64 rounded-full border border-white/5 transition-all duration-300",
-        @status == "scanning" && "border-indigo-500/40 scale-110"
-      ]}>
+      <div
+        id="sensorOuterRing"
+        class={[
+          "absolute w-64 h-64 rounded-full border border-white/5 transition-all duration-300",
+          @status == "scanning" && "border-indigo-500/40 scale-110"
+        ]}
+      >
       </div>
       <div
-        :if={@status == "scanning"}
-        class="absolute w-64 h-64 rounded-full bg-indigo-500/10 animate-ping"
+        id="sensorPing"
+        class={[
+          "absolute w-64 h-64 rounded-full bg-indigo-500/10 animate-ping",
+          @status != "scanning" && "hidden"
+        ]}
       >
       </div>
 
@@ -76,6 +82,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
             />
             <!-- Progress Ring (Managed by JS via --scan-p) -->
             <circle
+              id="progressRing"
               cx="50"
               cy="50"
               r="46"
@@ -92,19 +99,63 @@ defmodule NexusWeb.Identity.BiometricComponents do
           </svg>
         </div>
 
-        <div class={[
-          "transition-all",
-          if(@status == "success", do: "text-emerald-400", else: "text-slate-300"),
-          @status == "scanning" && "text-indigo-400"
-        ]}>
-          <span :if={@status != "success"} class="hero-fingerprint w-16 h-16"></span>
-          <span :if={@status == "success"} class="hero-shield-check w-16 h-16"></span>
+        <div
+          id="sensorIconWrapper"
+          class={[
+            "absolute inset-0 flex items-center justify-center transition-all",
+            cond do
+              @status == "success" -> "text-emerald-400"
+              @status == "scanning" -> "text-indigo-400"
+              true -> "text-slate-300"
+            end
+          ]}
+        >
+          <svg
+            id="fingerprintIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class={["w-16 h-16", @status == "success" && "hidden"]}
+          >
+            <%!-- Lucide fingerprint icon --%>
+            <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+            <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+            <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+            <path d="M2 12a10 10 0 0 1 18-6" />
+            <path d="M2 16h.01" />
+            <path d="M21.8 16c.2-2 .131-5.354 0-6" />
+            <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+            <path d="M8.65 22c.21-.66.45-1.32.57-2" />
+            <path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
+          </svg>
+          <svg
+            id="shieldCheckIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class={["w-16 h-16", @status != "success" && "hidden"]}
+          >
+            <%!-- Lucide shield-check icon --%>
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
         </div>
         <!-- scanning beam -->
-        <div class={[
-          "absolute left-4 right-4 h-0.5 bg-indigo-400/80 shadow-[0_0_12px_#818cf8] pointer-events-none transition-opacity",
-          if(@status == "scanning", do: "opacity-100 animate-scan-beam", else: "opacity-0")
-        ]}>
+        <div
+          id="scanBeam"
+          class={[
+            "absolute left-4 right-4 h-0.5 bg-indigo-400/80 shadow-[0_0_12px_#818cf8] pointer-events-none transition-opacity",
+            if(@status == "scanning", do: "opacity-100 animate-scan-beam", else: "opacity-0")
+          ]}
+        >
         </div>
       </button>
     </div>
@@ -177,26 +228,26 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-indigo-500/30">
         <span class="hero-shield-check w-7 h-7 text-indigo-400"></span>
       </div>
-      <h1 class="text-3xl font-bold mb-3 tracking-tight">Institutional verification</h1>
+      <h1 class="text-3xl font-bold mb-3 tracking-tight">Nexus Identity Gate</h1>
       <p class="text-slate-400 text-sm leading-relaxed mb-7">
-        Enhanced due diligence (EDD) compliant with FinCEN & Joint Money Laundering Steering Group guidance.
+        Secure your Nexus terminal with hardware-bound biometrics. Your fingerprint never leaves the device.
       </p>
 
       <div class="space-y-4 mb-8">
         <.feature_item
-          icon="hero-user-circle"
-          title="Liveness detection (3.2)"
-          subtitle="ISO 30107‑3 presentation attack detection"
+          icon="hero-finger-print"
+          title="Device-bound key"
+          subtitle="Your biometric creates a cryptographic key stored only on this device"
         />
         <.feature_item
-          icon="hero-hashtag"
-          title="Biometric fuzzy hash"
-          subtitle="Cancelable biometrics / salted SHA‑512"
+          icon="hero-cpu-chip"
+          title="Nexus Secure Enclave"
+          subtitle="Trusted execution environment · zero raw biometric storage"
         />
         <.feature_item
-          icon="hero-globe-alt"
-          title="OFAC / UN / EU sanctions"
-          subtitle="Real‑time screening (industrial)"
+          icon="hero-bolt"
+          title="Instant activation"
+          subtitle="One step to unlock full Nexus access"
         />
       </div>
 
@@ -205,11 +256,11 @@ defmodule NexusWeb.Identity.BiometricComponents do
         phx-value-step="consent"
         class="w-full py-4 bg-indigo-600 active:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 touch-feedback"
       >
-        <span>Start secure flow</span>
+        <span>Begin identity verification</span>
         <span class="hero-arrow-right w-4 h-4"></span>
       </button>
       <p class="text-[9px] text-center text-slate-600 mt-4">
-        🔒 session encrypted · 2048-bit RSA handshake
+        🔒 Nexus encrypted session · end-to-end
       </p>
     </div>
     """
@@ -218,17 +269,17 @@ defmodule NexusWeb.Identity.BiometricComponents do
   def step_content(%{step: :consent} = assigns) do
     ~H"""
     <div class="fade-up">
-      <h2 class="text-2xl font-bold mb-3">Privacy & consent</h2>
+      <h2 class="text-2xl font-bold mb-3">Nexus data processing notice</h2>
       <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 text-xs text-slate-300 max-h-40 overflow-y-auto scroll-soft leading-relaxed">
         <p class="mb-2">
-          Under <strong>GDPR Article 9(2)(a)</strong>
-          and <strong>California Consumer Privacy Act</strong>, we require explicit consent to process biometric data for identity verification.
+          Nexus uses <strong>device-bound credentials</strong> to verify your identity.
+          Your biometric data is processed entirely on your device — Nexus never sees or stores raw biometric data.
         </p>
         <ul class="list-disc ml-4 space-y-1.5 text-slate-400 text-[11px]">
-          <li>Biometric template is one-way salted hash — never stored as raw image.</li>
-          <li>Cross‑referenced with global watchlists (PEP, sanctions, adverse media).</li>
-          <li>Data retention: 30 days or until regulatory obligation met.</li>
-          <li>You may withdraw consent, but verification will fail.</li>
+          <li>A cryptographic key pair is generated on your device's secure enclave.</li>
+          <li>Only the public key is shared with Nexus — your fingerprint stays on-device.</li>
+          <li>Credentials can be revoked at any time from your Nexus dashboard.</li>
+          <li>Compliant with GDPR Article 9(2)(a) and CCPA biometric data provisions.</li>
         </ul>
       </div>
 
@@ -273,24 +324,17 @@ defmodule NexusWeb.Identity.BiometricComponents do
   def step_content(%{step: :biometric} = assigns) do
     ~H"""
     <div class="fade-up text-center flex flex-col items-center" data-challenge={@challenge}>
-      <h2 class="text-2xl font-bold">Biometric handshake</h2>
-      <p class="text-xs text-slate-400 mt-1 mb-4">Touch and hold the sensor area</p>
+      <h2 class="text-2xl font-bold">Biometric verification</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-4">Press and hold to verify your identity</p>
 
       <.sensor_ring status={@status} progress={@progress} />
 
       <div id="biometricHint" class="h-6 text-[10px] font-mono text-slate-500">
         {if @status == "scanning",
-          do: "📡 capturing entropy ⋯ hold still",
-          else: "⬇️ press & hold sensor ⬇️"}
+          do: "🔗 scanning ⋯ hold still",
+          else: "⬇️ press & hold to verify ⬇️"}
       </div>
 
-      <div class="mt-8 p-4 bg-white/5 rounded-xl text-left border border-white/5 flex gap-3 w-full">
-        <span class="hero-cpu-chip w-5 h-5 text-indigo-400 shrink-0 mt-0.5"></span>
-        <p class="text-[9px] text-slate-400 leading-relaxed">
-          Secure Enclave: capture & encrypt within trusted execution environment. Challenge:
-          <span class="font-mono">{@challenge}</span>
-        </p>
-      </div>
       <button
         phx-click="next_step"
         phx-value-step="consent"
@@ -298,6 +342,27 @@ defmodule NexusWeb.Identity.BiometricComponents do
       >
         ← cancel
       </button>
+
+      <div class="mt-8 w-full space-y-3">
+        <div class="flex items-center justify-center gap-5 text-[9px] text-slate-500">
+          <span class="flex items-center gap-1.5">
+            <span class="hero-device-phone-mobile w-3.5 h-3.5 text-indigo-400/60"></span>
+            On-device only
+          </span>
+          <span class="w-px h-3 bg-white/10"></span>
+          <span class="flex items-center gap-1.5">
+            <span class="hero-eye-slash w-3.5 h-3.5 text-indigo-400/60"></span> Zero-knowledge
+          </span>
+          <span class="w-px h-3 bg-white/10"></span>
+          <span class="flex items-center gap-1.5">
+            <span class="hero-shield-check w-3.5 h-3.5 text-indigo-400/60"></span> FIDO2 / WebAuthn
+          </span>
+        </div>
+        <p class="text-[8px] text-slate-600 text-center leading-relaxed">
+          Your biometric never leaves this device. Only a cryptographic
+          signature is transmitted — Nexus cannot access or reconstruct your fingerprint.
+        </p>
+      </div>
     </div>
     """
   end
@@ -312,13 +377,13 @@ defmodule NexusWeb.Identity.BiometricComponents do
           <span class="hero-viewfinder-circle w-7 h-7 text-indigo-400"></span>
         </div>
       </div>
-      <h3 class="text-xl font-bold">Screening in progress</h3>
-      <p class="text-xs text-slate-400 mb-6">watchlist & sanction checks (industrial)</p>
+      <h3 class="text-xl font-bold">Verification in progress</h3>
+      <p class="text-xs text-slate-400 mb-6">Verifying your identity</p>
 
       <div class="w-full space-y-3">
-        <.status_item label="Fuzzy hash match (internal)" status={@screening.fuzzy} />
-        <.status_item label="OFAC SDN / EU sanctions" status={@screening.ofac} />
-        <.status_item label="PEP / adverse media" status={@screening.pep} />
+        <.status_item label="Identity verification" status={@screening.fuzzy} />
+        <.status_item label="Compliance clearance" status={@screening.ofac} />
+        <.status_item label="Risk assessment" status={@screening.pep} />
       </div>
 
       <button
@@ -327,7 +392,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
         phx-value-step="success"
         class="mt-8 text-indigo-400 text-xs animate-pulse font-mono tracking-widest uppercase"
       >
-        [ ENTER SECURE ENCLAVE ]
+        [ CONTINUE ]
       </button>
 
       <p class="text-[9px] text-slate-600 mt-6">ref: {@v_id}</p>
@@ -341,9 +406,9 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-5 ring-8 ring-emerald-500/10 text-emerald-400">
         <span class="hero-check-badge w-10 h-10"></span>
       </div>
-      <h2 class="text-2xl font-bold">Identity verified</h2>
+      <h2 class="text-2xl font-bold">Nexus access granted</h2>
       <p class="text-sm text-slate-400 mt-1 mb-8 text-center">
-        Enhanced Due Diligence completed.<br />Institutional limits activated.
+        Identity verified.<br />Full access activated.
       </p>
 
       <div class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl mb-8 text-left">
@@ -360,7 +425,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
         phx-click="go_to_dashboard"
         class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-xl active:scale-95"
       >
-        Enter secure dashboard
+        Enter Nexus dashboard
       </button>
     </div>
     """
@@ -380,7 +445,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
         phx-value-step="biometric"
         class="w-full py-4 bg-white text-slate-900 font-bold rounded-xl shadow-xl active:scale-95"
       >
-        Retry handshake
+        Retry verification
       </button>
     </div>
     """
