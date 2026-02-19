@@ -329,10 +329,8 @@ defmodule NexusWeb.Identity.BiometricComponents do
 
       <.sensor_ring status={@status} progress={@progress} />
 
-      <div id="biometricHint" class="h-6 text-[10px] font-mono text-slate-500">
-        {if @status == "scanning",
-          do: "🔗 scanning ⋯ hold still",
-          else: "⬇️ press & hold to verify ⬇️"}
+      <div id="biometricHint" phx-update="ignore" class="h-6 text-[10px] font-mono text-slate-500">
+        <span>⬇️ press &amp; hold to verify ⬇️</span>
       </div>
 
       <button
