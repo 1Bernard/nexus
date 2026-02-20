@@ -26,16 +26,12 @@ defmodule Nexus.Identity.BiometricVerificationTest do
            %{username: _username},
            state do
     user_id = UUIDv7.generate()
-    unique_id = System.unique_integer([:positive])
-    email = "bernard_#{unique_id}@nexus.com"
 
     # Pre-seed the challenge store so RegisterUser can verify the attestation
     AuthChallengeStore.store_challenge(user_id, "mock_registration_challenge")
 
     command = %Nexus.Identity.Commands.RegisterUser{
       user_id: user_id,
-      email: email,
-      role: "trader",
       attestation_object: "mock_attestation_object",
       client_data_json: "mock_client_data_json"
     }
@@ -45,7 +41,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     # Wait for the projector to catch up
     Process.sleep(200)
 
-    user = %{id: user_id, email: email}
+    user = %{id: user_id}
     {:ok, Map.put(state, :user, user)}
   end
 
@@ -125,7 +121,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
           state do
     # Wait for the projector with a retry loop (max 3s)
     user = wait_for_user(state.user.id)
-    assert user.email == state.user.email
+    assert user.role == "trader"
     assert byte_size(user.cose_key) > 0
     assert user.credential_id == "mock_cred_123"
     {:ok, state}
