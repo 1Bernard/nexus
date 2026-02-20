@@ -189,10 +189,15 @@ defmodule Nexus.<Domain>.Projectors.<Name> do
     name: "<unique_projector_name>"
 
   project(%Events.Created{} = event, _metadata, fn multi ->
-    Ecto.Multi.insert(multi, :projection, %Projections.Name{
-      id: event.id,
-      field_1: event.field_1
-    })
+    case Ecto.UUID.cast(event.id) do
+      {:ok, _id} ->
+        Ecto.Multi.insert(multi, :projection, %Projections.Name{
+          id: event.id,
+          field_1: event.field_1
+        }, on_conflict: :nothing, conflict_target: :id)
+      :error ->
+        multi
+    end
   end)
 end
 ```

@@ -28,15 +28,10 @@ defmodule Nexus.Identity.Projectors.UserProjector do
         # For professional stability, we use a single 'id' target and ENSURE secondary keys
         # don't conflict, or we catch the crash.
         # Here we use a robust try/rescue to ensure the projector never hangs the app boot.
-        try do
-          Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
-            on_conflict:
-              {:replace, [:display_name, :role, :cose_key, :credential_id, :updated_at]},
-            conflict_target: :id
-          )
-        rescue
-          _ -> multi
-        end
+        Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
+          on_conflict: {:replace, [:display_name, :role, :cose_key, :credential_id, :updated_at]},
+          conflict_target: :id
+        )
 
       :error ->
         # Skip invalid IDs
