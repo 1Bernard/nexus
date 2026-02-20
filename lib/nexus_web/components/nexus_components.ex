@@ -316,10 +316,7 @@ defmodule NexusWeb.NexusComponents do
             ]}
             phx-click={@row_click && @row_click.(row)}
           >
-            <td
-              :for={col <- @col}
-              class={["px-4 py-3.5 text-sm", col[:class]]}
-            >
+            <td :for={col <- @col} class={["px-4 py-3.5 text-sm", col[:class]]}>
               {render_slot(col, @row_item.(row))}
             </td>
             <td :if={@action != []} class="px-4 py-3.5 text-right">
@@ -840,10 +837,7 @@ defmodule NexusWeb.NexusComponents do
       ]}
     >
       <%!-- Backdrop --%>
-      <div
-        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        phx-click={@on_close}
-      />
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" phx-click={@on_close} />
 
       <%!-- Content --%>
       <div class={[
