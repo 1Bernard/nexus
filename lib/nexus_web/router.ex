@@ -40,6 +40,7 @@ defmodule NexusWeb.Router do
 
       live_dashboard "/telemetry", metrics: NexusWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+      live "/design-system", NexusWeb.Dev.DesignSystemLive
     end
   end
 end
