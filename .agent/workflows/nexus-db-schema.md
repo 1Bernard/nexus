@@ -42,9 +42,10 @@ flowchart LR
 3. [Domain 2: ERP](#3-domain-2-erp)
 4. [Domain 3: Treasury](#4-domain-3-treasury)
 5. [Domain 4: Intelligence](#5-domain-4-intelligence)
-6. [Cross-Domain Relationships (ER Diagram)](#6-cross-domain-relationships)
-7. [Migration Execution Order](#7-migration-execution-order)
-8. [Index Strategy](#8-index-strategy)
+6. [RBAC & Data Isolation](#6-rbac--data-isolation)
+7. [Cross-Domain Relationships (ER Diagram)](#7-cross-domain-relationships)
+8. [Migration Execution Order](#8-migration-execution-order)
+9. [Index Strategy](#9-index-strategy)
 
 ---
 
@@ -72,28 +73,32 @@ Every projection table follows these rules:
 
 ## 2. Domain 1: Identity
 
-### `users` — ✅ Already exists
+### `users` — ✅ Already exists (updated)
 
 > Feature: F1 (SecureFlow ID) — Complete
+>
+> **Design decision:** No email. Frictionless biometric auth means the device IS the identity. `display_name` is optional, set post-login from the profile menu.
 
 ```
-┌──────────────────────────────────────────┐
-│ users                                    │
-├──────────────────────────────────────────┤
-│ id           binary_id   PK (UUIDv7)    │
-│ email        string      NOT NULL, UQ   │
-│ role         string      ("admin","user")│
-│ cose_key     binary      WebAuthn PK    │
-│ credential_id binary     WebAuthn cred  │
-│ created_at   datetime_usec              │
-│ updated_at   datetime_usec              │
-└──────────────────────────────────────────┘
-  indexes: unique(email), unique(credential_id)
+┌──────────────────────────────────────────────────────┐
+│ users                                                │
+├──────────────────────────────────────────────────────┤
+│ id            binary_id   PK (UUIDv7, auto-gen)     │
+│ display_name  string      NULL (optional, post-login)│
+│ role          string      NOT NULL, default: "trader"│
+│                            ↳ "admin" | "trader"      │
+│                            | "viewer"                │
+│ cose_key      binary      NOT NULL (WebAuthn PK)    │
+│ credential_id binary      NOT NULL, UQ (WebAuthn)   │
+│ created_at    datetime_usec                          │
+│ updated_at    datetime_usec                          │
+└──────────────────────────────────────────────────────┘
+  indexes: unique(credential_id)
 ```
 
 **Events that feed this table:**
 
-- `UserRegistered` → inserts row
+- `UserRegistered` → inserts row (role defaults to `"trader"`)
 - `BiometricVerified` → no schema change (stateless verification)
 
 ### `sessions` — NEW (F4: Step-Up Auth)
@@ -434,7 +439,74 @@ Every projection table follows these rules:
 
 ---
 
-## 6. Cross-Domain Relationships
+## 6. RBAC & Data Isolation
+
+> Role is a simple string column on `users` — **no extra tables needed.**
+
+### Roles
+
+| Role     | Can Do                                             | Data Visible                  |
+| -------- | -------------------------------------------------- | ----------------------------- |
+| `admin`  | Configure system, manage users, view all data      | Everything                    |
+| `trader` | Ingest invoices, execute trades, upload statements | Own data + shared market data |
+| `viewer` | View dashboards (read-only)                        | Dashboards + reports only     |
+
+### How Data Isolation Works (No Extra Tables)
+
+Data isolation is enforced **in the app layer**, not with database-level row security:
+
+```elixir
+# Pattern: Every query scopes by user_id (except market_ticks, which is global)
+
+# In your context/query module:
+def list_invoices(%User{id: user_id, role: "admin"}) do
+  Repo.all(Invoice)  # admin sees everything
+end
+
+def list_invoices(%User{id: user_id}) do
+  Repo.all(from i in Invoice, where: i.user_id == ^user_id)  # scoped
+end
+```
+
+### Why Not Postgres Row-Level Security?
+
+| RLS (Postgres)                | App-Level Scoping            |
+| ----------------------------- | ---------------------------- |
+| Hard to debug                 | Easy to test with ExUnit     |
+| Requires DB session variables | Uses Elixir pattern matching |
+| Nexus is single-tenant        | No multi-tenancy needed      |
+| ❌ Over-engineering           | ✅ Right for this app        |
+
+### Where Isolation Applies
+
+| Table                | Isolation                 | Reason                       |
+| -------------------- | ------------------------- | ---------------------------- |
+| `invoices`           | `user_id` scoped          | Trader sees own invoices     |
+| `statements`         | `user_id` scoped          | Trader sees own uploads      |
+| `reconciliations`    | `user_id` scoped          | Trader sees own matches      |
+| `forecasts`          | `user_id` scoped          | Trader sees own forecasts    |
+| `market_ticks`       | **No isolation** (global) | FX rates are shared data     |
+| `exposure_snapshots` | `user_id` scoped          | Trader sees own exposure     |
+| `analyses`           | `user_id` scoped          | Trader sees own AI results   |
+| `audit_log`          | Admin only                | Viewers/traders can't see    |
+| `sessions`           | Own session only          | User sees only their session |
+
+### LiveView Enforcement
+
+```elixir
+# In router.ex — role-based pipeline
+pipeline :require_trader do
+  plug :require_role, ["trader", "admin"]
+end
+
+pipeline :require_admin do
+  plug :require_role, ["admin"]
+end
+```
+
+---
+
+## 7. Cross-Domain Relationships
 
 ```mermaid
 erDiagram
@@ -459,10 +531,10 @@ erDiagram
 
     users {
         binary_id id PK
-        string email UK
+        string display_name
         string role
         binary cose_key
-        binary credential_id
+        binary credential_id UK
     }
 
     invoices {
@@ -549,7 +621,7 @@ erDiagram
 
 ---
 
-## 7. Migration Execution Order
+## 8. Migration Execution Order
 
 Migrations must be created in dependency order. Here's the sequence aligned with the feature roadmap:
 
@@ -574,7 +646,7 @@ Migrations must be created in dependency order. Here's the sequence aligned with
 
 ---
 
-## 8. Index Strategy
+## 9. Index Strategy
 
 ### Why These Indexes
 

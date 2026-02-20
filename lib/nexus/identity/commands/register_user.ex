@@ -1,7 +1,8 @@
 defmodule Nexus.Identity.Commands.RegisterUser do
   @moduledoc """
   Command to register a new user in the system.
+  Frictionless: only WebAuthn data needed. Role defaults to "trader".
   """
-  @enforce_keys [:user_id, :email, :role, :attestation_object, :client_data_json]
-  defstruct [:user_id, :email, :role, :attestation_object, :client_data_json]
+  @enforce_keys [:user_id, :attestation_object, :client_data_json]
+  defstruct [:user_id, :attestation_object, :client_data_json, role: "trader", display_name: nil]
 end
