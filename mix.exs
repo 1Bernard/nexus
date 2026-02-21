@@ -11,15 +11,20 @@ defmodule Nexus.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      preferred_cli_env: [
+      listeners: [Phoenix.CodeReloader]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         test: :test,
         "test.features": :test,
         "event_store.setup": :test,
         "event_store.create": :test,
         "event_store.init": :test,
         "event_store.drop": :test
-      ],
-      listeners: [Phoenix.CodeReloader]
+      ]
     ]
   end
 

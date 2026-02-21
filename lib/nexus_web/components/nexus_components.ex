@@ -65,14 +65,18 @@ defmodule NexusWeb.NexusComponents do
 
   def app_shell(assigns) do
     ~H"""
-    <div class="min-h-screen bg-[var(--nx-bg)] text-slate-100 font-sans selection:bg-indigo-500/40 flex">
+    <div
+      id="app-shell"
+      phx-hook="NavInteractions"
+      class="min-h-screen bg-[var(--nx-bg)] text-slate-100 font-sans selection:bg-indigo-500/40 flex transition-[width] duration-300 [&.sidebar-collapsed]:[--nx-sidebar-w:88px]"
+    >
       <.sidebar
         current_path={@current_path}
         session_status={@session_status}
         session_id={@session_id}
       />
 
-      <div class="flex-1 ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen">
+      <div class="flex-1 ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300">
         <.topbar>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
@@ -82,6 +86,9 @@ defmodule NexusWeb.NexusComponents do
           {render_slot(@content)}
         </main>
       </div>
+
+      <%!-- Global Command Palette --%>
+      <.command_palette />
     </div>
     """
   end
@@ -94,51 +101,141 @@ defmodule NexusWeb.NexusComponents do
   attr :session_id, :string, default: "3F8A"
 
   def sidebar(assigns) do
-    nav_items = [
+    core_nav = [
       %{path: "/dashboard", label: "Dashboard", icon: "hero-chart-bar-square"},
-      %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
-      %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
       %{path: "/intelligence", label: "Smart Insights", icon: "hero-sparkles"}
     ]
 
-    assigns = assign(assigns, :nav_items, nav_items)
+    ops_nav = [
+      %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
+      %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"}
+    ]
+
+    assigns =
+      assigns
+      |> assign(:core_nav, core_nav)
+      |> assign(:ops_nav, ops_nav)
 
     ~H"""
-    <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-40">
+    <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-40 overflow-hidden transition-[width] duration-300 [&_#rail-logo]:[.sidebar-collapsed_&]:block [&_#full-logo]:[.sidebar-collapsed_&]:hidden [&_.nav-label]:[.sidebar-collapsed_&]:hidden [&_.nav-header]:[.sidebar-collapsed_&]:opacity-0 [&_#session-full]:[.sidebar-collapsed_&]:hidden [&_#session-rail]:[.sidebar-collapsed_&]:flex">
       <%!-- Logo --%>
-      <div class="px-6 py-5 border-b border-[var(--nx-border)]">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+      <div class="px-6 py-5 border-b border-[var(--nx-border)] shrink-0 h-[var(--nx-topbar-h)] flex items-center">
+        <div id="full-logo" class="flex items-center gap-2.5 transition-opacity duration-200">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center border border-indigo-500/20 shrink-0">
             <span class="text-indigo-400 font-bold text-sm">◆</span>
           </div>
-          <span class="text-base font-bold tracking-tight">NEXUS</span>
+          <span class="text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            NEXUS
+          </span>
+        </div>
+        <div
+          id="rail-logo"
+          class="hidden items-center justify-center w-full transition-opacity duration-200"
+        >
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center border border-indigo-500/20 shrink-0">
+            <span class="text-indigo-400 font-bold text-sm">◆</span>
+          </div>
         </div>
       </div>
 
       <%!-- Navigation --%>
-      <nav class="flex-1 px-3 py-4 space-y-1">
-        <.link
-          :for={item <- @nav_items}
-          navigate={item.path}
-          class={[
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
-            if(item.path == @current_path,
-              do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
-              else:
-                "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
-            )
-          ]}
-        >
-          <span class={[item.icon, "w-5 h-5"]}></span>
-          <span>{item.label}</span>
-        </.link>
+      <nav class="flex-1 px-3 py-6 space-y-8 overflow-y-auto hidden-scrollbar">
+        <%!-- Core Group --%>
+        <div>
+          <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
+            Core
+          </h3>
+          <div class="space-y-1">
+            <.link
+              :for={item <- @core_nav}
+              navigate={item.path}
+              title={item.label}
+              class={[
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group/item overflow-hidden",
+                if(item.path == @current_path,
+                  do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
+                  else:
+                    "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
+                )
+              ]}
+            >
+              <span class={[
+                item.icon,
+                "w-5 h-5 shrink-0 transition-colors"
+              ]}>
+              </span>
+              <span class="nav-label whitespace-nowrap transition-opacity duration-200">
+                {item.label}
+              </span>
+            </.link>
+          </div>
+        </div>
+
+        <%!-- Operations Group --%>
+        <div>
+          <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
+            Operations
+          </h3>
+          <div class="space-y-1">
+            <.link
+              :for={item <- @ops_nav}
+              navigate={item.path}
+              title={item.label}
+              class={[
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group/item overflow-hidden",
+                if(item.path == @current_path,
+                  do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
+                  else:
+                    "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
+                )
+              ]}
+            >
+              <span class={[
+                item.icon,
+                "w-5 h-5 shrink-0 transition-colors"
+              ]}>
+              </span>
+              <span class="nav-label whitespace-nowrap transition-opacity duration-200">
+                {item.label}
+              </span>
+            </.link>
+          </div>
+        </div>
       </nav>
 
-      <%!-- Session Status Footer --%>
-      <div class="px-5 py-4 border-t border-[var(--nx-border)] space-y-2">
-        <.session_indicator status={@session_status} />
-        <p class="text-[10px] text-slate-600 font-mono">Session: {@session_id}...</p>
-        <p class="text-[9px] text-slate-600">🔒 Secured · Encrypted</p>
+      <%!-- Session Status Footer & Rail Toggle --%>
+      <div class="border-t border-[var(--nx-border)] bg-slate-900/20 shrink-0">
+        <div
+          id="session-full"
+          class="px-5 py-4 space-y-2 border-b border-[var(--nx-border)] transition-all duration-200"
+        >
+          <.session_indicator status={@session_status} />
+          <p class="text-[10px] text-slate-600 font-mono whitespace-nowrap">
+            Session: {@session_id}...
+          </p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="hero-shield-check w-3 h-3 text-emerald-500/70 shrink-0"></span>
+            <p class="text-[9px] text-slate-500 uppercase tracking-wider font-medium whitespace-nowrap">
+              Auth: MFA Enabled
+            </p>
+          </div>
+        </div>
+
+        <div
+          id="session-rail"
+          class="hidden py-4 border-b border-[var(--nx-border)] items-center justify-center transition-all duration-200"
+        >
+          <.session_indicator status={@session_status} />
+        </div>
+
+        <button
+          id="rail-toggle"
+          class="w-full flex items-center justify-center py-3 text-slate-500 hover:text-slate-300 hover:bg-white/[0.02] transition-colors cursor-pointer group/toggle"
+          title="Toggle Sidebar"
+        >
+          <span class="hero-chevron-double-left w-4 h-4 group-hover/toggle:-translate-x-1 transition-transform [.sidebar-collapsed_&]:rotate-180 [.sidebar-collapsed_&]:group-hover/toggle:translate-x-1">
+          </span>
+        </button>
       </div>
     </aside>
     """
@@ -153,18 +250,151 @@ defmodule NexusWeb.NexusComponents do
 
   def topbar(assigns) do
     ~H"""
-    <header class="h-[var(--nx-topbar-h)] border-b border-[var(--nx-border)] bg-[var(--nx-surface)]/50 backdrop-blur-sm flex items-center justify-between px-8 shrink-0">
-      <div>
-        <h1 class="text-lg font-bold tracking-tight">{render_slot(@title)}</h1>
-        <p :if={@subtitle != []} class="text-xs text-slate-500">{render_slot(@subtitle)}</p>
+    <header class="sticky top-0 z-30 h-[var(--nx-topbar-h)] border-b border-[var(--nx-border)] bg-[var(--nx-surface)]/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
+      <%!-- Left: Dynamic Breadcrumbs & Title --%>
+      <div class="flex items-center gap-3">
+        <div class="hidden md:flex items-center gap-2 text-sm mr-2">
+          <span class="text-slate-500 font-medium hover:text-slate-300 cursor-pointer transition-colors">
+            Nexus
+          </span>
+          <span class="hero-chevron-right w-3 h-3 text-slate-600"></span>
+          <span class="text-slate-500 font-medium hover:text-slate-300 cursor-pointer transition-colors">
+            Treasury
+          </span>
+          <span class="hero-chevron-right w-3 h-3 text-slate-600"></span>
+        </div>
+        <h1 class="text-lg font-bold tracking-tight text-slate-200">{render_slot(@title)}</h1>
+        <p
+          :if={@subtitle != []}
+          class="text-xs text-slate-500 hidden lg:block ml-2 pl-2 border-l border-white/10"
+        >
+          {render_slot(@subtitle)}
+        </p>
       </div>
-      <div class="flex items-center gap-4">
+
+      <%!-- Middle: Global Command Menu (Search) --%>
+      <div class="flex-1 max-w-lg mx-8 hidden lg:block">
+        <button
+          id="search-trigger"
+          class="relative group w-full text-left flex items-center justify-between border border-slate-700/50 rounded-lg bg-slate-900/40 text-slate-400 hover:bg-[var(--nx-surface)] hover:text-slate-300 transition-all shadow-inner py-1.5 pl-3 pr-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ring-offset-[var(--nx-surface)]"
+        >
+          <div class="flex items-center gap-2">
+            <span class="hero-magnifying-glass w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors">
+            </span>
+            <span class="text-sm">Search transactions, invoices...</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono border border-slate-700 rounded px-1.5 py-0.5 bg-slate-800 shadow-sm shrink-0">
+            ⌘K
+          </span>
+        </button>
+      </div>
+
+      <%!-- Right: Actions & User Profile --%>
+      <div class="flex items-center gap-5">
         <div :if={@actions != []} class="flex items-center gap-2">
           {render_slot(@actions)}
         </div>
-        <div class="flex items-center gap-2 text-xs text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Identity Verified</span>
+
+        <div class="flex items-center gap-5 pl-5 border-l border-[var(--nx-border)]">
+          <%!-- Notifications --%>
+          <div class="relative">
+            <button
+              id="notif-toggle"
+              class="relative text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer group"
+            >
+              <span class="hero-bell w-5 h-5"></span>
+              <span class="absolute top-0 right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[var(--nx-surface)]">
+              </span>
+            </button>
+
+            <%!-- Dropdown Menu --%>
+            <div
+              id="notification-menu"
+              class="hidden absolute top-full right-0 mt-3 w-80 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-xl shadow-black/80 ring-1 ring-white/5 overflow-hidden z-50"
+            >
+              <div class="px-4 py-3 border-b border-[var(--nx-border)] flex justify-between items-center bg-slate-800/20">
+                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  Notifications
+                </h3>
+                <span class="text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer">
+                  Mark all read
+                </span>
+              </div>
+              <div class="p-2 max-h-[300px] overflow-y-auto hidden-scrollbar">
+                <div class="px-3 py-3 hover:bg-white/[0.02] rounded-xl transition-colors cursor-pointer flex gap-3">
+                  <div class="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0"></div>
+                  <div>
+                    <p class="text-[11px] text-slate-200">Critical Limit Approached</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">
+                      London / JPY exposure exceeds limit.
+                    </p>
+                  </div>
+                </div>
+                <div class="px-3 py-3 hover:bg-white/[0.02] rounded-xl transition-colors cursor-pointer flex gap-3 opacity-60">
+                  <div class="w-2 h-2 rounded-full bg-transparent border border-slate-600 mt-1.5 shrink-0">
+                  </div>
+                  <div>
+                    <p class="text-[11px] text-slate-200">Payment Matched</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Invoice #3842 fully reconciled.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- User Profile Dropdown Toggle --%>
+          <div class="relative">
+            <div id="profile-toggle" class="flex items-center gap-3 cursor-pointer group">
+              <div class="text-right hidden sm:block">
+                <p class="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
+                  A. Freeman
+                </p>
+                <div class="flex items-center gap-1.5 justify-end mt-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <p class="text-[9px] text-emerald-400/80 font-medium uppercase tracking-wider">
+                    CFO
+                  </p>
+                </div>
+              </div>
+              <div class="w-8 h-8 rounded-full bg-slate-800 border border-[var(--nx-border)] flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:bg-slate-700 transition-colors">
+                <span class="text-xs font-bold text-slate-300">AF</span>
+              </div>
+              <span class="hero-chevron-down w-3 h-3 text-slate-500 group-hover:text-slate-300 transition-colors hidden sm:block">
+              </span>
+            </div>
+
+            <%!-- Profile Menu --%>
+            <div
+              id="profile-menu"
+              class="hidden absolute top-full right-0 mt-3 w-56 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-xl shadow-black/80 ring-1 ring-white/5 overflow-hidden z-50"
+            >
+              <div class="p-4 border-b border-[var(--nx-border)] bg-slate-800/20">
+                <p class="text-sm font-bold text-white">Alexander Freeman</p>
+                <p class="text-xs text-slate-500">Chief Financial Officer</p>
+              </div>
+              <div class="p-2 space-y-0.5">
+                <a
+                  href="#"
+                  class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
+                >
+                  <span class="hero-cog-8-tooth w-4 h-4 text-slate-500"></span> Settings
+                </a>
+                <a
+                  href="#"
+                  class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
+                >
+                  <span class="hero-shield-check w-4 h-4 text-slate-500"></span> Security
+                </a>
+                <div class="my-1 border-t border-[var(--nx-border)]"></div>
+                <a
+                  href="#"
+                  class="flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+                >
+                  <span class="hero-arrow-right-on-rectangle w-4 h-4"></span> End Session
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -450,6 +680,163 @@ defmodule NexusWeb.NexusComponents do
       </div>
       <p class="text-sm font-medium text-slate-400">{@title}</p>
       <p :if={@message} class="text-xs text-slate-600 mt-1 max-w-xs">{@message}</p>
+    </div>
+    """
+  end
+
+  @doc """
+  Top-level dashboard KPI card with an optional animated progress bar at the bottom.
+
+  ## Examples
+
+      <.kpi_card title="Successfully Matched" value="847" label="Transactions" color="emerald" progress />
+  """
+  attr :title, :string, required: true
+  attr :value, :string, required: true
+  attr :label, :string, required: true
+  attr :color, :string, default: "emerald", values: ~w(emerald amber rose indigo)
+  attr :progress, :boolean, default: false
+
+  def kpi_card(assigns) do
+    ~H"""
+    <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden">
+      <p class="text-[10px] text-slate-500 uppercase tracking-[0.1em]">{@title}</p>
+      <div class="mt-2 flex items-baseline gap-2">
+        <p class={[
+          "text-2xl font-mono tracking-tight",
+          @color == "emerald" && "text-emerald-400",
+          @color == "amber" && "text-amber-400",
+          @color == "rose" && "text-rose-400",
+          @color == "indigo" && "text-indigo-400"
+        ]}>
+          {@value}
+        </p>
+        <p class="text-[10px] text-slate-500 uppercase">{@label}</p>
+      </div>
+      <div
+        :if={@progress}
+        class={[
+          "absolute bottom-0 left-0 w-full h-1",
+          @color == "emerald" && "bg-emerald-500/20",
+          @color == "amber" && "bg-amber-500/20",
+          @color == "rose" && "bg-rose-500/20",
+          @color == "indigo" && "bg-indigo-500/20"
+        ]}
+      >
+        <div class={[
+          "h-full w-full",
+          @color == "emerald" && "bg-emerald-500",
+          @color == "amber" && "bg-amber-500",
+          @color == "rose" && "bg-rose-500",
+          @color == "indigo" && "bg-indigo-500"
+        ]}>
+        </div>
+      </div>
+    </.dark_card>
+    """
+  end
+
+  @doc """
+  Segmented control for selecting timeframes (e.g. 1H, 1D, 30D).
+
+  ## Examples
+
+      <.timeframe_selector options={["1H", "4H", "1D", "1W"]} active="1D" on_change="set_tf" />
+  """
+  attr :options, :list, required: true
+  attr :active, :string, required: true
+  attr :on_change, :string, required: true
+  attr :variant, :string, default: "subtle", values: ~w(subtle solid)
+
+  def timeframe_selector(assigns) do
+    ~H"""
+    <div class={[
+      "flex gap-1 text-[10px] font-medium text-slate-400",
+      @variant == "solid" && "bg-slate-900/30 p-0.5 rounded-lg border border-slate-800/50"
+    ]}>
+      <%= for option <- @options do %>
+        <button
+          phx-click={@on_change}
+          phx-value-tf={option}
+          class={[
+            "px-2 py-1 rounded-md transition-colors",
+            @variant == "subtle" && @active == option && "bg-white/5 text-white border border-white/5",
+            @variant == "subtle" && @active != option &&
+              "cursor-pointer hover:text-white border border-transparent",
+            @variant == "solid" && @active == option &&
+              "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.1)]",
+            @variant == "solid" && @active != option &&
+              "hover:text-white border border-transparent cursor-pointer"
+          ]}
+        >
+          {option}
+        </button>
+      <% end %>
+    </div>
+    """
+  end
+
+  @doc """
+  A single row in the Recent Activity feed.
+
+  ## Examples
+
+      <.activity_item
+        icon="hero-check-circle"
+        color="emerald"
+        title="Payment matched"
+        id_str="#3842"
+        time_ago="15 min ago"
+      />
+  """
+  attr :icon, :string, required: true
+  attr :color, :string, default: "indigo", values: ~w(indigo emerald amber rose white)
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  attr :id_str, :string, default: nil
+  attr :amount_str, :string, default: nil
+  attr :time_ago, :string, required: true
+
+  def activity_item(assigns) do
+    ~H"""
+    <div class="flex items-start gap-4 relative">
+      <div class={[
+        "w-6 h-6 rounded-full border flex items-center justify-center shrink-0 z-10 mt-0.5",
+        @color == "indigo" && "bg-indigo-500/20 border-indigo-500/30",
+        @color == "emerald" && "bg-emerald-500/20 border-emerald-500/30",
+        @color == "amber" && "bg-amber-500/20 border-amber-500/30",
+        @color == "rose" && "bg-rose-500/20 border-rose-500/30",
+        @color == "white" && "bg-white/10 border-white/20"
+      ]}>
+        <span class={[
+          @icon,
+          "w-3 h-3",
+          @color == "indigo" && "text-indigo-400",
+          @color == "emerald" && "text-emerald-400",
+          @color == "amber" && "text-amber-400",
+          @color == "rose" && "text-rose-400",
+          @color == "white" && "text-slate-300"
+        ]}>
+        </span>
+      </div>
+      <div class="flex-1">
+        <p class={[
+          "text-sm",
+          (@color == "indigo" || @color == "emerald" || @color == "white") && "text-slate-200",
+          @color == "amber" && "text-amber-300",
+          @color == "rose" && "text-rose-300"
+        ]}>
+          {@title}
+          <span :if={@id_str} class="text-white font-mono">{@id_str}</span>
+          <span :if={@amount_str} class="text-emerald-400 font-mono">({@amount_str})</span>
+        </p>
+        <p :if={@subtitle} class="text-[11px] text-slate-400 font-mono mt-0.5">
+          {@subtitle}
+        </p>
+        <p class="text-[10px] text-slate-400 mt-1 uppercase font-medium tracking-wider">
+          {@time_ago}
+        </p>
+      </div>
     </div>
     """
   end
@@ -1138,6 +1525,107 @@ defmodule NexusWeb.NexusComponents do
           >
             <span class="hero-arrow-right-on-rectangle w-4 h-4"></span> Sign out
           </button>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  # ══════════════════════════════════════════════════════════════
+  # 7. COMMAND PALETTE
+  # ══════════════════════════════════════════════════════════════
+
+  @doc """
+  Global Command Menu triggered by Cmd+K.
+  """
+  def command_palette(assigns) do
+    ~H"""
+    <div
+      id="command-palette-backdrop"
+      class="hidden fixed inset-0 z-50 bg-[#0B0E14]/80 backdrop-blur-sm transition-opacity opacity-0 flex items-start justify-center pt-[10vh]"
+    >
+      <div
+        id="command-palette-modal"
+        class="relative w-full max-w-2xl bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl shadow-black/80 overflow-hidden scale-95 transition-all opacity-0"
+      >
+        <%!-- Header (Input) --%>
+        <div class="px-4 py-4 border-b border-[var(--nx-border)] flex items-center gap-3">
+          <span class="hero-magnifying-glass w-5 h-5 text-indigo-400"></span>
+          <input
+            id="command-palette-input"
+            type="text"
+            placeholder="Search transactions, jump to invoice..."
+            autocomplete="off"
+            class="flex-1 bg-transparent border-none text-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-0"
+          />
+          <span class="text-[10px] text-slate-500 font-mono border border-slate-700 rounded px-1.5 py-0.5 bg-slate-800 shadow-sm shrink-0">
+            ESC
+          </span>
+        </div>
+
+        <%!-- Body (Results) --%>
+        <div class="max-h-[60vh] overflow-y-auto p-2" id="cmd-pal-results-container">
+          <%!-- Initial State --%>
+          <div id="cmd-pal-empty" class="py-12 flex flex-col items-center justify-center text-center">
+            <span class="hero-magnifying-glass w-8 h-8 text-slate-600 mb-3"></span>
+            <p class="text-sm font-medium text-slate-300">Looking for something specific?</p>
+            <p class="text-xs text-slate-500 mt-1 max-w-xs">
+              Search for invoice IDs, company names, or type a command like "Settings".
+            </p>
+          </div>
+
+          <%!-- Example Section: Suggestions (Hidden by default, can be toggled via JS) --%>
+          <div class="mb-4 hidden" id="cmd-pal-results">
+            <h3 class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+              Recent Activity
+            </h3>
+            <div class="space-y-0.5">
+              <a
+                href="#"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-sm text-slate-300 transition-colors group"
+              >
+                <span class="hero-document-text w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors">
+                </span>
+                <span class="flex-1">
+                  Invoice <span class="text-white font-medium">#INV-2024-3847</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono tracking-wider group-hover:text-indigo-300 hidden group-hover:block">
+                  JUMP
+                </span>
+              </a>
+              <a
+                href="#"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-sm text-slate-300 transition-colors group"
+              >
+                <span class="hero-banknotes w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors">
+                </span>
+                <span class="flex-1 text-amber-100/80">
+                  Pending Settlement <span class="text-white font-medium">#BNK-9924</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono tracking-wider group-hover:text-amber-300 hidden group-hover:block">
+                  REVIEW
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Footer --%>
+        <div class="px-4 py-3 border-t border-[var(--nx-border)] bg-slate-800/20 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1">
+              <kbd class="font-mono bg-slate-800 border border-slate-700 rounded px-1">↑↓</kbd>
+              to navigate
+            </span>
+            <span class="flex items-center gap-1">
+              <kbd class="font-mono bg-slate-800 border border-slate-700 rounded px-1">↵</kbd>
+              to select
+            </span>
+          </div>
+          <span class="flex items-center gap-1">
+            Powered by
+            <strong class="text-slate-400 tracking-wider uppercase">Nexus Intelligence</strong>
+          </span>
         </div>
       </div>
     </div>

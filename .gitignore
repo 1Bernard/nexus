@@ -41,8 +41,10 @@ npm-debug.log
 
 # MacOS files
 .DS_Store
+*.log
 
-# Editor/IDE files
+# Editor/IDE/Agent files
+/.agent/
 /.elixir_ls/
 /.vscode/
 /.idea/

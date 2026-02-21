@@ -26,6 +26,10 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
     end
   end
 
+  defp call_sap_api(_entity_id, "error_trigger") do
+    {:error, :simulated_api_failure}
+  end
+
   defp call_sap_api(_entity_id, invoice_id) do
     # In a simulation, we mock the Finch call
     # In production, this would be:

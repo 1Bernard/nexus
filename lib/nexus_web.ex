@@ -50,7 +50,8 @@ defmodule NexusWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView
+      use Phoenix.LiveView,
+        layout: {NexusWeb.Layouts, :app}
 
       unquote(html_helpers())
     end

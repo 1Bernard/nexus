@@ -1,4 +1,11 @@
-<.dark_page>
-  <.flash_group flash={@flash} />
-  {@inner_content}
-</.dark_page>
+<.app_shell
+  current_path={@current_path}
+  session_status="connected"
+  session_id={String.slice(Map.get(assigns, :session_id, "3F8A293B"), 0, 4)}
+>
+  <:topbar_title>{@page_title}</:topbar_title>
+  <:content>
+    <.flash_group flash={@flash} />
+    {@inner_content}
+  </:content>
+</.app_shell>

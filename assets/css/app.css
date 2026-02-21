@@ -107,37 +107,37 @@
 
 /* === NEXUS DESIGN TOKENS === */
 :root {
-  --nx-bg:           #0B0E13;
-  --nx-surface:      #14181F;
-  --nx-surface-hover: #1A1F28;
-  --nx-border:       rgba(255,255,255,0.06);
-  --nx-border-hover: rgba(255,255,255,0.12);
+  --nx-bg: #0b0e13;
+  --nx-surface: #14181f;
+  --nx-surface-hover: #1a1f28;
+  --nx-border: rgba(255, 255, 255, 0.06);
+  --nx-border-hover: rgba(255, 255, 255, 0.12);
 
-  --nx-accent:       #6366F1;
-  --nx-accent-hover: #818CF8;
-  --nx-accent-dim:   rgba(99,102,241,0.15);
-  --nx-success:      #10B981;
-  --nx-success-dim:  rgba(16,185,129,0.15);
-  --nx-warning:      #F59E0B;
-  --nx-warning-dim:  rgba(245,158,11,0.15);
-  --nx-danger:       #F43F5E;
-  --nx-danger-dim:   rgba(244,63,94,0.15);
+  --nx-accent: #6366f1;
+  --nx-accent-hover: #818cf8;
+  --nx-accent-dim: rgba(99, 102, 241, 0.15);
+  --nx-success: #10b981;
+  --nx-success-dim: rgba(16, 185, 129, 0.15);
+  --nx-warning: #f59e0b;
+  --nx-warning-dim: rgba(245, 158, 11, 0.15);
+  --nx-danger: #f43f5e;
+  --nx-danger-dim: rgba(244, 63, 94, 0.15);
 
-  --nx-text:         #F8FAFC;
-  --nx-text-muted:   #94A3B8;
-  --nx-text-dim:     #475569;
+  --nx-text: #f8fafc;
+  --nx-text-muted: #94a3b8;
+  --nx-text-dim: #475569;
 
-  --nx-radius:       1rem;
-  --nx-radius-lg:    2rem;
-  --nx-radius-sm:    0.5rem;
-  --nx-radius-xs:    0.375rem;
-  --nx-transition:   200ms ease-out;
+  --nx-radius: 1rem;
+  --nx-radius-lg: 2rem;
+  --nx-radius-sm: 0.5rem;
+  --nx-radius-xs: 0.375rem;
+  --nx-transition: 200ms ease-out;
 
-  --nx-sidebar-w:    260px;
-  --nx-topbar-h:     64px;
+  --nx-sidebar-w: 260px;
+  --nx-topbar-h: 73px;
 
-  --nx-shadow-glow-accent: 0 0 20px rgba(99,102,241,0.15);
-  --nx-shadow-glow-success: 0 0 20px rgba(16,185,129,0.15);
+  --nx-shadow-glow-accent: 0 0 20px rgba(99, 102, 241, 0.15);
+  --nx-shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.15);
 }
 
 /* SecureFlow ID - Industrial Biometric Animations */
@@ -210,4 +210,21 @@
 .touch-feedback:active {
   transform: scale(0.98);
   transition: transform 0.1s;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-12deg);
+  }
+}
+
+/* Specific to the dashboard risk map matrix layout */
+.matrix-container {
+  display: grid;
+  grid-template-columns: 100px repeat(4, 1fr);
+  gap: 1.5rem;
+  align-items: center;
 }
