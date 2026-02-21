@@ -83,7 +83,8 @@ defmodule NexusWeb.Identity.BiometricLive do
 
   @impl true
   def handle_event("go_to_dashboard", _params, socket) do
-    {:noreply, push_navigate(socket, to: ~p"/dashboard")}
+    token = Phoenix.Token.sign(socket.endpoint, "user auth", socket.assigns.user_id)
+    {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
   end
 
   @impl true
@@ -116,7 +117,8 @@ defmodule NexusWeb.Identity.BiometricLive do
 
   @impl true
   def handle_info(:go_to_dashboard, socket) do
-    {:noreply, push_navigate(socket, to: ~p"/dashboard")}
+    token = Phoenix.Token.sign(socket.endpoint, "user auth", socket.assigns.user_id)
+    {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
   end
 
   defp step_index(:welcome), do: 0

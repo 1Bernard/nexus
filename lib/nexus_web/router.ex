@@ -16,9 +16,18 @@ defmodule NexusWeb.Router do
 
   scope "/", NexusWeb do
     pipe_through :browser
+    get "/auth/login", SessionController, :create
+    delete "/auth/logout", SessionController, :delete
 
-    live "/", Identity.BiometricLive
-    live "/dashboard", DashboardLive
+    live_session :public,
+      layout: false,
+      on_mount: [{NexusWeb.UserAuth, :redirect_if_user_is_authenticated}] do
+      live "/", Identity.BiometricLive
+    end
+
+    live_session :authenticated, on_mount: [{NexusWeb.UserAuth, :mount_current_user}] do
+      live "/dashboard", DashboardLive
+    end
   end
 
   # Other scopes may use custom stacks.

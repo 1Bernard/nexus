@@ -386,12 +386,13 @@ defmodule NexusWeb.NexusComponents do
                   <span class="hero-shield-check w-4 h-4 text-slate-500"></span> Security
                 </a>
                 <div class="my-1 border-t border-[var(--nx-border)]"></div>
-                <a
-                  href="#"
+                <.link
+                  href="/auth/logout"
+                  method="delete"
                   class="flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
                 >
                   <span class="hero-arrow-right-on-rectangle w-4 h-4"></span> End Session
-                </a>
+                </.link>
               </div>
             </div>
           </div>
