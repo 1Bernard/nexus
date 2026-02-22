@@ -1,4 +1,5 @@
 defmodule Nexus.Identity.WebAuthn.MockAdapter do
+  @moduledoc "Mock adapter for WebAuthn in tests."
   @behaviour Nexus.Identity.WebAuthn
 
   def register(_attestation, _client_data, _challenge) do

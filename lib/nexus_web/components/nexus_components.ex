@@ -1,4 +1,5 @@
 defmodule NexusWeb.NexusComponents do
+  alias Phoenix.HTML.Form
   alias Phoenix.LiveView.JS
 
   @moduledoc """
@@ -966,7 +967,7 @@ defmodule NexusWeb.NexusComponents do
         field = assigns.field
 
         assigns
-        |> assign(:enabled, Phoenix.HTML.Form.normalize_value("checkbox", field.value))
+        |> assign(:enabled, Form.normalize_value("checkbox", field.value))
         |> assign(:name, field.name)
         |> assign(:id, field.id)
       else

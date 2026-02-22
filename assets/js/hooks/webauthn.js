@@ -232,6 +232,7 @@ const WebAuthnHook = {
     // Success hint
     if (hint) hint.innerHTML = '<span class="text-emerald-400">✓ biometric verified</span>';
 
+    const actionType = this.el.closest("[data-action]")?.dataset.action || "register";
     const challengeBase64URL = this.el.closest("[data-challenge]")?.dataset.challenge;
 
     if (!challengeBase64URL) {
@@ -240,35 +241,56 @@ const WebAuthnHook = {
     }
 
     try {
-      const options = {
-        publicKey: {
-          challenge: WebAuthnUtils.base64URLToBuffer(challengeBase64URL),
-          rp: { name: "Nexus Industrial", id: window.location.hostname },
-          user: {
-            id: WebAuthnUtils.base64URLToBuffer(WebAuthnUtils.arrayBufferToBase64URL(crypto.getRandomValues(new Uint8Array(16)))),
-            name: "trader_session_" + Math.random().toString(36).substring(7),
-            displayName: "Nexus Trader"
-          },
-          pubKeyCredParams: [
-            { alg: -7, type: "public-key" }, // ES256
-            { alg: -257, type: "public-key" } // RS256
-          ],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
+      if (actionType === "register") {
+        const options = {
+          publicKey: {
+            challenge: WebAuthnUtils.base64URLToBuffer(challengeBase64URL),
+            rp: { name: "Nexus Industrial", id: window.location.hostname },
+            user: {
+              id: WebAuthnUtils.base64URLToBuffer(WebAuthnUtils.arrayBufferToBase64URL(crypto.getRandomValues(new Uint8Array(16)))),
+              name: "trader_session_" + Math.random().toString(36).substring(7),
+              displayName: "Nexus Trader"
+            },
+            pubKeyCredParams: [
+              { alg: -7, type: "public-key" }, // ES256
+              { alg: -257, type: "public-key" } // RS256
+            ],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform",
+              userVerification: "required",
+              residentKey: "required"
+            },
+            timeout: 60000,
+            attestation: "none"
+          }
+        };
+
+        const credential = await navigator.credentials.create(options);
+        
+        this.pushEvent("biometric_complete", {
+          attestation_object: WebAuthnUtils.arrayBufferToBase64URL(credential.response.attestationObject),
+          client_data_json: WebAuthnUtils.arrayBufferToBase64URL(credential.response.clientDataJSON)
+        });
+
+      } else if (actionType === "login") {
+        const options = {
+          publicKey: {
+            challenge: WebAuthnUtils.base64URLToBuffer(challengeBase64URL),
+            rpId: window.location.hostname,
             userVerification: "required",
-            residentKey: "preferred"
-          },
-          timeout: 60000,
-          attestation: "none" // 'direct' often triggers extra warnings/prompts
-        }
-      };
+            timeout: 60000
+          }
+        };
 
-      const credential = await navigator.credentials.create(options);
-
-      this.pushEvent("biometric_complete", {
-        attestation_object: WebAuthnUtils.arrayBufferToBase64URL(credential.response.attestationObject),
-        client_data_json: WebAuthnUtils.arrayBufferToBase64URL(credential.response.clientDataJSON)
-      });
+        const credential = await navigator.credentials.get(options);
+        
+        this.pushEvent("biometric_login", {
+          raw_id: WebAuthnUtils.arrayBufferToBase64URL(credential.rawId),
+          authenticator_data: WebAuthnUtils.arrayBufferToBase64URL(credential.response.authenticatorData),
+          client_data_json: WebAuthnUtils.arrayBufferToBase64URL(credential.response.clientDataJSON),
+          signature: WebAuthnUtils.arrayBufferToBase64URL(credential.response.signature)
+        });
+      }
 
     } catch (err) {
       console.error("Biometric failed:", err);

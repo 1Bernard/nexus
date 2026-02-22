@@ -1,9 +1,10 @@
 defmodule NexusWeb.UserAuth do
+  @moduledoc "User authentication and session management."
   import Plug.Conn
   import Phoenix.Controller
 
-  alias Nexus.Repo
   alias Nexus.Identity.Projections.User
+  alias Nexus.Repo
 
   # Plug pipeline to require authentication
   def require_authenticated_user(conn, _opts) do
@@ -45,6 +46,23 @@ defmodule NexusWeb.UserAuth do
       end
     else
       {:halt, Phoenix.LiveView.redirect(socket, to: "/")}
+    end
+  end
+
+  # LiveView on_mount to protect System Admin routes
+  def on_mount(:require_system_admin, _params, session, socket) do
+    # First, rely on the base mount to get the user
+    case on_mount(:mount_current_user, _params, session, socket) do
+      {:cont, socket} ->
+        if socket.assigns.current_user.role == "system_admin" do
+          {:cont, socket}
+        else
+          # If not system admin, kick them back to their dashboard
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
+        end
+
+      {:halt, socket} ->
+        {:halt, socket}
     end
   end
 

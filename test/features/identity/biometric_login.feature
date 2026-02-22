@@ -5,8 +5,8 @@ Feature: Biometric Dashboard Login
 
     Scenario: Successful password-less login
         Given the "Identity" domain is active
-        And the user "Elena V." has a registered "Yubikey"
-        When Elena enters her email "elena@global-corp.com"
+        And the user "Elena V." has a registered "Yubikey" under "Global Corp" with role "trader"
+        When Elena attempts to authenticate with her hardware security key
         Then the system should generate a "WebAuthn Challenge"
         And store it in the "AuthChallengeStore" for 60 seconds
         When Elena performs a fingerprint scan on her hardware device
@@ -16,7 +16,7 @@ Feature: Biometric Dashboard Login
 
     Scenario: Handling expired challenges during login
         Given the "Identity" domain is active
-        And the user "Elena V." has a registered "Yubikey"
+        And the user "Elena V." has a registered "Yubikey" under "Global Corp" with role "trader"
         And a login challenge was generated 65 seconds ago
         When Elena attempts to complete the biometric handshake
         Then the system should return an "Authentication Expired" error

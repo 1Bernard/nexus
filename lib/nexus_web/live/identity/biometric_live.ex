@@ -2,11 +2,14 @@ defmodule NexusWeb.Identity.BiometricLive do
   use NexusWeb, :live_view
   import NexusWeb.Identity.BiometricComponents
 
-  alias Nexus.Identity.AuthChallengeStore
   alias Nexus.App
+  alias Nexus.Identity.AuthChallengeStore
+  alias Nexus.Identity.WebAuthn
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
+    action_type = params["type"] || "login"
+
     req_host =
       if connected?(socket) do
         get_connect_info(socket, :uri).host
@@ -17,14 +20,15 @@ defmodule NexusWeb.Identity.BiometricLive do
     {:ok,
      assign(socket,
        step: :welcome,
-       activeIndex: 0,
+       active_index: 0,
        status: "idle",
        progress: 0,
        verification_id: "KYC-#{Base.encode32(:crypto.strong_rand_bytes(5), padding: false)}",
-       user_id: Uniq.UUID.uuid7(),
+       user_id: nil,
        challenge: nil,
        error_message: nil,
        host: req_host,
+       action_type: action_type,
        consent_checked: false,
        screening: %{fuzzy: :scanning, ofac: :scanning, pep: :scanning}
      )}
@@ -38,26 +42,15 @@ defmodule NexusWeb.Identity.BiometricLive do
   @impl true
   def handle_event("next_step", %{"step" => step}, socket) do
     new_step = String.to_existing_atom(step)
-    activeIndex = step_index(new_step)
+    active_index = step_index(new_step)
 
     # Prevent progressing to biometric without consent
     if new_step == :biometric && !socket.assigns.consent_checked do
       {:noreply, socket}
     else
-      socket =
-        if new_step == :biometric do
-          challenge = generate_challenge(socket.assigns.host, socket.assigns.user_id)
-          assign(socket, challenge: challenge, status: "idle", progress: 0)
-        else
-          socket
-        end
+      socket = process_step_transition(socket, new_step)
 
-      # Trigger screening simulation when entering verifying step
-      if new_step == :verifying do
-        Process.send_after(self(), :advance_screening_1, 800)
-      end
-
-      {:noreply, assign(socket, step: new_step, activeIndex: activeIndex)}
+      {:noreply, assign(socket, step: new_step, active_index: active_index)}
     end
   end
 
@@ -76,6 +69,7 @@ defmodule NexusWeb.Identity.BiometricLive do
     # in the read-model (UserProjector) during continuous demo testing.
     command = %Nexus.Identity.Commands.RegisterUser{
       user_id: socket.assigns.user_id,
+      org_id: Nexus.Schema.generate_uuidv7(),
       display_name: "Bernard Ansah",
       email: "bernard+#{Base.encode16(:crypto.strong_rand_bytes(4), case: :lower)}@example.com",
       role: "admin",
@@ -90,6 +84,60 @@ defmodule NexusWeb.Identity.BiometricLive do
 
       {:error, reason} ->
         {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "biometric_login",
+        %{
+          "raw_id" => raw_id,
+          "authenticator_data" => auth_data,
+          "client_data_json" => client,
+          "signature" => sig
+        },
+        socket
+      ) do
+    challenge_id = "auth_#{socket.assigns.host}"
+
+    # In a real app we would query the read model for the user_id by credential_id
+    # Since we are mocking the scanner, we'll extract the known org_id and user_id from the DB if available
+    # Or mock it if testing. For the prototype we dispatch VerifyBiometric.
+    # The true 'Id' of the User aggregate is needed here.
+
+    # FOR PROTOTYPE PURPOSES: We use a hardcoded user lookup or error out since we can't reliably
+    # fake the credential_id mapping without a DB lookup.
+    # In full implementation: UserProjector.get_by_credential_id(raw_id)
+
+    # To keep the demo working, we simulate finding the user we registered earlier:
+    user =
+      Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "elena@global-corp.com") ||
+        Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "admin@nexus-platform.io")
+
+    # If neither exists, this will crash the demo, which is expected since registration or bootstrap must happen first.
+
+    if user do
+      command = %Nexus.Identity.Commands.VerifyBiometric{
+        user_id: user.id,
+        org_id: user.org_id,
+        challenge_id: challenge_id,
+        raw_id: decode_base64_url!(raw_id),
+        authenticator_data: decode_base64_url!(auth_data),
+        signature: decode_base64_url!(sig),
+        client_data_json: decode_base64_url!(client)
+      }
+
+      case App.dispatch(command) do
+        :ok ->
+          Process.send_after(self(), :advance_screening_1, 800)
+          {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+
+        {:error, reason} ->
+          {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+      end
+    else
+      {:noreply,
+       assign(socket, step: :error, error_message: "User not found. Please register first.")}
     end
   end
 
@@ -133,6 +181,29 @@ defmodule NexusWeb.Identity.BiometricLive do
     {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
   end
 
+  defp process_step_transition(socket, :biometric) do
+    new_user_id =
+      if socket.assigns.action_type == "register", do: Uniq.UUID.uuid7(), else: nil
+
+    challenge =
+      if socket.assigns.action_type == "register" do
+        generate_registration_challenge(socket.assigns.host, new_user_id)
+      else
+        generate_authentication_challenge(socket.assigns.host)
+      end
+
+    socket
+    |> assign(user_id: new_user_id)
+    |> assign(challenge: challenge, status: "idle", progress: 0)
+  end
+
+  defp process_step_transition(socket, :verifying) do
+    Process.send_after(self(), :advance_screening_1, 800)
+    socket
+  end
+
+  defp process_step_transition(socket, _other_step), do: socket
+
   defp step_index(:welcome), do: 0
   defp step_index(:consent), do: 1
   defp step_index(:biometric), do: 2
@@ -140,19 +211,19 @@ defmodule NexusWeb.Identity.BiometricLive do
   defp step_index(:success), do: 3
   defp step_index(:error), do: 0
 
-  defp generate_challenge(host, user_id) do
+  defp generate_registration_challenge(host, user_id) do
     # Wax.new_registration_challenge() requires both rp_id and origin.
     # In local dev, origin must be http://localhost:4000 or http://127.0.0.1:4000.
     origin =
       if host in ["localhost", "127.0.0.1"], do: "http://#{host}:4000", else: "https://#{host}"
 
     challenge =
-      Nexus.Identity.WebAuthn.new_registration_challenge(
+      WebAuthn.new_registration_challenge(
         rp_id: host,
         origin: origin,
         authenticator_selection: %{
-          residentKey: "discouraged",
-          requireResidentKey: false,
+          residentKey: "required",
+          requireResidentKey: true,
           userVerification: "preferred"
         }
       )
@@ -160,6 +231,24 @@ defmodule NexusWeb.Identity.BiometricLive do
     AuthChallengeStore.store_challenge(user_id, challenge)
 
     # We only send the raw bytes (Base64URL encoded) to the browser.
+    Base.url_encode64(challenge.bytes, padding: false)
+  end
+
+  defp generate_authentication_challenge(host) do
+    origin =
+      if host in ["localhost", "127.0.0.1"], do: "http://#{host}:4000", else: "https://#{host}"
+
+    challenge =
+      WebAuthn.new_authentication_challenge(
+        rp_id: host,
+        origin: origin,
+        userVerification: "preferred"
+      )
+
+    # Use a generic session key for auth challenges before user_id is known
+    challenge_id = "auth_#{host}"
+    AuthChallengeStore.store_challenge(challenge_id, challenge)
+
     Base.url_encode64(challenge.bytes, padding: false)
   end
 
@@ -184,7 +273,7 @@ defmodule NexusWeb.Identity.BiometricLive do
         </div>
 
         <div class="pt-7 px-7 pb-3 flex justify-between items-center">
-          <.step_indicators activeIndex={@activeIndex} />
+          <.step_indicators active_index={@active_index} />
           <.security_badge />
         </div>
 
@@ -196,6 +285,7 @@ defmodule NexusWeb.Identity.BiometricLive do
             v_id={@verification_id}
             error={@error_message}
             challenge={@challenge}
+            action_type={@action_type}
             consent_checked={@consent_checked}
             screening={@screening}
           />

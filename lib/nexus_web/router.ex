@@ -23,10 +23,15 @@ defmodule NexusWeb.Router do
       layout: false,
       on_mount: [{NexusWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/", Identity.BiometricLive
+      live "/invites/:token", Organization.InvitesLive
     end
 
     live_session :authenticated, on_mount: [{NexusWeb.UserAuth, :mount_current_user}] do
       live "/dashboard", DashboardLive
+    end
+
+    live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
+      live "/backoffice", BackofficeLive
     end
   end
 

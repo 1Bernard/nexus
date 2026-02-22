@@ -18,11 +18,12 @@ defmodule Nexus.Identity.Projectors.UserProjector do
       {:ok, _uuid} ->
         user_data = %{
           id: ev.user_id,
+          org_id: ev.org_id,
           email: ev.email,
           display_name: ev.display_name,
           role: ev.role,
-          cose_key: Base.decode64!(ev.cose_key),
-          credential_id: Base.decode64!(ev.credential_id)
+          cose_key: safe_decode64(ev.cose_key),
+          credential_id: safe_decode64(ev.credential_id)
         }
 
         # We use Multi.run to check for existence before inserting.
@@ -48,4 +49,14 @@ defmodule Nexus.Identity.Projectors.UserProjector do
         multi
     end
   end)
+
+  defp safe_decode64(binary) when is_binary(binary) do
+    case Base.decode64(binary) do
+      {:ok, decoded} -> decoded
+      # Or a placeholder if it's not base64
+      :error -> binary
+    end
+  end
+
+  defp safe_decode64(other), do: other
 end

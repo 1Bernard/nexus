@@ -30,7 +30,13 @@ defmodule Nexus.Application do
       if Mix.env() == :test do
         children
       else
-        children ++ [Nexus.Identity.Projectors.UserProjector]
+        children ++
+          [
+            Nexus.Identity.Projectors.UserProjector,
+            # --- Organization Domain ---
+            Nexus.Organization.Projectors.TenantProjector,
+            Nexus.Organization.Projectors.InvitationProjector
+          ]
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

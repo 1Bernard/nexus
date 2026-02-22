@@ -11,7 +11,9 @@ defmodule Nexus.Identity.BiometricLoginTest do
     {:ok, state}
   end
 
-  defgiven ~r/^the user "(?<name>[^"]+)" has a registered "(?<device>[^"]+)"$/, _vars, state do
+  defgiven ~r/^the user "(?<name>[^"]+)" has a registered "(?<device>[^"]+)" under "(?<org_name>[^"]+)" with role "(?<role>[^"]+)"$/,
+           _vars,
+           state do
     {:ok, state}
   end
 
@@ -24,8 +26,10 @@ defmodule Nexus.Identity.BiometricLoginTest do
 
   # --- When ---
 
-  defwhen ~r/^Elena enters her email "(?<email>[^"]+)"$/, %{email: email}, state do
-    {:ok, Map.put(state, :email, email)}
+  defwhen ~r/^Elena attempts to authenticate with her hardware security key$/, _vars, state do
+    # In a Usernameless flow, we immediately generate the challenge.
+    # We put the email back into state here for the rest of the mock test steps to use.
+    {:ok, Map.put(state, :email, "elena@global-corp.com")}
   end
 
   defwhen ~r/^Elena performs a fingerprint scan on her hardware device$/, _vars, state do

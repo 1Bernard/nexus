@@ -4,11 +4,20 @@ defmodule Nexus.Identity.Commands.VerifyBiometric do
   """
   @enforce_keys [
     :user_id,
+    :org_id,
     :challenge_id,
     :raw_id,
     :authenticator_data,
     :signature,
     :client_data_json
   ]
-  defstruct [:user_id, :challenge_id, :raw_id, :authenticator_data, :signature, :client_data_json]
+  defstruct [
+    :user_id,
+    :org_id,
+    :challenge_id,
+    :raw_id,
+    :authenticator_data,
+    :signature,
+    :client_data_json
+  ]
 end

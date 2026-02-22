@@ -1,4 +1,5 @@
 defmodule Nexus.Identity.WebAuthn do
+  @moduledoc "Port for WebAuthn integrations."
   @callback register(binary(), binary(), any()) :: {:ok, {any(), any()}} | {:error, any()}
   @callback authenticate(binary(), binary(), binary(), binary(), any()) ::
               {:ok, any()} | {:error, any()}

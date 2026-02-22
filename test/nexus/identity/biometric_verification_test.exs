@@ -4,9 +4,9 @@ defmodule Nexus.Identity.BiometricVerificationTest do
 
   @moduletag :feature
 
-  alias Nexus.Repo
   alias Nexus.Identity.AuthChallengeStore
   alias Nexus.Identity.Events.BiometricVerified
+  alias Nexus.Repo
 
   setup do
     # Use the mock adapter for WebAuthn logic in tests
@@ -22,16 +22,18 @@ defmodule Nexus.Identity.BiometricVerificationTest do
 
   # --- Given ---
 
-  defgiven ~r/^a user "(?<username>[^"]+)" is registered with a public key$/,
-           %{username: username},
+  defgiven ~r/^a user "(?<username>[^"]+)" is registered with a public key under "(?<org_name>[^"]+)" with role "(?<role>[^"]+)"$/,
+           %{username: username, org_name: _org, role: _role},
            state do
     user_id = UUIDv7.generate()
+    org_id = UUIDv7.generate()
 
     # Pre-seed the challenge store so RegisterUser can verify the attestation
     AuthChallengeStore.store_challenge(user_id, "mock_registration_challenge")
 
     command = %Nexus.Identity.Commands.RegisterUser{
       user_id: user_id,
+      org_id: org_id,
       email: "#{username}@example.com",
       attestation_object: "mock_attestation_object",
       client_data_json: "mock_client_data_json"
@@ -42,7 +44,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     # Wait for the projector to catch up
     Process.sleep(200)
 
-    user = %{id: user_id}
+    user = %{id: user_id, org_id: org_id}
     {:ok, Map.put(state, :user, user)}
   end
 
@@ -68,6 +70,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     # Simulate a WebAuthn signature and metadata
     command = %Nexus.Identity.Commands.VerifyBiometric{
       user_id: state.user.id,
+      org_id: state.user.org_id,
       challenge_id: state.session_id,
       raw_id: "mock_cred_123",
       authenticator_data: "mock_auth_data",
@@ -125,6 +128,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     assert user.role == "trader"
     assert byte_size(user.cose_key) > 0
     assert user.credential_id == "mock_cred_123"
+    assert user.org_id == state.user.org_id
     {:ok, state}
   end
 

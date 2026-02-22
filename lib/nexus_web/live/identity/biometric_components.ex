@@ -1,7 +1,10 @@
 defmodule NexusWeb.Identity.BiometricComponents do
+  @moduledoc """
+  UI primitives and layout components for the Biometric flow.
+  """
   use Phoenix.Component
 
-  attr :activeIndex, :integer, required: true
+  attr :active_index, :integer, required: true
 
   def step_indicators(assigns) do
     ~H"""
@@ -10,7 +13,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
         :for={idx <- 0..3}
         class={[
           "step-dot h-1.5 rounded-full transition-all",
-          if(idx == @activeIndex,
+          if(idx == @active_index,
             do: "w-8 bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.7)]",
             else: "w-4 bg-white/10"
           )
@@ -219,6 +222,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
   attr :v_id, :string, default: nil
   attr :error, :string, default: nil
   attr :challenge, :string, default: nil
+  attr :action_type, :string, default: "register"
   attr :consent_checked, :boolean, default: false
   attr :screening, :map, default: %{}
 
@@ -323,7 +327,11 @@ defmodule NexusWeb.Identity.BiometricComponents do
 
   def step_content(%{step: :biometric} = assigns) do
     ~H"""
-    <div class="fade-up text-center flex flex-col items-center" data-challenge={@challenge}>
+    <div
+      class="fade-up text-center flex flex-col items-center"
+      data-challenge={@challenge}
+      data-action={@action_type}
+    >
       <h2 class="text-2xl font-bold">Biometric verification</h2>
       <p class="text-xs text-slate-400 mt-1 mb-4">Press and hold to verify your identity</p>
 

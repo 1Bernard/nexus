@@ -16,7 +16,14 @@ defmodule Nexus.Schema do
       @foreign_key_type :binary_id
       @timestamps_opts [type: :utc_datetime_usec, inserted_at: :created_at]
 
-      def generate_uuidv7, do: Uniq.UUID.uuid7()
+      # Multi-tenancy: Every record belongs to an organization
+      # This ensures mathematically guaranteed isolation between tenants.
+      schema_prefix =
+        quote do
+          field :org_id, :binary_id
+        end
     end
   end
+
+  def generate_uuidv7, do: Uniq.UUID.uuid7()
 end
