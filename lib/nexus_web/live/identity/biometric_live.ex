@@ -67,6 +67,7 @@ defmodule NexusWeb.Identity.BiometricLive do
     # This is for Registration
     command = %Nexus.Identity.Commands.RegisterUser{
       user_id: socket.assigns.user_id,
+      email: "user-#{socket.assigns.user_id}@example.com",
       attestation_object: decode_base64_url!(att),
       client_data_json: decode_base64_url!(client)
     }

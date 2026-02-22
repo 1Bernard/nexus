@@ -18,6 +18,7 @@ defmodule Nexus.Identity.Projectors.UserProjector do
       {:ok, _uuid} ->
         user_data = %{
           id: ev.user_id,
+          email: ev.email,
           display_name: ev.display_name,
           role: ev.role,
           cose_key: Base.decode64!(ev.cose_key),
@@ -29,7 +30,8 @@ defmodule Nexus.Identity.Projectors.UserProjector do
         # don't conflict, or we catch the crash.
         # Here we use a robust try/rescue to ensure the projector never hangs the app boot.
         Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
-          on_conflict: {:replace, [:display_name, :role, :cose_key, :credential_id, :updated_at]},
+          on_conflict:
+            {:replace, [:email, :display_name, :role, :cose_key, :credential_id, :updated_at]},
           conflict_target: :id
         )
 

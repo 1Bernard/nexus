@@ -3,7 +3,7 @@ defmodule Nexus.Identity.Aggregates.User do
   The Domain Aggregate for User Identity.
   Responsible for validating Biometric Handshakes and emitting Facts.
   """
-  defstruct [:id, :display_name, :role, :status, :cose_key, :credential_id]
+  defstruct [:id, :email, :display_name, :role, :status, :cose_key, :credential_id]
 
   alias Nexus.Identity.Commands.RegisterUser
   alias Nexus.Identity.Events.UserRegistered
@@ -29,6 +29,7 @@ defmodule Nexus.Identity.Aggregates.User do
 
             %UserRegistered{
               user_id: cmd.user_id,
+              email: cmd.email,
               display_name: cmd.display_name,
               role: cmd.role,
               cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
@@ -88,6 +89,7 @@ defmodule Nexus.Identity.Aggregates.User do
     %__MODULE__{
       state
       | id: ev.user_id,
+        email: ev.email,
         display_name: ev.display_name,
         role: ev.role,
         cose_key: ev.cose_key,

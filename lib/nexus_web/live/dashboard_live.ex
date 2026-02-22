@@ -59,7 +59,7 @@ defmodule NexusWeb.DashboardLive do
           value={to_string(@payment_matching.matched)}
           label="Transactions"
           color="emerald"
-          progress
+          progress={94}
         />
 
         <%!-- 3. Partial --%>
@@ -68,7 +68,7 @@ defmodule NexusWeb.DashboardLive do
           value={to_string(@payment_matching.partial)}
           label="Requires Review"
           color="amber"
-          progress
+          progress={4}
         />
 
         <%!-- 4. Alerts --%>
@@ -77,7 +77,7 @@ defmodule NexusWeb.DashboardLive do
           value={to_string(@payment_matching.unmatched)}
           label="Anomalies"
           color="rose"
-          progress
+          progress={2}
         />
 
         <%!-- 5. Rate & Action --%>

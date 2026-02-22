@@ -23,7 +23,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
   # --- Given ---
 
   defgiven ~r/^a user "(?<username>[^"]+)" is registered with a public key$/,
-           %{username: _username},
+           %{username: username},
            state do
     user_id = UUIDv7.generate()
 
@@ -32,6 +32,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
 
     command = %Nexus.Identity.Commands.RegisterUser{
       user_id: user_id,
+      email: "#{username}@example.com",
       attestation_object: "mock_attestation_object",
       client_data_json: "mock_client_data_json"
     }

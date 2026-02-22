@@ -2,6 +2,7 @@
   current_path={assigns[:current_path] || "/"}
   session_status="connected"
   session_id={String.slice(Map.get(assigns, :session_id, "3F8A293B"), 0, 4)}
+  current_user={@current_user}
 >
   <:topbar_title>{assigns[:page_title] || "Nexus"}</:topbar_title>
   <:content>

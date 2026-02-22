@@ -9,20 +9,29 @@ defmodule NexusWeb.Dev.DesignSystemLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     assign(socket,
-       page_title: "Design System",
-       show_modal: false,
-       search_value: "",
-       toggle_on: false,
-       show_notifications: false,
-       show_profile: false,
-       notifications: [
-         %{message: "Invoice #3847 was received", time: "2 min ago"},
-         %{message: "Statement upload completed", time: "15 min ago"},
-         %{message: "Anomaly detected in Q4 batch", time: "1 hour ago"}
-       ]
-     )}
+    socket =
+      assign(socket,
+        page_title: "Design System",
+        show_modal: false,
+        search_value: "",
+        toggle_on: false,
+        show_notifications: false,
+        show_profile: false,
+        notifications: [
+          %{message: "Invoice #3847 was received", time: "2 min ago"},
+          %{message: "Statement upload completed", time: "15 min ago"},
+          %{message: "Anomaly detected in Q4 batch", time: "1 hour ago"}
+        ]
+      )
+      |> assign_new(:current_user, fn ->
+        %Nexus.Identity.Projections.User{
+          id: "dev-admin-id",
+          display_name: "A. Freeman",
+          role: "admin"
+        }
+      end)
+
+    {:ok, socket, layout: false}
   end
 
   @impl true
@@ -201,6 +210,60 @@ defmodule NexusWeb.Dev.DesignSystemLive do
                 </:action>
               </.data_table>
               <.pagination showing={4} total={1247} has_more={true} />
+            </div>
+          </.dark_card>
+        </.section>
+
+        <%!-- ═══ LOADING DATA TABLE ═══ --%>
+        <.section
+          title="Loading DataGrid"
+          subtitle="data_table — skeleton/shimmer state before data loads"
+        >
+          <.dark_card>
+            <div class="p-2">
+              <div class="animate-pulse">
+                <%!-- Header row skeleton --%>
+                <div class="flex items-center px-4 py-3 border-b border-[var(--nx-border)] bg-black/20">
+                  <div class="h-3 bg-white/10 rounded w-24 mr-auto"></div>
+                  <div class="h-3 bg-white/10 rounded w-32 mr-auto"></div>
+                  <div class="h-3 bg-white/10 rounded w-20 mr-auto"></div>
+                  <div class="h-3 bg-white/10 rounded w-16 mr-auto"></div>
+                  <div class="h-3 bg-white/10 rounded w-8"></div>
+                </div>
+                <%!-- Body rows skeleton --%>
+                <div class="divide-y divide-[var(--nx-border)]">
+                  <div
+                    :for={_ <- 1..5}
+                    class="flex items-center px-4 py-4 hover:bg-[var(--nx-border)]/30 transition-colors"
+                  >
+                    <div class="w-1/4 pr-4">
+                      <div class="h-4 bg-white/[0.06] rounded w-24 mb-1"></div>
+                      <div class="h-3 bg-white/[0.03] rounded w-16"></div>
+                    </div>
+                    <div class="w-1/4 pr-4">
+                      <div class="h-4 bg-white/[0.06] rounded w-32"></div>
+                    </div>
+                    <div class="w-1/4 pr-4 flex items-center">
+                      <div class="h-4 bg-white/[0.06] rounded w-20"></div>
+                    </div>
+                    <div class="w-1/5 pr-4 flex items-center">
+                      <div class="h-5 bg-white/[0.08] rounded-full w-16"></div>
+                    </div>
+                    <div class="w-12 flex justify-end">
+                      <div class="h-6 bg-white/[0.04] rounded w-10"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <%!-- Pagination skeleton --%>
+              <div class="flex items-center justify-between px-4 py-3 border-t border-[var(--nx-border)] opacity-50">
+                <div class="animate-pulse h-4 bg-white/5 rounded w-16"></div>
+                <div class="animate-pulse h-4 bg-white/5 rounded w-24"></div>
+                <div class="animate-pulse flex gap-2">
+                  <div class="h-button bg-white/5 rounded px-3 py-1 w-16"></div>
+                  <div class="h-button bg-white/5 rounded px-3 py-1 w-16"></div>
+                </div>
+              </div>
             </div>
           </.dark_card>
         </.section>

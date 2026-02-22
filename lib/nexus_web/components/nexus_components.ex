@@ -1,4 +1,6 @@
 defmodule NexusWeb.NexusComponents do
+  alias Phoenix.LiveView.JS
+
   @moduledoc """
   Nexus Design System — Shared Component Library.
 
@@ -59,6 +61,7 @@ defmodule NexusWeb.NexusComponents do
   attr :current_path, :string, default: "/dashboard"
   attr :session_status, :string, default: "connected"
   attr :session_id, :string, default: "3F8A"
+  attr :current_user, :any, required: true, doc: "The authenticated user struct"
   slot :topbar_title
   slot :topbar_subtitle
   slot :content, required: true
@@ -74,10 +77,11 @@ defmodule NexusWeb.NexusComponents do
         current_path={@current_path}
         session_status={@session_status}
         session_id={@session_id}
+        current_user={@current_user}
       />
 
       <div class="flex-1 ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300">
-        <.topbar>
+        <.topbar current_user={@current_user}>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
         </.topbar>
@@ -99,6 +103,7 @@ defmodule NexusWeb.NexusComponents do
   attr :current_path, :string, default: "/dashboard"
   attr :session_status, :string, default: "connected"
   attr :session_id, :string, default: "3F8A"
+  attr :current_user, :any, required: true
 
   def sidebar(assigns) do
     core_nav = [
@@ -111,10 +116,15 @@ defmodule NexusWeb.NexusComponents do
       %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"}
     ]
 
+    admin_nav = [
+      %{path: "/admin/users", label: "Manage Users", icon: "hero-users"}
+    ]
+
     assigns =
       assigns
       |> assign(:core_nav, core_nav)
       |> assign(:ops_nav, ops_nav)
+      |> assign(:admin_nav, admin_nav)
 
     ~H"""
     <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-40 overflow-hidden transition-[width] duration-300 [&_#rail-logo]:[.sidebar-collapsed_&]:block [&_#full-logo]:[.sidebar-collapsed_&]:hidden [&_.nav-label]:[.sidebar-collapsed_&]:hidden [&_.nav-header]:[.sidebar-collapsed_&]:opacity-0 [&_#session-full]:[.sidebar-collapsed_&]:hidden [&_#session-rail]:[.sidebar-collapsed_&]:flex">
@@ -201,6 +211,37 @@ defmodule NexusWeb.NexusComponents do
             </.link>
           </div>
         </div>
+
+        <%!-- Admin Group (Conditional) --%>
+        <div :if={@current_user.role == "admin"}>
+          <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
+            Admin
+          </h3>
+          <div class="space-y-1">
+            <.link
+              :for={item <- @admin_nav}
+              navigate={item.path}
+              title={item.label}
+              class={[
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group/item overflow-hidden",
+                if(item.path == @current_path,
+                  do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
+                  else:
+                    "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
+                )
+              ]}
+            >
+              <span class={[
+                item.icon,
+                "w-5 h-5 shrink-0 transition-colors"
+              ]}>
+              </span>
+              <span class="nav-label whitespace-nowrap transition-opacity duration-200">
+                {item.label}
+              </span>
+            </.link>
+          </div>
+        </div>
       </nav>
 
       <%!-- Session Status Footer & Rail Toggle --%>
@@ -244,6 +285,7 @@ defmodule NexusWeb.NexusComponents do
   @doc """
   Top bar with page title, subtitle, and session badge.
   """
+  attr :current_user, :any, default: nil
   slot :title
   slot :subtitle
   slot :actions
@@ -297,105 +339,13 @@ defmodule NexusWeb.NexusComponents do
 
         <div class="flex items-center gap-5 pl-5 border-l border-[var(--nx-border)]">
           <%!-- Notifications --%>
-          <div class="relative">
-            <button
-              id="notif-toggle"
-              class="relative text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer group"
-            >
-              <span class="hero-bell w-5 h-5"></span>
-              <span class="absolute top-0 right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[var(--nx-surface)]">
-              </span>
-            </button>
-
-            <%!-- Dropdown Menu --%>
-            <div
-              id="notification-menu"
-              class="hidden absolute top-full right-0 mt-3 w-80 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-xl shadow-black/80 ring-1 ring-white/5 overflow-hidden z-50"
-            >
-              <div class="px-4 py-3 border-b border-[var(--nx-border)] flex justify-between items-center bg-slate-800/20">
-                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Notifications
-                </h3>
-                <span class="text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer">
-                  Mark all read
-                </span>
-              </div>
-              <div class="p-2 max-h-[300px] overflow-y-auto hidden-scrollbar">
-                <div class="px-3 py-3 hover:bg-white/[0.02] rounded-xl transition-colors cursor-pointer flex gap-3">
-                  <div class="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0"></div>
-                  <div>
-                    <p class="text-[11px] text-slate-200">Critical Limit Approached</p>
-                    <p class="text-[10px] text-slate-500 mt-0.5">
-                      London / JPY exposure exceeds limit.
-                    </p>
-                  </div>
-                </div>
-                <div class="px-3 py-3 hover:bg-white/[0.02] rounded-xl transition-colors cursor-pointer flex gap-3 opacity-60">
-                  <div class="w-2 h-2 rounded-full bg-transparent border border-slate-600 mt-1.5 shrink-0">
-                  </div>
-                  <div>
-                    <p class="text-[11px] text-slate-200">Payment Matched</p>
-                    <p class="text-[10px] text-slate-500 mt-0.5">Invoice #3842 fully reconciled.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <.notification_dropdown notifications={[]} />
 
           <%!-- User Profile Dropdown Toggle --%>
-          <div class="relative">
-            <div id="profile-toggle" class="flex items-center gap-3 cursor-pointer group">
-              <div class="text-right hidden sm:block">
-                <p class="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
-                  A. Freeman
-                </p>
-                <div class="flex items-center gap-1.5 justify-end mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <p class="text-[9px] text-emerald-400/80 font-medium uppercase tracking-wider">
-                    CFO
-                  </p>
-                </div>
-              </div>
-              <div class="w-8 h-8 rounded-full bg-slate-800 border border-[var(--nx-border)] flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:bg-slate-700 transition-colors">
-                <span class="text-xs font-bold text-slate-300">AF</span>
-              </div>
-              <span class="hero-chevron-down w-3 h-3 text-slate-500 group-hover:text-slate-300 transition-colors hidden sm:block">
-              </span>
-            </div>
-
-            <%!-- Profile Menu --%>
-            <div
-              id="profile-menu"
-              class="hidden absolute top-full right-0 mt-3 w-56 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-xl shadow-black/80 ring-1 ring-white/5 overflow-hidden z-50"
-            >
-              <div class="p-4 border-b border-[var(--nx-border)] bg-slate-800/20">
-                <p class="text-sm font-bold text-white">Alexander Freeman</p>
-                <p class="text-xs text-slate-500">Chief Financial Officer</p>
-              </div>
-              <div class="p-2 space-y-0.5">
-                <a
-                  href="#"
-                  class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-                >
-                  <span class="hero-cog-8-tooth w-4 h-4 text-slate-500"></span> Settings
-                </a>
-                <a
-                  href="#"
-                  class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-                >
-                  <span class="hero-shield-check w-4 h-4 text-slate-500"></span> Security
-                </a>
-                <div class="my-1 border-t border-[var(--nx-border)]"></div>
-                <.link
-                  href="/auth/logout"
-                  method="delete"
-                  class="flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
-                >
-                  <span class="hero-arrow-right-on-rectangle w-4 h-4"></span> End Session
-                </.link>
-              </div>
-            </div>
-          </div>
+          <.profile_menu
+            user_name={(@current_user && @current_user.display_name) || "Admin"}
+            session_id={String.slice(Map.get(assigns, :session_id, "3F8A293B"), 0, 4)}
+          />
         </div>
       </div>
     </header>
@@ -696,7 +646,10 @@ defmodule NexusWeb.NexusComponents do
   attr :value, :string, required: true
   attr :label, :string, required: true
   attr :color, :string, default: "emerald", values: ~w(emerald amber rose indigo)
-  attr :progress, :boolean, default: false
+
+  attr :progress, :integer,
+    default: nil,
+    doc: "Percentage 0-100 to show as a progress bar at the bottom"
 
   def kpi_card(assigns) do
     ~H"""
@@ -724,13 +677,16 @@ defmodule NexusWeb.NexusComponents do
           @color == "indigo" && "bg-indigo-500/20"
         ]}
       >
-        <div class={[
-          "h-full w-full",
-          @color == "emerald" && "bg-emerald-500",
-          @color == "amber" && "bg-amber-500",
-          @color == "rose" && "bg-rose-500",
-          @color == "indigo" && "bg-indigo-500"
-        ]}>
+        <div
+          class={[
+            "h-full transition-all duration-1000 ease-out",
+            @color == "emerald" && "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
+            @color == "amber" && "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]",
+            @color == "rose" && "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]",
+            @color == "indigo" && "bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          ]}
+          style={"width: #{@progress}%"}
+        >
         </div>
       </div>
     </.dark_card>
@@ -1448,9 +1404,10 @@ defmodule NexusWeb.NexusComponents do
 
   def notification_dropdown(assigns) do
     ~H"""
-    <div class="relative">
+    <div class="relative" id="notification-dropdown-container">
       <button
-        phx-click={@on_toggle}
+        phx-click={JS.toggle(to: "#notification-menu", in: "fade-in", out: "fade-out")}
+        phx-click-away={JS.hide(to: "#notification-menu", transition: "fade-out")}
         class="relative p-2 text-slate-400 hover:text-slate-200 transition-colors"
       >
         <span class="hero-bell w-5 h-5"></span>
@@ -1463,8 +1420,8 @@ defmodule NexusWeb.NexusComponents do
       </button>
 
       <div
-        :if={@show}
-        class="absolute right-0 top-full mt-2 w-80 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-2xl overflow-hidden z-50"
+        id="notification-menu"
+        class="hidden absolute right-0 top-full mt-2 w-80 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-2xl overflow-hidden z-50"
       >
         <div class="px-4 py-3 border-b border-[var(--nx-border)]">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recent Activity</p>
@@ -1501,17 +1458,18 @@ defmodule NexusWeb.NexusComponents do
 
   def profile_menu(assigns) do
     ~H"""
-    <div class="relative">
+    <div class="relative" id="profile-dropdown-container">
       <button
-        phx-click={@on_toggle}
+        phx-click={JS.toggle(to: "#profile-menu-dropdown", in: "fade-in", out: "fade-out")}
+        phx-click-away={JS.hide(to: "#profile-menu-dropdown", transition: "fade-out")}
         class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-300 text-sm font-bold hover:bg-indigo-500/25 transition-colors"
       >
         {String.first(@user_name)}
       </button>
 
       <div
-        :if={@show}
-        class="absolute right-0 top-full mt-2 w-56 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-2xl overflow-hidden z-50"
+        id="profile-menu-dropdown"
+        class="hidden absolute right-0 top-full mt-2 w-56 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-2xl overflow-hidden z-50"
       >
         <div class="px-4 py-3 border-b border-[var(--nx-border)]">
           <p class="text-sm font-medium text-slate-200">{@user_name}</p>
@@ -1519,13 +1477,27 @@ defmodule NexusWeb.NexusComponents do
             Session: {@session_id}...
           </p>
         </div>
-        <div class="py-1">
-          <button
-            phx-click={@on_sign_out}
-            class="w-full text-left px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2"
+        <div class="p-2 space-y-0.5">
+          <a
+            href="#"
+            class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
+          >
+            <span class="hero-cog-8-tooth w-4 h-4 text-slate-500"></span> Settings
+          </a>
+          <a
+            href="#"
+            class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
+          >
+            <span class="hero-shield-check w-4 h-4 text-slate-500"></span> Security
+          </a>
+          <div class="my-1 border-t border-[var(--nx-border)]"></div>
+          <.link
+            href="/auth/logout"
+            method="delete"
+            class="flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
           >
             <span class="hero-arrow-right-on-rectangle w-4 h-4"></span> Sign out
-          </button>
+          </.link>
         </div>
       </div>
     </div>
