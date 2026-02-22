@@ -19,11 +19,7 @@ defmodule Nexus.MixProject do
     [
       preferred_envs: [
         test: :test,
-        "test.features": :test,
-        "event_store.setup": :test,
-        "event_store.create": :test,
-        "event_store.init": :test,
-        "event_store.drop": :test
+        "test.features": :test
       ]
     ]
   end

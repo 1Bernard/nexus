@@ -25,15 +25,23 @@ defmodule Nexus.Identity.Projectors.UserProjector do
           credential_id: Base.decode64!(ev.credential_id)
         }
 
-        # Multi-target on_conflict is complex in Postgres (requires a named constraint).
-        # For professional stability, we use a single 'id' target and ENSURE secondary keys
-        # don't conflict, or we catch the crash.
-        # Here we use a robust try/rescue to ensure the projector never hangs the app boot.
-        Ecto.Multi.insert(multi, :user, User.changeset(%User{}, user_data),
-          on_conflict:
-            {:replace, [:email, :display_name, :role, :cose_key, :credential_id, :updated_at]},
-          conflict_target: :id
-        )
+        # We use Multi.run to check for existence before inserting.
+        # This is the safest way to prevent 'users_email_index' or 'id'
+        # unique violations from crashing the entire projector process.
+        multi
+        |> Ecto.Multi.run(:check_id, fn repo, _ ->
+          {:ok, repo.get(User, ev.user_id)}
+        end)
+        |> Ecto.Multi.run(:check_email, fn repo, _ ->
+          {:ok, repo.get_by(User, email: ev.email)}
+        end)
+        |> Ecto.Multi.run(:user, fn repo, %{check_id: id_exists, check_email: email_exists} ->
+          cond do
+            id_exists -> {:ok, id_exists}
+            email_exists -> {:ok, email_exists}
+            true -> repo.insert(User.changeset(%User{}, user_data))
+          end
+        end)
 
       :error ->
         # Skip invalid IDs

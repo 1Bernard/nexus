@@ -32,9 +32,9 @@ defmodule NexusWeb.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col gap-6 w-full px-6 pb-12 w-full">
+    <div class="flex flex-col gap-6 w-full px-4 md:px-6 pb-12">
       <%!-- KPI Header Row: Institutional Data Bar (Segmented Control Panel) --%>
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-6 w-full">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 w-full">
         <%!-- 1. Engine Status --%>
         <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden group">
           <div>
@@ -97,10 +97,10 @@ defmodule NexusWeb.DashboardLive do
       </div>
 
       <%!-- Top Row: High Frequency Data (2/3 & 1/3) --%>
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 flex flex-col">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 flex flex-col">
           <%!-- Market Prices --%>
-          <.dark_card class="p-6 h-full min-h-[300px] flex flex-col relative overflow-hidden group">
+          <.dark_card class="p-4 md:p-6 h-full min-h-[300px] flex flex-col relative overflow-hidden group">
             <div class="flex items-center justify-between mb-2">
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                 Market Prices
@@ -198,9 +198,9 @@ defmodule NexusWeb.DashboardLive do
           </.dark_card>
         </div>
 
-        <div class="xl:col-span-1 flex flex-col">
+        <div class="lg:col-span-1 flex flex-col">
           <%!-- Section C: Your Currencies --%>
-          <.dark_card class="p-6 h-full flex flex-col justify-between">
+          <.dark_card class="p-4 md:p-6 h-full flex flex-col justify-between">
             <div>
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">
                 Your Currencies
@@ -240,118 +240,120 @@ defmodule NexusWeb.DashboardLive do
 
       <%!-- Middle Row: Massive Risk Heatmap (Full Width) --%>
       <div class="w-full">
-        <.dark_card class="p-6 min-h-[320px]">
+        <.dark_card class="p-4 md:p-6 min-h-[320px]">
           <h2 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">
             Risk Overview (Exposure Map)
           </h2>
-          <div class="matrix-container mb-4">
-            <%!-- Headers --%>
-            <div class="col-span-1"></div>
-            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              EUR
-            </div>
-            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              USD
-            </div>
-            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              GBP
-            </div>
-            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              JPY
-            </div>
-            <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              CHF
-            </div>
+          <div class="overflow-x-auto scroll-soft -mx-4 px-4 md:mx-0 md:px-0">
+            <div class="matrix-container mb-4 min-w-[700px]">
+              <%!-- Headers --%>
+              <div class="col-span-1"></div>
+              <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                EUR
+              </div>
+              <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                USD
+              </div>
+              <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                GBP
+              </div>
+              <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                JPY
+              </div>
+              <div class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                CHF
+              </div>
 
-            <%!-- Row 1: Munich HQ --%>
-            <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
-              Munich HQ
-            </div>
-            <div class="bg-indigo-500/10 rounded-lg h-12 border border-indigo-500/10 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair group relative">
-              <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20">
-                <div class="font-bold text-white">€145,000</div>
-                <div class="text-[10px] text-slate-400 mt-1">Munich HQ · EUR</div>
+              <%!-- Row 1: Munich HQ --%>
+              <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
+                Munich HQ
               </div>
-            </div>
-            <div class="bg-indigo-500/30 rounded-lg h-12 border border-indigo-500/20 hover:bg-indigo-500/40 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair relative group">
-              <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
-                <div class="font-bold text-white">$450,000</div>
-                <div class="text-[10px] text-slate-400 mt-1">Munich HQ · USD</div>
-              </div>
-            </div>
-            <div class="bg-indigo-500/50 rounded-lg h-12 border border-indigo-500/30 hover:bg-indigo-500/60 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair">
-            </div>
-            <div class="bg-amber-500/50 rounded-lg h-12 shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] hover:bg-amber-400 hover:-translate-y-1 hover:shadow-[0_8px_25px_-4px_rgba(245,158,11,0.5)] transition-all cursor-crosshair border border-amber-500/20 relative group">
-              <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
-                <div class="font-bold text-amber-400">¥10,000,000</div>
-                <div class="text-[10px] text-slate-400 mt-1">Munich HQ · JPY</div>
-                <div class="text-[9px] text-amber-500/70 mt-1 border-t border-amber-500/20 pt-1">
-                  Elevated Risk Limit
+              <div class="bg-indigo-500/10 rounded-lg h-12 border border-indigo-500/10 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair group relative">
+                <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20">
+                  <div class="font-bold text-white">€145,000</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Munich HQ · EUR</div>
                 </div>
               </div>
-            </div>
-            <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
-            </div>
-
-            <%!-- Row 2: Tokyo Branch --%>
-            <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
-              Tokyo Branch
-            </div>
-            <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
-            </div>
-            <div class="bg-rose-500/70 rounded-lg h-12 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)] hover:bg-rose-400 hover:-translate-y-1 hover:shadow-[0_8px_25px_-4px_rgba(244,63,94,0.5)] transition-all cursor-crosshair border border-rose-500/40 relative group">
-              <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
-                <div class="font-bold text-rose-400">$1,200,000</div>
-                <div class="text-[10px] text-slate-400 mt-1">Tokyo Branch · USD</div>
-                <div class="text-[9px] text-rose-500/70 mt-1 border-t border-rose-500/20 pt-1">
-                  Critical Limit Reached
+              <div class="bg-indigo-500/30 rounded-lg h-12 border border-indigo-500/20 hover:bg-indigo-500/40 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair relative group">
+                <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
+                  <div class="font-bold text-white">$450,000</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Munich HQ · USD</div>
                 </div>
               </div>
-            </div>
-            <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
-            </div>
-            <div class="bg-indigo-500/60 rounded-lg h-12 hover:bg-indigo-500/70 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/40">
-            </div>
-            <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              <div class="bg-indigo-500/50 rounded-lg h-12 border border-indigo-500/30 hover:bg-indigo-500/60 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair">
+              </div>
+              <div class="bg-amber-500/50 rounded-lg h-12 shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] hover:bg-amber-400 hover:-translate-y-1 hover:shadow-[0_8px_25px_-4px_rgba(245,158,11,0.5)] transition-all cursor-crosshair border border-amber-500/20 relative group">
+                <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
+                  <div class="font-bold text-amber-400">¥10,000,000</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Munich HQ · JPY</div>
+                  <div class="text-[9px] text-amber-500/70 mt-1 border-t border-amber-500/20 pt-1">
+                    Elevated Risk Limit
+                  </div>
+                </div>
+              </div>
+              <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+
+              <%!-- Row 2: Tokyo Branch --%>
+              <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
+                Tokyo Branch
+              </div>
+              <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+              <div class="bg-rose-500/70 rounded-lg h-12 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)] hover:bg-rose-400 hover:-translate-y-1 hover:shadow-[0_8px_25px_-4px_rgba(244,63,94,0.5)] transition-all cursor-crosshair border border-rose-500/40 relative group">
+                <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-lg p-2 text-center text-xs shadow-xl z-20 w-32 -ml-8">
+                  <div class="font-bold text-rose-400">$1,200,000</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Tokyo Branch · USD</div>
+                  <div class="text-[9px] text-rose-500/70 mt-1 border-t border-rose-500/20 pt-1">
+                    Critical Limit Reached
+                  </div>
+                </div>
+              </div>
+              <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+              <div class="bg-indigo-500/60 rounded-lg h-12 hover:bg-indigo-500/70 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/40">
+              </div>
+              <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+
+              <%!-- Row 3: London Ltd --%>
+              <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
+                London Ltd
+              </div>
+              <div class="bg-indigo-500/40 rounded-lg h-12 hover:bg-indigo-500/50 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/20">
+              </div>
+              <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+              <div class="bg-indigo-500/80 rounded-lg h-12 hover:bg-indigo-500/90 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/50">
+              </div>
+              <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
+              </div>
+              <div class="bg-indigo-500/30 rounded-lg h-12 hover:bg-indigo-500/40 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/20">
+              </div>
             </div>
 
-            <%!-- Row 3: London Ltd --%>
-            <div class="text-xs font-medium text-slate-400 self-center text-right pr-4">
-              London Ltd
-            </div>
-            <div class="bg-indigo-500/40 rounded-lg h-12 hover:bg-indigo-500/50 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/20">
-            </div>
-            <div class="bg-indigo-500/20 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
-            </div>
-            <div class="bg-indigo-500/80 rounded-lg h-12 hover:bg-indigo-500/90 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/50">
-            </div>
-            <div class="bg-indigo-500/10 rounded-lg h-12 hover:bg-indigo-500/30 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/10">
-            </div>
-            <div class="bg-indigo-500/30 rounded-lg h-12 hover:bg-indigo-500/40 hover:border-indigo-400/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.3)] transition-all cursor-crosshair border border-indigo-500/20">
-            </div>
-          </div>
-
-          <div class="flex items-center justify-center gap-8 mt-8 pt-6 border-t border-white/5">
-            <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
-              <span class="w-3 h-3 rounded bg-indigo-500/50 border border-indigo-500/20"></span>
-              Normal Exposure
-            </div>
-            <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
-              <span class="w-3 h-3 rounded bg-amber-500/50 border border-amber-500/20"></span>
-              Elevated Risk
-            </div>
-            <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
-              <span class="w-3 h-3 rounded bg-rose-500/50 border border-rose-500/20"></span>
-              Critical Limit Approaching
+            <div class="flex items-center justify-center gap-8 mt-8 pt-6 border-t border-white/5">
+              <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
+                <span class="w-3 h-3 rounded bg-indigo-500/50 border border-indigo-500/20"></span>
+                Normal Exposure
+              </div>
+              <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
+                <span class="w-3 h-3 rounded bg-amber-500/50 border border-amber-500/20"></span>
+                Elevated Risk
+              </div>
+              <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">
+                <span class="w-3 h-3 rounded bg-rose-500/50 border border-rose-500/20"></span>
+                Critical Limit Approaching
+              </div>
             </div>
           </div>
         </.dark_card>
       </div>
 
       <%!-- Lower Row: Trends & Activity (2/3 & 1/3) --%>
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 flex flex-col">
-          <.dark_card class="p-6 min-h-[300px] h-full flex flex-col relative overflow-hidden group">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 flex flex-col">
+          <.dark_card class="p-4 md:p-6 min-h-[300px] h-full flex flex-col relative overflow-hidden group">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                 Cash Flow Outlook
@@ -445,9 +447,9 @@ defmodule NexusWeb.DashboardLive do
           </.dark_card>
         </div>
 
-        <div class="xl:col-span-1 flex flex-col">
+        <div class="lg:col-span-1 flex flex-col">
           <%!-- Section E: Recent Activity Feed --%>
-          <.dark_card class="p-6 h-full">
+          <.dark_card class="p-4 md:p-6 h-full">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                 Recent Activity

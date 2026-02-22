@@ -50,8 +50,20 @@ defmodule NexusWeb.UserAuth do
 
   # LiveView on_mount to redirect away from login
   def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
-    if session["user_id"] do
-      {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
+    if user_id = session["user_id"] do
+      # Only redirect if the user actually exists in the read-side DB
+      case Repo.get(User, user_id) do
+        nil ->
+          # Session exists but user doesn't (or projector hasn't caught up).
+          # We allow them to mount the auth page so they aren't trapped in a redirect loop.
+          {:cont,
+           socket
+           |> Phoenix.Component.assign(:current_user_id, nil)
+           |> Phoenix.Component.assign(:current_user, nil)}
+
+        _user ->
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
+      end
     else
       {:cont,
        socket

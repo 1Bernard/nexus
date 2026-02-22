@@ -73,6 +73,13 @@ defmodule NexusWeb.NexusComponents do
       phx-hook="NavInteractions"
       class="min-h-screen bg-[var(--nx-bg)] text-slate-100 font-sans selection:bg-indigo-500/40 flex transition-[width] duration-300 [&.sidebar-collapsed]:[--nx-sidebar-w:88px]"
     >
+      <%!-- Mobile Overlay --%>
+      <div
+        id="sidebar-overlay"
+        class="fixed inset-0 bg-[#0B0E14]/80 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden"
+      >
+      </div>
+
       <.sidebar
         current_path={@current_path}
         session_status={@session_status}
@@ -80,13 +87,13 @@ defmodule NexusWeb.NexusComponents do
         current_user={@current_user}
       />
 
-      <div class="flex-1 ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300">
+      <div class="flex-1 lg:ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300 w-full overflow-x-hidden">
         <.topbar current_user={@current_user} session_id={@session_id}>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
         </.topbar>
 
-        <main class="flex-1 p-8 overflow-y-auto">
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
           {render_slot(@content)}
         </main>
       </div>
@@ -127,7 +134,7 @@ defmodule NexusWeb.NexusComponents do
       |> assign(:admin_nav, admin_nav)
 
     ~H"""
-    <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-40 overflow-hidden transition-[width] duration-300 [&_#rail-logo]:[.sidebar-collapsed_&]:block [&_#full-logo]:[.sidebar-collapsed_&]:hidden [&_.nav-label]:[.sidebar-collapsed_&]:hidden [&_.nav-header]:[.sidebar-collapsed_&]:opacity-0 [&_#session-full]:[.sidebar-collapsed_&]:hidden [&_#session-rail]:[.sidebar-collapsed_&]:flex">
+    <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-50 overflow-hidden transition-all duration-300 -translate-x-full lg:translate-x-0 [&.mobile-open]:translate-x-0 [&_#rail-logo]:[.sidebar-collapsed_&]:block [&_#full-logo]:[.sidebar-collapsed_&]:hidden [&_.nav-label]:[.sidebar-collapsed_&]:hidden [&_.nav-header]:[.sidebar-collapsed_&]:opacity-0 [&_#session-full]:[.sidebar-collapsed_&]:hidden [&_#session-rail]:[.sidebar-collapsed_&]:flex">
       <%!-- Logo --%>
       <div class="px-6 py-5 border-b border-[var(--nx-border)] shrink-0 h-[var(--nx-topbar-h)] flex items-center">
         <div id="full-logo" class="flex items-center gap-2.5 transition-opacity duration-200">
@@ -293,10 +300,18 @@ defmodule NexusWeb.NexusComponents do
 
   def topbar(assigns) do
     ~H"""
-    <header class="sticky top-0 z-30 h-[var(--nx-topbar-h)] border-b border-[var(--nx-border)] bg-[var(--nx-surface)]/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
-      <%!-- Left: Dynamic Breadcrumbs & Title --%>
+    <header class="sticky top-0 z-30 h-[var(--nx-topbar-h)] border-b border-[var(--nx-border)] bg-[var(--nx-surface)]/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 shrink-0">
+      <%!-- Left: Mobile Toggle & Dynamic Breadcrumbs & Title --%>
       <div class="flex items-center gap-3">
-        <div class="hidden md:flex items-center gap-2 text-sm mr-2">
+        <button
+          id="mobile-menu-toggle"
+          class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
+          title="Open Menu"
+        >
+          <span class="hero-bars-3 w-6 h-6"></span>
+        </button>
+
+        <div class="hidden md:flex items-center gap-2 text-sm mr-2 transition-opacity duration-300">
           <span class="text-slate-500 font-medium hover:text-slate-300 cursor-pointer transition-colors">
             Nexus
           </span>
@@ -306,10 +321,12 @@ defmodule NexusWeb.NexusComponents do
           </span>
           <span class="hero-chevron-right w-3 h-3 text-slate-600"></span>
         </div>
-        <h1 class="text-lg font-bold tracking-tight text-slate-200">{render_slot(@title)}</h1>
+        <h1 class="text-base md:text-lg font-bold tracking-tight text-slate-200">
+          {render_slot(@title)}
+        </h1>
         <p
           :if={@subtitle != []}
-          class="text-xs text-slate-500 hidden lg:block ml-2 pl-2 border-l border-white/10"
+          class="text-xs text-slate-500 hidden xl:block ml-2 pl-2 border-l border-white/10"
         >
           {render_slot(@subtitle)}
         </p>
@@ -1407,6 +1424,7 @@ defmodule NexusWeb.NexusComponents do
     ~H"""
     <div class="relative" id="notification-dropdown-container">
       <button
+        id="notif-toggle"
         phx-click={JS.toggle(to: "#notification-menu", in: "fade-in", out: "fade-out")}
         phx-click-away={JS.hide(to: "#notification-menu", transition: "fade-out")}
         class="relative p-2 text-slate-400 hover:text-slate-200 transition-colors"
@@ -1461,15 +1479,16 @@ defmodule NexusWeb.NexusComponents do
     ~H"""
     <div class="relative" id="profile-dropdown-container">
       <button
-        phx-click={JS.toggle(to: "#profile-menu-dropdown", in: "fade-in", out: "fade-out")}
-        phx-click-away={JS.hide(to: "#profile-menu-dropdown", transition: "fade-out")}
+        id="profile-toggle"
+        phx-click={JS.toggle(to: "#profile-menu", in: "fade-in", out: "fade-out")}
+        phx-click-away={JS.hide(to: "#profile-menu", transition: "fade-out")}
         class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center text-indigo-300 text-sm font-bold hover:bg-indigo-500/25 transition-colors"
       >
         {String.first(@user_name)}
       </button>
 
       <div
-        id="profile-menu-dropdown"
+        id="profile-menu"
         class="hidden absolute right-0 top-full mt-2 w-56 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl shadow-2xl overflow-hidden z-50"
       >
         <div class="px-4 py-3 border-b border-[var(--nx-border)]">

@@ -64,13 +64,50 @@ Hooks.NavInteractions = {
 
     // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
-      if (this.notifMenu && !this.notifMenu.contains(e.target) && !this.notifBtn.contains(e.target)) {
+      if (this.notifMenu && this.notifBtn && !this.notifMenu.contains(e.target) && !this.notifBtn.contains(e.target)) {
         this.notifMenu.classList.add('hidden')
       }
-      if (this.profileMenu && !this.profileMenu.contains(e.target) && !this.profileBtn.contains(e.target)) {
+      if (this.profileMenu && this.profileBtn && !this.profileMenu.contains(e.target) && !this.profileBtn.contains(e.target)) {
         this.profileMenu.classList.add('hidden')
       }
     })
+
+    // Mobile Menu Logic
+    this.mobileToggle = this.el.querySelector('#mobile-menu-toggle')
+    this.sidebar = this.el.querySelector('aside')
+    this.sidebarOverlay = this.el.querySelector('#sidebar-overlay')
+
+    const toggleMobileMenu = (show) => {
+      if (!this.sidebar || !this.sidebarOverlay) return
+      
+      if (show) {
+        this.sidebar.classList.add('mobile-open')
+        this.sidebarOverlay.classList.remove('hidden')
+        document.body.style.overflow = 'hidden' // Lock scroll
+        requestAnimationFrame(() => {
+          this.sidebarOverlay.classList.remove('opacity-0')
+          this.sidebarOverlay.classList.add('opacity-100')
+        })
+      } else {
+        this.sidebar.classList.remove('mobile-open')
+        this.sidebarOverlay.classList.remove('opacity-100')
+        this.sidebarOverlay.classList.add('opacity-0')
+        document.body.style.overflow = '' // Unlock scroll
+        setTimeout(() => this.sidebarOverlay.classList.add('hidden'), 300)
+      }
+    }
+
+    if (this.mobileToggle) {
+      this.mobileToggle.addEventListener('click', (e) => {
+        e.preventDefault()
+        const isOpen = this.sidebar.classList.contains('mobile-open')
+        toggleMobileMenu(!isOpen)
+      })
+    }
+
+    if (this.sidebarOverlay) {
+      this.sidebarOverlay.addEventListener('click', () => toggleMobileMenu(false))
+    }
 
     // Command Palette Logic
     this.cmdBtn = this.el.querySelector('#search-trigger')
