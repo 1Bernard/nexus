@@ -39,6 +39,7 @@ defmodule NexusWeb.UserAuth do
             socket
             |> Phoenix.Component.assign(:current_user_id, user_id)
             |> Phoenix.Component.assign(:current_user, user)
+            |> Phoenix.Component.assign(:session_id, String.slice(String.upcase(user_id), 0, 8))
 
           {:cont, socket}
       end

@@ -60,7 +60,7 @@ defmodule NexusWeb.NexusComponents do
   """
   attr :current_path, :string, default: "/dashboard"
   attr :session_status, :string, default: "connected"
-  attr :session_id, :string, default: "3F8A"
+  attr :session_id, :string, default: nil
   attr :current_user, :any, required: true, doc: "The authenticated user struct"
   slot :topbar_title
   slot :topbar_subtitle
@@ -81,7 +81,7 @@ defmodule NexusWeb.NexusComponents do
       />
 
       <div class="flex-1 ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300">
-        <.topbar current_user={@current_user}>
+        <.topbar current_user={@current_user} session_id={@session_id}>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
         </.topbar>
@@ -102,7 +102,7 @@ defmodule NexusWeb.NexusComponents do
   """
   attr :current_path, :string, default: "/dashboard"
   attr :session_status, :string, default: "connected"
-  attr :session_id, :string, default: "3F8A"
+  attr :session_id, :string, default: nil
   attr :current_user, :any, required: true
 
   def sidebar(assigns) do
@@ -286,6 +286,7 @@ defmodule NexusWeb.NexusComponents do
   Top bar with page title, subtitle, and session badge.
   """
   attr :current_user, :any, default: nil
+  attr :session_id, :string, default: nil
   slot :title
   slot :subtitle
   slot :actions
@@ -343,8 +344,8 @@ defmodule NexusWeb.NexusComponents do
 
           <%!-- User Profile Dropdown Toggle --%>
           <.profile_menu
-            user_name={(@current_user && @current_user.display_name) || "Admin"}
-            session_id={String.slice(Map.get(assigns, :session_id, "3F8A293B"), 0, 4)}
+            user_name={(@current_user && @current_user.display_name) || "Guest"}
+            session_id={@session_id}
           />
         </div>
       </div>
