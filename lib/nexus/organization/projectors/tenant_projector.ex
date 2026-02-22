@@ -21,6 +21,7 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
             org_id: event.org_id,
             name: event.name,
             status: "active",
+            initial_admin_email: event.initial_admin_email,
             created_at: DateTime.utc_now(),
             updated_at: DateTime.utc_now()
           },

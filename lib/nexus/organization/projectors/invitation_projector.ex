@@ -8,6 +8,7 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
     name: "Organization.InvitationProjector"
 
   alias Nexus.Organization.Events.UserInvited
+  alias Nexus.Organization.Events.InvitationRedeemed
   alias Nexus.Organization.Projections.Invitation
 
   project(%UserInvited{} = event, _metadata, fn multi ->
@@ -28,6 +29,15 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
       },
       on_conflict: :nothing,
       conflict_target: [:email, :org_id]
+    )
+  end)
+
+  project(%InvitationRedeemed{} = event, _metadata, fn multi ->
+    Ecto.Multi.update_all(
+      multi,
+      :redeem_invitation,
+      from(i in Invitation, where: i.invitation_token == ^event.invitation_token),
+      set: [status: "redeemed", updated_at: event.redeemed_at]
     )
   end)
 

@@ -6,8 +6,10 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 
   alias Nexus.Organization.Commands.ProvisionTenant
   alias Nexus.Organization.Commands.InviteUser
+  alias Nexus.Organization.Commands.RedeemInvitation
   alias Nexus.Organization.Events.TenantProvisioned
   alias Nexus.Organization.Events.UserInvited
+  alias Nexus.Organization.Events.InvitationRedeemed
 
   # --- Provisioning ---
 
@@ -51,6 +53,15 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 
   def execute(%__MODULE__{id: nil}, %InviteUser{}) do
     {:error, :tenant_not_found}
+  end
+
+  def execute(%__MODULE__{id: id} = _state, %RedeemInvitation{} = cmd) when not is_nil(id) do
+    %InvitationRedeemed{
+      org_id: cmd.org_id,
+      invitation_token: cmd.invitation_token,
+      redeemed_by_user_id: cmd.redeemed_by_user_id,
+      redeemed_at: DateTime.utc_now()
+    }
   end
 
   # --- State Mutators ---

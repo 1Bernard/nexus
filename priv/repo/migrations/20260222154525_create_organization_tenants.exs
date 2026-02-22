@@ -7,6 +7,7 @@ defmodule Nexus.Repo.Migrations.CreateOrganizationTenants do
       add :org_id, :binary_id, null: false
       add :name, :string, null: false
       add :status, :string, null: false, default: "active"
+      add :initial_admin_email, :string, null: false
 
       add :created_at, :utc_datetime_usec, null: false
       add :updated_at, :utc_datetime_usec, null: false

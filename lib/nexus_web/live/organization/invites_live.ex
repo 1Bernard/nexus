@@ -82,8 +82,16 @@ defmodule NexusWeb.Organization.InvitesLive do
 
     case App.dispatch(command) do
       :ok ->
-        # We should also emit a command to redeem the invitation
-        # For the prototype, we assume success bound to the user projection.
+        # Redeem the invitation
+        redeem_cmd = %Nexus.Organization.Commands.RedeemInvitation{
+          org_id: invitation.org_id,
+          invitation_token: invitation.invitation_token,
+          redeemed_by_user_id: socket.assigns.user_id
+        }
+
+        # We fire and forget or check success for the redeem command
+        App.dispatch(redeem_cmd)
+
         Process.send_after(self(), :advance_screening_1, 800)
         {:noreply, assign(socket, step: :verifying, status: "success")}
 

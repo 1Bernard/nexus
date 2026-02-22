@@ -34,4 +34,9 @@ defmodule Nexus.Router do
     to: Nexus.Organization.Aggregates.Tenant,
     identity: :org_id
   )
+
+  dispatch(Nexus.Organization.Commands.RedeemInvitation,
+    to: Nexus.Organization.Aggregates.Tenant,
+    identity: :org_id
+  )
 end

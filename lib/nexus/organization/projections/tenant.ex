@@ -8,6 +8,7 @@ defmodule Nexus.Organization.Projections.Tenant do
     field :org_id, :binary_id
     field :name, :string
     field :status, :string, default: "active"
+    field :initial_admin_email, :string
 
     timestamps()
   end
