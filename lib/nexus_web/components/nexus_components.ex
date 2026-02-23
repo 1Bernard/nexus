@@ -1729,8 +1729,8 @@ defmodule NexusWeb.NexusComponents do
 
       <div class="p-8 lg:p-12 relative z-10">
         <%= if @label do %>
-          <div class="text-[9px] font-mono tracking-[0.4em] text-cyan-500/50 uppercase mb-12 flex items-center gap-4">
-            <span class="w-8 h-[1px] bg-cyan-500/20"></span>
+          <div class="text-[9px] font-mono tracking-[0.4em] text-indigo-500/50 uppercase mb-12 flex items-center gap-4">
+            <span class="w-8 h-[1px] bg-indigo-500/20"></span>
             {@label}
           </div>
         <% end %>
@@ -1776,7 +1776,7 @@ defmodule NexusWeb.NexusComponents do
         </div>
 
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div class="w-12 h-12 border border-cyan-500/50 rotate-45 animate-pulse"></div>
+          <div class="w-12 h-12 border border-indigo-500/50 rotate-45 animate-pulse"></div>
         </div>
       </div>
     </div>
@@ -1792,12 +1792,12 @@ defmodule NexusWeb.NexusComponents do
       <div class="ledger-stream">
         <%= for i <- 1..20 do %>
           <div class="ledger-item" style={"animation-delay: #{i * -1.5}s"}>
-            <span class="text-cyan-500/40">CMD:</span> PROVISION_BLOCK_{1000 + i}
-            <span class="text-slate-500/40">// SIG_AUTH: 0x{Integer.to_string(10000 + i, 16)}</span>
+            <span class="text-indigo-500/40">TRANS:</span> ARCHIVE_BLOCK_{1000 + i}
+            <span class="text-slate-500/40">// LEDGER_SIG: 0x{Integer.to_string(10000 + i, 16)}</span>
           </div>
           <div class="ledger-item" style={"animation-delay: #{(i * -1.5) - 0.7}s"}>
-            <span class="text-violet-500/40">EVT:</span>
-            ORG_TENANT_ISOLATED <span class="text-slate-500/40">// REF: NEX-{4000 + i}</span>
+            <span class="text-emerald-500/40">GENESIS:</span>
+            PARTITION_SECURED <span class="text-slate-500/40">// NODE: NX-{4000 + i}</span>
           </div>
         <% end %>
       </div>
@@ -1818,13 +1818,13 @@ defmodule NexusWeb.NexusComponents do
     ~H"""
     <div id={@id} class={["relative scanner-reveal interactive group", @class]} data-scan="true">
       <div class="relative z-10 p-6 lg:p-10 border border-white/5 bg-white/[0.02]">
-        <div class="text-[8px] font-mono text-cyan-500/50 uppercase mb-8">{@label}</div>
+        <div class="text-[8px] font-mono text-indigo-500/50 uppercase mb-8">{@label}</div>
 
         {render_slot(@inner_block)}
 
         <div class="mt-8 pt-8 border-t border-white/5 opacity-0 translate-y-4 transition-all duration-700 group-[.scanned]:opacity-100 group-[.scanned]:translate-y-0">
-          <div class="text-[8px] font-mono text-cyan-500 uppercase mb-4">
-            SCAN_RESULT // DECRYPTED
+          <div class="text-[8px] font-mono text-indigo-400 uppercase mb-4">
+            VERIFIED_ENCLAVE // SECURE
           </div>
           <div class="font-mono text-[10px] text-slate-400 space-y-2">
             {render_slot(@hidden_content)}

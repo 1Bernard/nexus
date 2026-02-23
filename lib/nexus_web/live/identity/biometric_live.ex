@@ -35,6 +35,12 @@ defmodule NexusWeb.Identity.BiometricLive do
   end
 
   @impl true
+  def handle_params(params, _uri, socket) do
+    action_type = params["type"] || socket.assigns[:action_type] || "login"
+    {:noreply, assign(socket, action_type: action_type)}
+  end
+
+  @impl true
   def handle_event("toggle_consent", _params, socket) do
     {:noreply, assign(socket, consent_checked: !socket.assigns.consent_checked)}
   end
@@ -222,8 +228,8 @@ defmodule NexusWeb.Identity.BiometricLive do
         rp_id: host,
         origin: origin,
         authenticator_selection: %{
-          residentKey: "required",
-          requireResidentKey: true,
+          residentKey: "preferred",
+          requireResidentKey: false,
           userVerification: "preferred"
         }
       )

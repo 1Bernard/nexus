@@ -245,9 +245,9 @@ const WebAuthnHook = {
         const options = {
           publicKey: {
             challenge: WebAuthnUtils.base64URLToBuffer(challengeBase64URL),
-            rp: { name: "Nexus Industrial", id: window.location.hostname },
+            rp: { name: "Nexus Industrial", id: window.location.hostname === "127.0.0.1" ? "localhost" : window.location.hostname },
             user: {
-              id: WebAuthnUtils.base64URLToBuffer(WebAuthnUtils.arrayBufferToBase64URL(crypto.getRandomValues(new Uint8Array(16)))),
+              id: crypto.getRandomValues(new Uint8Array(16)).buffer,
               name: "trader_session_" + Math.random().toString(36).substring(7),
               displayName: "Nexus Trader"
             },
@@ -257,8 +257,8 @@ const WebAuthnHook = {
             ],
             authenticatorSelection: {
               authenticatorAttachment: "platform",
-              userVerification: "required",
-              residentKey: "required"
+              userVerification: "preferred",
+              residentKey: "preferred"
             },
             timeout: 60000,
             attestation: "none"
@@ -276,8 +276,8 @@ const WebAuthnHook = {
         const options = {
           publicKey: {
             challenge: WebAuthnUtils.base64URLToBuffer(challengeBase64URL),
-            rpId: window.location.hostname,
-            userVerification: "required",
+            rpId: window.location.hostname === "127.0.0.1" ? "localhost" : window.location.hostname,
+            userVerification: "preferred",
             timeout: 60000
           }
         };
