@@ -5,6 +5,7 @@
   current_user={@current_user}
 >
   <:topbar_title>{assigns[:page_title] || "Nexus"}</:topbar_title>
+  <:topbar_subtitle>{assigns[:page_subtitle]}</:topbar_subtitle>
   <:content>
     <.flash_group flash={@flash} />
     {@inner_content}

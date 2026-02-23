@@ -22,7 +22,8 @@ defmodule NexusWeb.Router do
     live_session :public,
       layout: false,
       on_mount: [{NexusWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/", Identity.BiometricLive
+      live "/", LandingLive
+      live "/auth/gate", Identity.BiometricLive
       live "/invites/:token", Organization.InvitesLive
     end
 

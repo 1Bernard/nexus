@@ -10,7 +10,10 @@
  */
 
 import WebAuthnHook from "./webauthn";
+import { CursorFollower, ScrollReveal } from "./cinematic";
 
 export default {
   WebAuthnHook,
+  CursorFollower,
+  ScrollReveal
 };

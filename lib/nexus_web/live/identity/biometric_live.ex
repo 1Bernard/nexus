@@ -259,8 +259,20 @@ defmodule NexusWeb.Identity.BiometricLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.dark_page class="flex items-center justify-center p-3 overflow-hidden no-select">
-      <div class="w-full max-w-md bg-[#14181F] border border-white/[0.06] rounded-[2.2rem] shadow-2xl flex flex-col relative min-h-[680px] backdrop-blur-sm overflow-hidden">
+    <.dark_page class="relative flex items-center justify-center p-3 overflow-hidden no-select">
+      <!-- Museum Archive Background Elements -->
+      <.editorial_grid />
+      <div class="absolute inset-0 volumetric-nebula opacity-[0.15] pointer-events-none"></div>
+      
+    <!-- Subtle Ledger Streams in Background -->
+      <div class="fixed left-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block">
+        <.ledger_stream />
+      </div>
+      <div class="fixed right-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block scale-x-[-1]">
+        <.ledger_stream />
+      </div>
+
+      <div class="w-full max-w-md bg-[#0B0E14]/80 border border-white/[0.08] rounded-[2.2rem] shadow-2xl flex flex-col relative min-h-[680px] backdrop-blur-xl overflow-hidden z-10 transition-all duration-1000">
         <%!-- Connection Error Overlay --%>
         <div class="phx-loading:flex hidden absolute inset-0 bg-[#0B0E14]/70 backdrop-blur-sm z-50 flex-col items-center justify-center text-center p-8 transition-all duration-500">
           <div class="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/10">

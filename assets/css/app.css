@@ -105,6 +105,8 @@
   display: contents;
 }
 
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@400;700&display=swap");
+
 /* === NEXUS DESIGN TOKENS === */
 :root {
   --nx-bg: #0b0e13;
@@ -123,6 +125,9 @@
   --nx-danger: #f43f5e;
   --nx-danger-dim: rgba(244, 63, 94, 0.15);
 
+  --nx-font-serif: "Playfair Display", serif;
+  --nx-font-mono: "JetBrains Mono", monospace;
+
   --nx-text: #f8fafc;
   --nx-text-muted: #94a3b8;
   --nx-text-dim: #475569;
@@ -131,7 +136,7 @@
   --nx-radius-lg: 2rem;
   --nx-radius-sm: 0.5rem;
   --nx-radius-xs: 0.375rem;
-  --nx-transition: 200ms ease-out;
+  --nx-transition: 300ms cubic-bezier(0.2, 0.9, 0.3, 1);
 
   --nx-sidebar-w: 260px;
   --nx-topbar-h: 73px;
@@ -227,4 +232,192 @@
   grid-template-columns: 100px repeat(4, 1fr);
   gap: 1.5rem;
   align-items: center;
+}
+
+/* Cinematic Landing Page Animations */
+@keyframes flicker {
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.1;
+    filter: none;
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-20px);
+  }
+}
+
+.reveal-text {
+  transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: blur(10px);
+  opacity: 0;
+}
+
+.reveal-text.active {
+  filter: blur(0);
+  opacity: 1;
+}
+
+/* Glass Orb Internal Shimmer */
+.glass-shimmer {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* === EXHIBIT: THE PARTITION VIEWER (3D) === */
+.exhibit-3d-scene {
+  perspective: 1200px;
+  width: 200px;
+  height: 200px;
+}
+
+.exhibit-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 1.5s cubic-bezier(0.2, 0.1, 0.3, 1);
+  will-change: transform;
+}
+
+.cube-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: rgba(34, 211, 238, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 1s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.face-front {
+  transform: rotateY(0deg) translateZ(100px);
+}
+.face-back {
+  transform: rotateY(180deg) translateZ(100px);
+}
+.face-right {
+  transform: rotateY(90deg) translateZ(100px);
+}
+.face-left {
+  transform: rotateY(-90deg) translateZ(100px);
+}
+.face-top {
+  transform: rotateX(90deg) translateZ(100px);
+}
+.face-bottom {
+  transform: rotateX(-90deg) translateZ(100px);
+}
+
+.group:hover .face-front {
+  transform: rotateY(0deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+.group:hover .face-back {
+  transform: rotateY(180deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+.group:hover .face-right {
+  transform: rotateY(90deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+.group:hover .face-left {
+  transform: rotateY(-90deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+.group:hover .face-top {
+  transform: rotateX(90deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+.group:hover .face-bottom {
+  transform: rotateX(-90deg) translateZ(140px) scale(0.9);
+  opacity: 0.8;
+}
+
+/* === EXHIBIT: LIVE LEDGER STREAM === */
+.ledger-container {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 20%,
+    black 80%,
+    transparent
+  );
+}
+
+.ledger-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ledger-item {
+  animation: slide-up 30s linear infinite;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 9px;
+  color: rgba(148, 163, 184, 0.4);
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+/* === CINEMATIC PRIMITIVES === */
+.volumetric-nebula {
+  background: radial-gradient(
+    circle at center,
+    rgba(34, 211, 238, 0.05) 0%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
 }

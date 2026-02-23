@@ -232,7 +232,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-indigo-500/30">
         <span class="hero-shield-check w-7 h-7 text-indigo-400"></span>
       </div>
-      <h1 class="text-3xl font-bold mb-3 tracking-tight">Nexus Identity Gate</h1>
+      <h1 class="text-4xl font-serif italic font-bold mb-3 tracking-tight">Nexus Identity Gate</h1>
       <p class="text-slate-400 text-sm leading-relaxed mb-7">
         Secure your Nexus terminal with hardware-bound biometrics. Your fingerprint never leaves the device.
       </p>
@@ -273,7 +273,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
   def step_content(%{step: :consent} = assigns) do
     ~H"""
     <div class="fade-up">
-      <h2 class="text-2xl font-bold mb-3">Nexus data processing notice</h2>
+      <h2 class="text-2xl font-serif italic font-bold mb-3">Nexus data processing notice</h2>
       <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 text-xs text-slate-300 max-h-40 overflow-y-auto scroll-soft leading-relaxed">
         <p class="mb-2">
           Nexus uses <strong>device-bound credentials</strong> to verify your identity.
@@ -332,7 +332,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       data-challenge={@challenge}
       data-action={@action_type}
     >
-      <h2 class="text-2xl font-bold">Biometric verification</h2>
+      <h2 class="text-2xl font-serif italic font-bold">Biometric verification</h2>
       <p class="text-xs text-slate-400 mt-1 mb-4">Press and hold to verify your identity</p>
 
       <.sensor_ring status={@status} progress={@progress} />
@@ -383,7 +383,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
           <span class="hero-viewfinder-circle w-7 h-7 text-indigo-400"></span>
         </div>
       </div>
-      <h3 class="text-xl font-bold">Verification in progress</h3>
+      <h3 class="text-2xl font-serif italic font-bold">Verification in progress</h3>
       <p class="text-xs text-slate-400 mb-6">Verifying your identity</p>
 
       <div class="w-full space-y-3">
@@ -412,7 +412,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-5 ring-8 ring-emerald-500/10 text-emerald-400">
         <span class="hero-check-badge w-10 h-10"></span>
       </div>
-      <h2 class="text-2xl font-bold">Nexus access granted</h2>
+      <h2 class="text-3xl font-serif italic font-bold">Nexus access granted</h2>
       <p class="text-sm text-slate-400 mt-1 mb-8 text-center">
         Identity verified.<br />Full access activated.
       </p>
@@ -443,7 +443,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <div class="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mb-5 ring-8 ring-rose-500/10 text-rose-400">
         <span class="hero-exclamation-triangle w-10 h-10"></span>
       </div>
-      <h2 class="text-2xl font-bold">Verification failed</h2>
+      <h2 class="text-2xl font-serif italic font-bold">Verification failed</h2>
       <p class="text-sm text-slate-400 mt-1 mb-8 text-center">{@error}</p>
 
       <button
