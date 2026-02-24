@@ -158,22 +158,87 @@ defmodule NexusWeb.MarketingComponents do
   end
 
   @doc """
-  The Live Ledger Stream Exhibit.
+  The High-Fidelity Transaction Pipeline Exhibit.
+  Replaces the legacy terminal ledger stream with premium glassmorphic transaction cards.
   """
   def ledger_stream(assigns) do
     ~H"""
-    <div class="ledger-container h-[400px] overflow-hidden relative font-mono">
-      <div class="ledger-stream">
-        <%= for i <- 1..20 do %>
-          <div class="ledger-item" style={"animation-delay: #{i * -1.5}s"}>
-            <span class="text-indigo-500/40">TRANS:</span> ARCHIVE_BLOCK_{1000 + i}
-            <span class="text-slate-500/40">// LEDGER_SIG: 0x{Integer.to_string(10000 + i, 16)}</span>
-          </div>
-          <div class="ledger-item" style={"animation-delay: #{(i * -1.5) - 0.7}s"}>
-            <span class="text-emerald-500/40">GENESIS:</span>
-            PARTITION_SECURED <span class="text-slate-500/40">// NODE: NX-{4000 + i}</span>
-          </div>
-        <% end %>
+    <div class="w-full h-[400px] overflow-hidden relative flex items-center justify-center">
+      <%!-- Background Grid/Glow --%>
+      <div class="absolute inset-0 bg-[url('/images/grid-pattern.svg')] opacity-10"></div>
+      <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent">
+      </div>
+      <div class="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent blur-sm">
+      </div>
+
+      <%!-- Pipeline Track --%>
+      <div class="relative w-full h-full flex items-center">
+        <div class="flex animate-[slide-left_20s_linear_infinite] w-max select-none">
+          <% transactions = [
+            %{
+              type: "SAP BAPI Sync",
+              ref: "DOC-992381",
+              amount: "$2.4M",
+              status: "Settled",
+              color: "emerald",
+              icon: "✓"
+            },
+            %{
+              type: "Cross-Border Wire",
+              ref: "SWIFT-US2EU",
+              amount: "€850k",
+              status: "Processing",
+              color: "indigo",
+              icon: "↻"
+            },
+            %{
+              type: "Ledger Consensus",
+              ref: "BLOCK-884A",
+              amount: "Validated",
+              status: "Secured",
+              color: "cyan",
+              icon: "◆"
+            },
+            %{
+              type: "Payroll Escrow",
+              ref: "ESC-2026-03",
+              amount: "$1.2M",
+              status: "Held",
+              color: "slate",
+              icon: "🔒"
+            }
+          ] %>
+
+          <%= for _i <- 1..3 do %>
+            <%= for tx <- transactions do %>
+              <div class="mx-6 w-64 bg-[#0B0E14]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col gap-3 group hover:border-white/20 hover:-translate-y-1 transition-all duration-300">
+                <div class="flex justify-between items-start">
+                  <div class={"w-8 h-8 rounded-full bg-#{tx.color}-500/10 flex items-center justify-center text-#{tx.color}-400 text-sm border border-#{tx.color}-500/20"}>
+                    {tx.icon}
+                  </div>
+                  <div class="text-[10px] font-mono text-slate-500">{tx.ref}</div>
+                </div>
+                <div>
+                  <div class="text-white font-semibold text-sm mb-0.5">{tx.amount}</div>
+                  <div class="text-slate-400 text-xs">{tx.type}</div>
+                </div>
+                <div class="pt-3 border-t border-white/5 flex items-center justify-between">
+                  <div class={"text-[10px] font-bold tracking-wider uppercase text-#{tx.color}-400"}>
+                    {tx.status}
+                  </div>
+                  <div class={"w-1.5 h-1.5 rounded-full bg-#{tx.color}-500 shadow-[0_0_8px_currentColor]"}>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <%!-- Edge Fades --%>
+      <div class="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#0B0E14] to-transparent z-10">
+      </div>
+      <div class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#0B0E14] to-transparent z-10">
       </div>
     </div>
     """

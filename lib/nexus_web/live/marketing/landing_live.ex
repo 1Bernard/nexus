@@ -59,13 +59,78 @@ defmodule NexusWeb.Marketing.LandingLive do
             </div>
           </div>
           <div class="lg:text-right hidden xl:block">
-            <div class="w-64 h-64 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 border border-white/5 p-6 backdrop-blur-xl relative overflow-hidden flex flex-col justify-end">
-              <div class="absolute top-6 left-6 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]">
+            <div class="w-72 h-72 rounded-3xl bg-[#0B0E14]/40 border border-white/10 p-6 backdrop-blur-2xl relative overflow-hidden flex flex-col shadow-[0_0_50px_rgba(99,102,241,0.1)]">
+              <%!-- Top Bar --%>
+              <div class="flex items-center justify-between mb-6 relative z-10">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_#10b981] animate-pulse">
+                  </div>
+                  <span class="text-xs font-semibold text-emerald-400">Platform Sync</span>
+                </div>
+                <div class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+                  Global Edge
+                </div>
               </div>
-              <div class="text-[10px] font-mono text-slate-500 mb-1">SYSTEM_STATUS</div>
-              <div class="text-sm font-semibold text-emerald-400 mb-4">All Systems Operational</div>
-              <div class="text-[10px] font-mono text-slate-500 mb-1">LATENCY</div>
-              <div class="text-sm font-semibold text-white">1.04ms (Global Edge)</div>
+
+              <%!-- Main Metric --%>
+              <div class="relative z-10 mb-auto mt-2 text-left">
+                <div class="text-xs text-slate-400 font-medium mb-1">Volume Processed</div>
+                <div class="text-4xl font-extrabold text-white tracking-tight flex items-baseline gap-1">
+                  $1.2B <span class="text-sm font-semibold text-slate-500">/day</span>
+                </div>
+              </div>
+
+              <%!-- Abstract Data Viz (Sine Wave) --%>
+              <div class="absolute bottom-0 left-0 w-full h-32 opacity-40">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none" class="w-full h-full">
+                  <path
+                    d="M0,40 Q10,10 20,25 T40,20 T60,30 T80,15 T100,25 L100,40 Z"
+                    fill="url(#gradient-wave-1)"
+                    class="animate-[pulse_4s_ease-in-out_infinite]"
+                  />
+                  <path
+                    d="M0,40 Q15,15 30,25 T50,15 T70,30 T90,20 T100,35 L100,40 Z"
+                    fill="url(#gradient-wave-2)"
+                    class="animate-[pulse_3s_ease-in-out_infinite_reverse]"
+                  />
+                  <defs>
+                    <linearGradient id="gradient-wave-1" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.8" />
+                      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
+                    </linearGradient>
+                    <linearGradient id="gradient-wave-2" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.6" />
+                      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+
+              <%!-- Bottom Detail overlay --%>
+              <div class="relative z-10 pt-4 border-t border-white/10 flex justify-between items-end mt-4">
+                <div class="text-left">
+                  <div class="text-[10px] text-slate-500 font-semibold mb-0.5">LATENCY (P99)</div>
+                  <div class="text-sm text-white font-semibold">1.04ms</div>
+                </div>
+                <div class="flex gap-1">
+                  <div class="w-1 h-3 bg-white/20 rounded-full animate-pulse"></div>
+                  <div
+                    class="w-1 h-5 bg-indigo-500/50 rounded-full animate-pulse"
+                    style="animation-delay: 0.2s"
+                  >
+                  </div>
+                  <div
+                    class="w-1 h-4 bg-cyan-500/50 rounded-full animate-pulse"
+                    style="animation-delay: 0.4s"
+                  >
+                  </div>
+                  <div
+                    class="w-1 h-7 bg-indigo-400 rounded-full animate-pulse"
+                    style="animation-delay: 0.6s"
+                  >
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </header>
