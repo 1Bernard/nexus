@@ -1,4 +1,4 @@
-defmodule NexusWeb.BackofficeLive do
+defmodule NexusWeb.System.BackofficeLive do
   use NexusWeb, :live_view
 
   import NexusWeb.NexusComponents

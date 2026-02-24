@@ -1,4 +1,4 @@
-defmodule NexusWeb.SessionController do
+defmodule NexusWeb.Identity.SessionController do
   use NexusWeb, :controller
 
   def create(conn, %{"token" => token}) do

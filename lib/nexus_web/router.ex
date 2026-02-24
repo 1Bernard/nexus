@@ -16,23 +16,23 @@ defmodule NexusWeb.Router do
 
   scope "/", NexusWeb do
     pipe_through :browser
-    get "/auth/login", SessionController, :create
-    delete "/auth/logout", SessionController, :delete
+    get "/auth/login", Identity.SessionController, :create
+    delete "/auth/logout", Identity.SessionController, :delete
 
     live_session :public,
       layout: false,
       on_mount: [{NexusWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/", LandingLive
+      live "/", Marketing.LandingLive
       live "/auth/gate", Identity.BiometricLive
       live "/invites/:token", Organization.InvitesLive
     end
 
     live_session :authenticated, on_mount: [{NexusWeb.UserAuth, :mount_current_user}] do
-      live "/dashboard", DashboardLive
+      live "/dashboard", Tenant.DashboardLive
     end
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
-      live "/backoffice", BackofficeLive
+      live "/backoffice", System.BackofficeLive
     end
   end
 

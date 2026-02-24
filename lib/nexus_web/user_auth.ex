@@ -50,9 +50,9 @@ defmodule NexusWeb.UserAuth do
   end
 
   # LiveView on_mount to protect System Admin routes
-  def on_mount(:require_system_admin, _params, session, socket) do
+  def on_mount(:require_system_admin, params, session, socket) do
     # First, rely on the base mount to get the user
-    case on_mount(:mount_current_user, _params, session, socket) do
+    case on_mount(:mount_current_user, params, session, socket) do
       {:cont, socket} ->
         if socket.assigns.current_user.role == "system_admin" do
           {:cont, socket}

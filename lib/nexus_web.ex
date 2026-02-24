@@ -88,7 +88,7 @@ defmodule NexusWeb do
       # Core UI components
       import NexusWeb.CoreComponents
       import NexusWeb.NexusComponents
-
+      import NexusWeb.MarketingComponents
       # Common modules used in templates
       alias NexusWeb.Layouts
       alias Phoenix.LiveView.JS

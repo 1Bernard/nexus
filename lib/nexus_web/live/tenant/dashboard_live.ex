@@ -1,4 +1,4 @@
-defmodule NexusWeb.DashboardLive do
+defmodule NexusWeb.Tenant.DashboardLive do
   use NexusWeb, :live_view
 
   @impl true

@@ -1,4 +1,4 @@
-defmodule NexusWeb.LandingLive do
+defmodule NexusWeb.Marketing.LandingLive do
   use NexusWeb, :live_view
 
   @impl true
@@ -24,9 +24,11 @@ defmodule NexusWeb.LandingLive do
         @revealed && "-translate-y-full"
       ]}>
         <div class="h-full w-full flex items-center justify-center">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse">
-            <span class="text-white font-bold text-lg">◆</span>
-          </div>
+          <img
+            src="/images/nexus_logo_full.png"
+            alt="Nexus Loader"
+            class="w-8 h-8 rounded-lg object-cover shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse"
+          />
         </div>
       </div>
 
@@ -35,14 +37,6 @@ defmodule NexusWeb.LandingLive do
       <div id="landing-main" phx-hook="ScrollReveal" class="relative z-10 font-sans tracking-tight">
         <header class="pt-32 pb-16 px-6 lg:px-12 border-b border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-[#0B0E14]">
           <div class="max-w-4xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-6">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75">
-                </span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-              </span>
-              NEXUS ENTERPRISE RELEASE v2.1
-            </div>
             <h1 class="text-5xl md:text-7xl lg:text-[6rem] leading-[1.05] text-white font-extrabold mb-6">
               Institutional Financial Architecture.
             </h1>
