@@ -39,4 +39,10 @@ defmodule Nexus.Router do
     to: Nexus.Organization.Aggregates.Tenant,
     identity: :org_id
   )
+
+  # --- ERP Domain ---
+  dispatch(Nexus.ERP.Commands.IngestInvoice,
+    to: Nexus.ERP.Aggregates.Invoice,
+    identity: :invoice_id
+  )
 end

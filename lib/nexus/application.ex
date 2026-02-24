@@ -35,7 +35,9 @@ defmodule Nexus.Application do
             Nexus.Identity.Projectors.UserProjector,
             # --- Organization Domain ---
             Nexus.Organization.Projectors.TenantProjector,
-            Nexus.Organization.Projectors.InvitationProjector
+            Nexus.Organization.Projectors.InvitationProjector,
+            # --- ERP Domain ---
+            Nexus.ERP.Projectors.InvoiceProjector
           ]
       end
 
