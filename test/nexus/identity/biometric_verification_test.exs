@@ -12,10 +12,11 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     # Use the mock adapter for WebAuthn logic in tests
     Application.put_env(:nexus, :webauthn_adapter, Nexus.Identity.WebAuthn.MockAdapter)
 
-    # For async projections to work with the SQL sandbox,
-    # we must share the connection with all processes.
-    # Manually start the projector for this test
-    start_supervised!(Nexus.Identity.Projectors.UserProjector)
+    # Clear the projection versions table and users to ensure clean state
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Repo.delete_all(Nexus.Identity.Projections.User)
+      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions")
+    end)
 
     :ok
   end
@@ -36,13 +37,15 @@ defmodule Nexus.Identity.BiometricVerificationTest do
       org_id: org_id,
       email: "#{username}@example.com",
       attestation_object: "mock_attestation_object",
-      client_data_json: "mock_client_data_json"
+      client_data_json: "mock_client_data_json",
+      role: "trader"
     }
 
     :ok = Nexus.App.dispatch(command)
 
-    # Wait for the projector to catch up
-    Process.sleep(200)
+    # Manually project the registration for determinism
+    {:ok, [event]} = Nexus.EventStore.read_stream_forward(user_id)
+    project_event(event.data, event.event_number)
 
     user = %{id: user_id, org_id: org_id}
     {:ok, Map.put(state, :user, user)}
@@ -123,8 +126,10 @@ defmodule Nexus.Identity.BiometricVerificationTest do
   defthen ~r/^the user should be "found in the database" with their public key$/,
           _vars,
           state do
-    # Wait for the projector with a retry loop (max 3s)
-    user = wait_for_user(state.user.id)
+    # In BiometricVerified flow, we don't actually update the User projection (it was already created in Given)
+    # But for a proper BDD test we check the read model
+    user = get_user(state.user.id)
+
     assert user.role == "trader"
     assert byte_size(user.cose_key) > 0
     assert user.credential_id == "mock_cred_123"
@@ -132,17 +137,19 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     {:ok, state}
   end
 
-  defp wait_for_user(user_id, attempts \\ 30)
-  defp wait_for_user(_user_id, 0), do: nil
+  # --- Helpers ---
 
-  defp wait_for_user(user_id, attempts) do
-    case Repo.get(Nexus.Identity.Projections.User, user_id) do
-      nil ->
-        Process.sleep(100)
-        wait_for_user(user_id, attempts - 1)
+  defp project_event(event, event_number) do
+    metadata = %{handler_name: "Identity.Projectors.UserProjector", event_number: event_number}
 
-      user ->
-        user
-    end
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Identity.Projectors.UserProjector.handle(event, metadata)
+    end)
+  end
+
+  defp get_user(id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.get(Nexus.Identity.Projections.User, id)
+    end)
   end
 end

@@ -69,6 +69,10 @@ const WebAuthnHook = {
     this.el.addEventListener("pointerdown", (e) => {
       // Prevent context menus on mobile/mac hold
       if (e.pointerType === "touch" || e.button === 0) {
+        if (this.cooldownActive) {
+          // Visual shake or immediate feedback could go here
+          return;
+        }
         this.startScan(e);
       }
     });
@@ -116,7 +120,7 @@ const WebAuthnHook = {
     if (hint) hint.innerHTML = '<span class="text-indigo-400">🔗 scanning ⋯ hold still</span>';
 
     // Server notification (fire-and-forget for state tracking)
-    this.pushEvent("biometric_start", {});
+    this.pushEventTo(this.el, "biometric_start", {});
 
     this.scanInterval = setInterval(() => {
       this.progress += 2;
@@ -159,14 +163,17 @@ const WebAuthnHook = {
     // Reset progress bar
     this.el.style.setProperty("--scan-p", "0");
 
-    // === COOLDOWN: keep hint visible for 2s, block new scans ===
+    // === COOLDOWN: keep hint visible for 1s, block new scans ===
     this.cooldownActive = true;
+    this.el.classList.add("opacity-50", "cursor-wait"); // Visual feedback for cooldown
+    
     clearTimeout(this.cooldownTimer);
     this.cooldownTimer = setTimeout(() => {
       this.cooldownActive = false;
-    }, 2000);
+      this.el.classList.remove("opacity-50", "cursor-wait");
+    }, 1000);
 
-    this.pushEvent("biometric_reset", {retry_count: this.retryCount});
+    this.pushEventTo(this.el, "biometric_reset", {retry_count: this.retryCount});
   },
 
   resetVisuals() {
@@ -267,7 +274,7 @@ const WebAuthnHook = {
 
         const credential = await navigator.credentials.create(options);
         
-        this.pushEvent("biometric_complete", {
+        this.pushEventTo(this.el, "biometric_complete", {
           attestation_object: WebAuthnUtils.arrayBufferToBase64URL(credential.response.attestationObject),
           client_data_json: WebAuthnUtils.arrayBufferToBase64URL(credential.response.clientDataJSON)
         });
@@ -284,9 +291,9 @@ const WebAuthnHook = {
 
         const credential = await navigator.credentials.get(options);
         
-        this.pushEvent("biometric_login", {
+        this.pushEventTo(this.el, "biometric_login", {
           raw_id: WebAuthnUtils.arrayBufferToBase64URL(credential.rawId),
-          authenticator_data: WebAuthnUtils.arrayBufferToBase64URL(credential.response.authenticatorData),
+          authenticator_data: WebAuthnUtils.arrayBufferToBase64URL(credential.response.authenticator_data || credential.response.authenticatorData),
           client_data_json: WebAuthnUtils.arrayBufferToBase64URL(credential.response.clientDataJSON),
           signature: WebAuthnUtils.arrayBufferToBase64URL(credential.response.signature)
         });
@@ -295,7 +302,7 @@ const WebAuthnHook = {
     } catch (err) {
       console.error("Biometric failed:", err);
       this.resetVisuals();
-      this.pushEvent("biometric_reset", {error: err.message});
+      this.pushEventTo(this.el, "biometric_reset", {error: err.message});
     }
   }
 };

@@ -9,7 +9,12 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
   @moduletag :feature
 
   setup do
-    start_supervised!(Nexus.ERP.Projectors.InvoiceProjector)
+    # Clear the projection versions table to ensure clean state
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Repo.delete_all(Invoice)
+      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions")
+    end)
+
     :ok
   end
 
@@ -100,10 +105,11 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
   defthen ~r/^the invoice should be accepted and recorded$/, _vars, state do
     assert :ok = state.result
 
-    # Wait for the projector to write the read-model
-    Process.sleep(50)
+    # Manually project the event since subscription is bypassed in tests for determinism
+    {:ok, [event]} = Nexus.EventStore.read_stream_forward(state.command.invoice_id)
+    project_event(event.data, event.event_number)
 
-    invoice = Repo.get(Invoice, state.command.invoice_id)
+    invoice = get_invoice(state.command.invoice_id)
     assert invoice != nil
     assert invoice.org_id == state.org_id
     assert invoice.amount == state.command.amount
@@ -123,8 +129,7 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
   end
 
   defthen ~r/^an InvoiceRejected event should be emitted$/, _vars, state do
-    Process.sleep(50)
-    assert nil == Repo.get(Invoice, state.command.invoice_id)
+    assert get_invoice(state.command.invoice_id) == nil
     {:ok, state}
   end
 
@@ -135,5 +140,24 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
 
   defthen ~r/^no duplicate events should be emitted$/, _vars, state do
     {:ok, state}
+  end
+
+  # --- Helpers ---
+
+  defp project_event(event, event_number) do
+    metadata = %{
+      handler_name: "ERP.InvoiceProjector",
+      event_number: event_number
+    }
+
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.ERP.Projectors.InvoiceProjector.handle(event, metadata)
+    end)
+  end
+
+  defp get_invoice(id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.get(Invoice, id)
+    end)
   end
 end

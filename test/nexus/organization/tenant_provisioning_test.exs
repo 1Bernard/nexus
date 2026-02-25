@@ -9,7 +9,12 @@ defmodule Nexus.Organization.TenantProvisioningTest do
   @moduletag :feature
 
   setup do
-    start_supervised!(Nexus.Organization.Projectors.TenantProjector)
+    # Clear the projection versions table to ensure clean state
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Repo.delete_all(Tenant)
+      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions")
+    end)
+
     :ok
   end
 
@@ -99,7 +104,12 @@ defmodule Nexus.Organization.TenantProvisioningTest do
           %{tenant_name: _tenant_name},
           state do
     org_id = state.last_org_id
-    tenant = wait_for_record(org_id)
+
+    # Manually project the event since subscription is bypassed in tests for determinism
+    {:ok, [event]} = Nexus.EventStore.read_stream_forward(org_id)
+    project_event(event.data, event.event_number)
+
+    tenant = get_tenant(org_id)
 
     assert tenant != nil
     assert tenant.name == state.last_tenant_name
@@ -125,17 +135,22 @@ defmodule Nexus.Organization.TenantProvisioningTest do
     {:ok, state}
   end
 
-  defp wait_for_record(id, attempts \\ 30)
-  defp wait_for_record(_id, 0), do: nil
+  # --- Helpers ---
 
-  defp wait_for_record(id, attempts) do
-    case Repo.get(Tenant, id) do
-      nil ->
-        Process.sleep(50)
-        wait_for_record(id, attempts - 1)
+  defp project_event(event, event_number) do
+    metadata = %{
+      handler_name: "Organization.TenantProjector",
+      event_number: event_number
+    }
 
-      record ->
-        record
-    end
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Organization.Projectors.TenantProjector.handle(event, metadata)
+    end)
+  end
+
+  defp get_tenant(id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.get(Tenant, id)
+    end)
   end
 end

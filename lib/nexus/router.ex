@@ -14,7 +14,7 @@ defmodule Nexus.Router do
     identity: :user_id
   )
 
-  dispatch(Nexus.Identity.Commands.VerifyBiometric,
+  dispatch([Nexus.Identity.Commands.VerifyBiometric, Nexus.Identity.Commands.VerifyStepUp],
     to: Nexus.Identity.Aggregates.User,
     identity: :user_id
   )
@@ -55,5 +55,10 @@ defmodule Nexus.Router do
   dispatch(Nexus.Treasury.Commands.CalculateExposure,
     to: Nexus.Treasury.Aggregates.Exposure,
     identity: :id
+  )
+
+  dispatch(Nexus.Treasury.Commands.RequestTransfer,
+    to: Nexus.Treasury.Aggregates.Transfer,
+    identity: :transfer_id
   )
 end

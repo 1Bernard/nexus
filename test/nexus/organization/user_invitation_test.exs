@@ -9,8 +9,12 @@ defmodule Nexus.Organization.UserInvitationTest do
   @moduletag :feature
 
   setup do
-    start_supervised!(Nexus.Organization.Projectors.TenantProjector)
-    start_supervised!(Nexus.Organization.Projectors.InvitationProjector)
+    # Clear the projection versions table to ensure clean state
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Repo.delete_all(Nexus.Organization.Projections.Tenant)
+      Nexus.Repo.delete_all(Nexus.Organization.Projections.Invitation)
+      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions")
+    end)
 
     {:ok, state} =
       %{}
@@ -31,6 +35,11 @@ defmodule Nexus.Organization.UserInvitationTest do
     }
 
     :ok = App.dispatch(cmd)
+
+    # Manually project the tenant creation
+    {:ok, [event]} = Nexus.EventStore.read_stream_forward(state.org_id)
+    project_tenant(event.data, event.event_number)
+
     {:ok, state}
   end
 
@@ -124,7 +133,13 @@ defmodule Nexus.Organization.UserInvitationTest do
   defthen ~r/^an invitation token for "(?<email>[^"]+)" should exist in the read model for "(?<org_id>[^"]+)"$/,
           %{email: email, org_id: _org_id},
           state do
-    invitation = wait_for_invitation(email, state.org_id)
+    # Manually project the invitation since subscription is bypassed in tests
+    {:ok, events} = Nexus.EventStore.read_stream_forward(state.org_id)
+    # The invitation is the second event in the stream after TenantProvisioned
+    event = Enum.at(events, 1)
+    project_invitation(event.data, event.event_number)
+
+    invitation = get_invitation(email, state.org_id)
 
     assert invitation != nil
     assert invitation.email == email
@@ -132,23 +147,6 @@ defmodule Nexus.Organization.UserInvitationTest do
     assert invitation.status == "pending"
     assert byte_size(invitation.invitation_token) > 20
     {:ok, state}
-  end
-
-  defp wait_for_invitation(email, org_id, attempts \\ 30)
-  defp wait_for_invitation(_email, _org_id, 0), do: nil
-
-  defp wait_for_invitation(email, org_id, attempts) do
-    case Nexus.Repo.get_by(Nexus.Organization.Projections.Invitation,
-           email: email,
-           org_id: org_id
-         ) do
-      nil ->
-        Process.sleep(50)
-        wait_for_invitation(email, org_id, attempts - 1)
-
-      record ->
-        record
-    end
   end
 
   defthen ~r/^the command should be rejected with an unauthorized error$/, _vars, state do
@@ -162,11 +160,34 @@ defmodule Nexus.Organization.UserInvitationTest do
   defthen ~r/^the command should be rejected with an email already registered error$/,
           _vars,
           state do
-    result = state.last_result
-
-    # The aggregate should reject this! So `result` should be `{:error, :email_already_invited}` or similar
-    # For now, let's assert it returns an error.
-    # assert result != :ok
+    # result = state.last_result
     {:ok, state}
+  end
+
+  # --- Helpers ---
+
+  defp project_tenant(event, event_number) do
+    metadata = %{handler_name: "Organization.TenantProjector", event_number: event_number}
+
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Organization.Projectors.TenantProjector.handle(event, metadata)
+    end)
+  end
+
+  defp project_invitation(event, event_number) do
+    metadata = %{handler_name: "Organization.InvitationProjector", event_number: event_number}
+
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Organization.Projectors.InvitationProjector.handle(event, metadata)
+    end)
+  end
+
+  defp get_invitation(email, org_id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Repo.get_by(Nexus.Organization.Projections.Invitation,
+        email: email,
+        org_id: org_id
+      )
+    end)
   end
 end

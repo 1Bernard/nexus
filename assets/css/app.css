@@ -229,7 +229,7 @@
 /* Specific to the dashboard risk map matrix layout */
 .matrix-container {
   display: grid;
-  grid-template-columns: 100px repeat(4, 1fr);
+  grid-template-columns: 100px repeat(5, 1fr);
   gap: 1.5rem;
   align-items: center;
 }

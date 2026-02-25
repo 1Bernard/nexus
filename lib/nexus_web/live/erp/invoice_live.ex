@@ -11,8 +11,11 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Nexus.PubSub, "erp_invoices:#{org_id}")
+      # Defer heavy aggregations to after mount
+      send(self(), :load_stats)
     end
 
+    # Load initial page instantly
     invoices = load_invoices(org_id, nil, 10)
 
     {:ok,
@@ -20,11 +23,12 @@ defmodule NexusWeb.ERP.InvoiceLive do
      |> assign(page_title: "ERP Talk Back - Nexus")
      |> assign(org_id: org_id)
      |> assign(show_manual_modal: false)
-     |> assign(total_volume: get_total_volume(org_id))
-     |> assign(pending_count: get_pending_count(org_id))
+     # Initialize with placeholders
+     |> assign(total_volume: 0.0)
+     |> assign(pending_count: 0)
+     |> assign(total_count: 0)
      |> assign(has_more: length(invoices) == 10)
      |> assign(showing: length(invoices))
-     |> assign(total_count: get_total_count(org_id))
      |> assign(last_cursor: List.last(invoices) && List.last(invoices).created_at)
      |> stream(:invoices, invoices)}
   end
@@ -71,6 +75,17 @@ defmodule NexusWeb.ERP.InvoiceLive do
       end)
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:load_stats, socket) do
+    org_id = socket.assigns.org_id
+
+    {:noreply,
+     socket
+     |> assign(total_volume: get_total_volume(org_id))
+     |> assign(pending_count: get_pending_count(org_id))
+     |> assign(total_count: get_total_count(org_id))}
   end
 
   @impl true
@@ -141,9 +156,6 @@ defmodule NexusWeb.ERP.InvoiceLive do
   def render(assigns) do
     ~H"""
     <style>
-      #invoices-table-body:empty + #empty-state {
-        display: flex;
-      }
       @keyframes rowSlideIn {
         from { opacity: 0; transform: translateY(-10px); background-color: rgba(16,185,129,0.1); }
         to { opacity: 1; transform: translateY(0); background-color: transparent; }
@@ -319,6 +331,14 @@ defmodule NexusWeb.ERP.InvoiceLive do
             </div>
           </:action>
         </NexusWeb.NexusComponents.data_table>
+
+        <%= if @total_count == 0 do %>
+          <NexusWeb.NexusComponents.empty_state
+            icon="hero-inbox-arrow-down"
+            title="No invoices found"
+            message="Invoices will appear here automatically once your SAP instance pushes data via the webhook."
+          />
+        <% end %>
 
         <NexusWeb.NexusComponents.pagination
           showing={@showing}

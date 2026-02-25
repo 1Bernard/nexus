@@ -554,7 +554,7 @@ defmodule NexusWeb.NexusComponents do
 
   def pagination(assigns) do
     ~H"""
-    <div class="flex items-center justify-between pt-4 px-4">
+    <div class="flex items-center justify-between py-4 px-6 border-t border-white/5 mt-1">
       <p class="text-xs text-slate-500">
         Showing <span class="text-slate-300 font-medium">{@showing}</span>
         of <span class="text-slate-300 font-medium">{@total}</span>

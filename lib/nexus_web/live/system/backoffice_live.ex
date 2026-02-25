@@ -31,7 +31,7 @@ defmodule NexusWeb.System.BackofficeLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col gap-6 w-full pb-12">
+    <div class="flex flex-col gap-6 w-full p-6 md:p-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <.stat_card
           label="Active Tenants"
@@ -49,31 +49,36 @@ defmodule NexusWeb.System.BackofficeLive do
           </.nx_button>
         </:header_actions>
 
-        <div class="mt-6">
-          <.data_table id="tenants-table" rows={@tenants}>
-            <:col :let={tenant} label="Tenant Name">{tenant.name}</:col>
-            <:col :let={tenant} label="Org ID" class="font-mono text-xs">
-              {String.slice(tenant.org_id, 0, 8)}...
-            </:col>
-            <:col :let={tenant} label="Status">
-              <.badge variant="success" label={tenant.status} />
-            </:col>
-            <:col :let={tenant} label="Admin Email" class="text-slate-400">
-              {tenant.initial_admin_email || "N/A"}
-            </:col>
-            <:action :let={_tenant}>
-              <.nx_button variant="ghost" size="sm">Manage</.nx_button>
-            </:action>
-          </.data_table>
+        <.data_table id="tenants-table" rows={@tenants}>
+          <:col :let={tenant} label="Tenant Name">{tenant.name}</:col>
+          <:col :let={tenant} label="Org ID" class="font-mono text-xs">
+            {String.slice(tenant.org_id, 0, 8)}...
+          </:col>
+          <:col :let={tenant} label="Status">
+            <.badge variant="success" label={tenant.status} />
+          </:col>
+          <:col :let={tenant} label="Admin Email" class="text-slate-400">
+            {tenant.initial_admin_email || "N/A"}
+          </:col>
+          <:action :let={_tenant}>
+            <.nx_button variant="ghost" size="sm">Manage</.nx_button>
+          </:action>
+        </.data_table>
 
-          <%= if Enum.empty?(@tenants) do %>
-            <.empty_state
-              icon="hero-building-office-2"
-              title="No tenants found"
-              message="Provision your first organization to begin partitioning data."
-            />
-          <% end %>
-        </div>
+        <%= if Enum.empty?(@tenants) do %>
+          <.empty_state
+            icon="hero-building-office-2"
+            title="No tenants found"
+            message="Provision your first organization to begin partitioning data."
+          />
+        <% end %>
+
+        <.pagination
+          showing={Enum.count(@tenants)}
+          total={Enum.count(@tenants)}
+          has_more={false}
+          on_load_more=""
+        />
       </.dark_card>
 
       <.modal id="provision-modal" show={@show_provision_modal} on_close="toggle_provision_modal">

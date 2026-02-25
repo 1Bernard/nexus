@@ -1,11 +1,14 @@
 defmodule Nexus.Organization.Projectors.InvitationProjector do
   @moduledoc """
   Projects Organization domain events into the Postgres read model.
+  Handles invitation lifecycle: created on UserInvited, status changed on InvitationRedeemed.
   """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
     name: "Organization.InvitationProjector"
+
+  import Ecto.Query, only: [from: 2]
 
   alias Nexus.Organization.Events.UserInvited
   alias Nexus.Organization.Events.InvitationRedeemed

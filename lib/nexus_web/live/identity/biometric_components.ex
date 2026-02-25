@@ -42,6 +42,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
   # idle, scanning, success, error
   attr :status, :string, default: "idle"
   attr :progress, :integer, default: 0
+  attr :target, :any, default: nil
 
   def sensor_ring(assigns) do
     ~H"""
@@ -66,6 +67,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <button
         id="biometricSensor"
         phx-hook="WebAuthnHook"
+        phx-target={@target}
         class="relative w-48 h-48 rounded-full flex items-center justify-center transition-all duration-200 touch-none bg-white/5 ring-1 ring-white/10 touch-feedback"
       >
         <div class="relative w-56 h-56 flex items-center justify-center pointer-events-none">

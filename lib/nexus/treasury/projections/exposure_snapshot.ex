@@ -8,9 +8,6 @@ defmodule Nexus.Treasury.Projections.ExposureSnapshot do
   use Nexus.Schema
 
   @primary_key {:id, :string, autogenerate: false}
-  # This table was migrated with standard inserted_at/updated_at column names
-  # (before the created_at convention was applied). Override to match the actual columns.
-  @timestamps_opts [type: :naive_datetime, inserted_at: :inserted_at, updated_at: :updated_at]
   schema "treasury_exposure_snapshots" do
     field :org_id, :binary_id
     field :subsidiary, :string

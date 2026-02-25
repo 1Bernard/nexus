@@ -1,11 +1,11 @@
 defmodule Nexus.Treasury.Projections.MarketTick do
   @moduledoc """
-  Ecto schema modeling the Hypertable of market ticks in TimescaleDB.
+  Schema for each individual FX market tick, stored in the treasury_market_ticks
+  TimescaleDB hypertable for time-series analysis. No tenant isolation — ticks
+  are global market data, not org-specific.
   """
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Nexus.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: true}
   schema "treasury_market_ticks" do
     field :pair, :string
     field :price, :decimal

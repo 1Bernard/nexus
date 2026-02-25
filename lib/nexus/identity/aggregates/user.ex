@@ -6,11 +6,8 @@ defmodule Nexus.Identity.Aggregates.User do
   defstruct [:id, :org_id, :email, :display_name, :role, :status, :cose_key, :credential_id]
 
   alias Nexus.Identity.AuthChallengeStore
-  alias Nexus.Identity.Commands.RegisterUser
-  alias Nexus.Identity.Commands.RegisterSystemAdmin
-  alias Nexus.Identity.Commands.VerifyBiometric
-  alias Nexus.Identity.Events.BiometricVerified
-  alias Nexus.Identity.Events.UserRegistered
+  alias Nexus.Identity.Commands.{RegisterUser, RegisterSystemAdmin, VerifyBiometric, VerifyStepUp}
+  alias Nexus.Identity.Events.{BiometricVerified, UserRegistered, StepUpVerified}
   alias Nexus.Identity.WebAuthn
 
   # --- Command Handlers ---
@@ -33,39 +30,25 @@ defmodule Nexus.Identity.Aggregates.User do
   end
 
   def execute(%__MODULE__{id: nil}, %RegisterUser{} = cmd) do
-    # 1. Retrieve the challenge from the store (this would happen in the controller usually,
-    # but since this is an aggregate we might need to pass it in or verify it here if we trust the caller)
-    # Actually, Commanded best practice is to verify in the controller/handler and pass verified data.
-    # However, to keep it "Internal" to the aggregate logic:
+    with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.user_id),
+         {:ok, {auth_data, _result}} <-
+           WebAuthn.register(cmd.attestation_object, cmd.client_data_json, challenge) do
+      cose_key = auth_data.attested_credential_data.credential_public_key
+      credential_id = auth_data.attested_credential_data.credential_id
 
-    case AuthChallengeStore.pop_challenge(cmd.user_id) do
-      {:ok, challenge} ->
-        case WebAuthn.register(
-               cmd.attestation_object,
-               cmd.client_data_json,
-               challenge
-             ) do
-          {:ok, {auth_data, _result}} ->
-            cose_key = auth_data.attested_credential_data.credential_public_key
-            credential_id = auth_data.attested_credential_data.credential_id
-
-            %UserRegistered{
-              user_id: cmd.user_id,
-              org_id: cmd.org_id,
-              email: cmd.email,
-              display_name: cmd.display_name,
-              role: cmd.role,
-              cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
-              credential_id: Base.encode64(credential_id),
-              registered_at: DateTime.utc_now()
-            }
-
-          {:error, reason} ->
-            {:error, {:webauthn_error, reason}}
-        end
-
-      {:error, reason} ->
-        {:error, {:challenge_error, reason}}
+      %UserRegistered{
+        user_id: cmd.user_id,
+        org_id: cmd.org_id,
+        email: cmd.email,
+        display_name: cmd.display_name,
+        role: cmd.role,
+        cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
+        credential_id: Base.encode64(credential_id),
+        registered_at: DateTime.utc_now()
+      }
+    else
+      {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
+      {:error, reason} -> {:error, {:webauthn_error, reason}}
     end
   end
 
@@ -73,48 +56,89 @@ defmodule Nexus.Identity.Aggregates.User do
         %__MODULE__{id: id, cose_key: cose_key_bin, credential_id: cred_id} = _state,
         %VerifyBiometric{} = cmd
       ) do
-    case AuthChallengeStore.pop_challenge(cmd.challenge_id) do
-      {:ok, challenge} ->
-        # Check if the user is a bootstrapped admin (using placeholders)
-        is_bootstrap? =
-          cose_key_bin in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_cose_key")] or
-            cred_id in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_credential_id")]
+    if bootstrap_user?(cose_key_bin, cred_id) do
+      with {:ok, _challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id) do
+        %BiometricVerified{
+          user_id: id,
+          org_id: cmd.org_id,
+          handshake_id: cmd.challenge_id,
+          verified_at: DateTime.utc_now()
+        }
+      else
+        {:error, reason} -> {:error, {:challenge_error, reason}}
+      end
+    else
+      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
+           {:ok, _} <-
+             WebAuthn.authenticate(
+               cmd.raw_id,
+               cmd.authenticator_data,
+               cmd.signature,
+               cmd.client_data_json,
+               challenge
+             ) do
+        %BiometricVerified{
+          user_id: id,
+          org_id: cmd.org_id,
+          handshake_id: cmd.challenge_id,
+          verified_at: DateTime.utc_now()
+        }
+      else
+        {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
+        {:error, reason} -> {:error, {:webauthn_error, reason}}
+      end
+    end
+  end
 
-        if is_bootstrap? do
-          %BiometricVerified{
-            user_id: id,
-            org_id: cmd.org_id,
-            handshake_id: cmd.challenge_id,
-            verified_at: DateTime.utc_now()
-          }
-        else
-          case WebAuthn.authenticate(
-                 cmd.raw_id,
-                 cmd.authenticator_data,
-                 cmd.signature,
-                 cmd.client_data_json,
-                 challenge
-               ) do
-            {:ok, _} ->
-              %BiometricVerified{
-                user_id: id,
-                org_id: cmd.org_id,
-                handshake_id: cmd.challenge_id,
-                verified_at: DateTime.utc_now()
-              }
-
-            {:error, reason} ->
-              {:error, {:webauthn_error, reason}}
-          end
-        end
-
-      {:error, reason} ->
-        {:error, {:challenge_error, reason}}
+  def execute(
+        %__MODULE__{id: id, cose_key: cose_key_bin, credential_id: cred_id} = _state,
+        %VerifyStepUp{} = cmd
+      ) do
+    if bootstrap_user?(cose_key_bin, cred_id) do
+      with {:ok, _challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id) do
+        %StepUpVerified{
+          user_id: id,
+          org_id: cmd.org_id,
+          action_id: cmd.action_id,
+          verified_at: DateTime.utc_now()
+        }
+      else
+        {:error, reason} -> {:error, {:challenge_error, reason}}
+      end
+    else
+      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
+           {:ok, _} <-
+             WebAuthn.authenticate(
+               cmd.raw_id,
+               cmd.authenticator_data,
+               cmd.signature,
+               cmd.client_data_json,
+               challenge
+             ) do
+        %StepUpVerified{
+          user_id: id,
+          org_id: cmd.org_id,
+          action_id: cmd.action_id,
+          verified_at: DateTime.utc_now()
+        }
+      else
+        {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
+        {:error, reason} -> {:error, {:webauthn_error, reason}}
+      end
     end
   end
 
   def execute(state, cmd) do
     {:error, {:unexpected_command, state, cmd}}
+  end
+
+  # --- Private Helpers ---
+
+  # Returns true when the user is a bootstrapped admin using placeholder credentials,
+  # meaning real WebAuthn verification is skipped and we only validate the challenge exists.
+  defp bootstrap_user?(cose_key_bin, cred_id) do
+    cose_key_bin in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_cose_key")] or
+      cred_id in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_credential_id")]
   end
 
   # --- State Transitions ---
@@ -135,6 +159,11 @@ defmodule Nexus.Identity.Aggregates.User do
 
   def apply(%__MODULE__{} = state, %BiometricVerified{}) do
     # Identity verified, no state change for now
+    state
+  end
+
+  def apply(%__MODULE__{} = state, %StepUpVerified{}) do
+    # Step-up verified, no state change for now
     state
   end
 end

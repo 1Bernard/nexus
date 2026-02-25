@@ -14,7 +14,7 @@ defmodule Nexus.Organization.Projections.Invitation do
     field :invited_at, :utc_datetime_usec
     field :claimed_at, :utc_datetime_usec
 
-    timestamps(type: :utc_datetime_usec, inserted_at: :created_at)
+    timestamps()
   end
 
   @doc false

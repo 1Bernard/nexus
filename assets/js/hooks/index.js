@@ -11,9 +11,11 @@
 
 import WebAuthnHook from "./webauthn";
 import { CursorFollower, ScrollReveal } from "./cinematic";
+import EChartsHook from "./echarts";
 
 export default {
   WebAuthnHook,
   CursorFollower,
-  ScrollReveal
+  ScrollReveal,
+  ECharts: EChartsHook
 };
