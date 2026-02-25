@@ -1,16 +1,24 @@
 defmodule Nexus.Treasury.Projectors.ExposureProjector do
+  @moduledoc """
+  Listens for ExposureCalculated events and writes the latest FX exposure
+  snapshot per subsidiary and currency to the treasury_exposure_snapshots table.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
     name: "Treasury.ExposureProjector",
     consistency: :strong
 
+  # Explicitly marked overridable so the test-env override below does not
+  # produce a compile warning about shadowing the macro-defined clause.
+  defoverridable update_projection: 3
+
+  require Logger
+
   alias Nexus.Treasury.Events.ExposureCalculated
   alias Nexus.Treasury.Projections.ExposureSnapshot
 
   project(%ExposureCalculated{} = event, _metadata, fn multi ->
-    require Logger
-    Logger.debug("[ExposureProjector] handle called for #{event.subsidiary}-#{event.currency}")
     id = "#{event.subsidiary}-#{event.currency}"
 
     exposure_amount =
@@ -47,6 +55,8 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
     # (even with Sandbox.allow). Override the repo transaction to run inside
     # Sandbox.unboxed_run, giving us a real connection that can actually commit.
     def update_projection(event, metadata, multi_fn) do
+      import Ecto.Query, only: [from: 2]
+
       Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
         projection_name = Map.fetch!(metadata, :handler_name)
         event_number = Map.fetch!(metadata, :event_number)
@@ -56,23 +66,20 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
           last_seen_event_number: event_number
         }
 
-        update_projection_version =
-          import Ecto.Query,
-            only: [from: 2]
-
-        from(pv in __MODULE__.ProjectionVersion,
-          where:
-            pv.projection_name == ^projection_name and
-              pv.last_seen_event_number < ^event_number,
-          update: [set: [last_seen_event_number: ^event_number]]
-        )
+        update_projection_version_query =
+          from(pv in __MODULE__.ProjectionVersion,
+            where:
+              pv.projection_name == ^projection_name and
+                pv.last_seen_event_number < ^event_number,
+            update: [set: [last_seen_event_number: ^event_number]]
+          )
 
         multi =
           Ecto.Multi.new()
           |> Ecto.Multi.run(:track_projection_version, fn repo, _changes ->
             try do
               repo.insert(projection_version,
-                on_conflict: update_projection_version,
+                on_conflict: update_projection_version_query,
                 conflict_target: [:projection_name]
               )
             rescue

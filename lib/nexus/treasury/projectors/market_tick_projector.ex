@@ -1,4 +1,8 @@
 defmodule Nexus.Treasury.Projectors.MarketTickProjector do
+  @moduledoc """
+  Listens for MarketTickRecorded events and appends each tick to the
+  treasury_market_ticks TimescaleDB hypertable for time-series analysis.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,

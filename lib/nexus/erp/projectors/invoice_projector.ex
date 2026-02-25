@@ -1,4 +1,8 @@
 defmodule Nexus.ERP.Projectors.InvoiceProjector do
+  @moduledoc """
+  Listens for InvoiceIngested and InvoiceRejected events and writes
+  the invoice read model to the erp_invoices table.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
