@@ -33,6 +33,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:recent_activity, [])
       |> assign(:show_step_up, false)
       |> assign(:pending_transfer, nil)
+      |> assign(:transfer_threshold, 1_000_000)
       |> assign(:host, get_host(socket))
 
     {:ok, socket}
@@ -58,12 +59,56 @@ defmodule NexusWeb.Tenant.DashboardLive do
           </h1>
           <p class="text-slate-500 text-sm mt-1">Real-time treasury & exposure intelligence</p>
         </div>
-        <button
-          phx-click="initiate_transfer"
-          class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/10 transition-all active:scale-95 flex items-center gap-2"
-        >
-          <span class="hero-arrows-right-left w-4 h-4"></span> Transfer Funds
-        </button>
+        <div class="flex items-center gap-3">
+          <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl mr-2">
+            <button
+              phx-click="update_threshold"
+              phx-value-threshold="1000000"
+              class={[
+                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
+                if(Decimal.eq?(@transfer_threshold, 1_000_000),
+                  do: "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
+            >
+              Standard
+            </button>
+            <button
+              phx-click="update_threshold"
+              phx-value-threshold="50000"
+              class={[
+                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
+                if(Decimal.eq?(@transfer_threshold, 50_000),
+                  do: "bg-rose-600 text-white shadow-lg shadow-rose-600/20",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
+            >
+              Strict
+            </button>
+            <button
+              phx-click="update_threshold"
+              phx-value-threshold="10000000"
+              class={[
+                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
+                if(Decimal.eq?(@transfer_threshold, 10_000_000),
+                  do: "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
+            >
+              Relaxed
+            </button>
+          </div>
+
+          <button
+            phx-click="initiate_transfer"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/10 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <span class="hero-arrows-right-left w-4 h-4"></span> Transfer Funds
+          </button>
+        </div>
       </div>
 
       <%!-- KPI Header Row (Simplified for focus) --%>
@@ -442,6 +487,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
         _ -> "1.0854"
       end
 
+    # Fetch policy
+    policy = Treasury.get_treasury_policy(org_id)
+    threshold = (policy && policy.transfer_threshold) || Decimal.new(1_000_000)
+
     socket =
       socket
       |> assign(:current_price, current_price)
@@ -451,6 +500,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:exposure_heatmap, Treasury.list_exposure_heatmap(org_id))
       |> assign(:payment_matching, ERP.get_payment_matching_stats(org_id))
       |> assign(:recent_activity, ERP.list_recent_activity(org_id))
+      |> assign(:transfer_threshold, threshold)
 
     {:noreply, socket}
   end
@@ -521,6 +571,20 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
+  def handle_event("update_threshold", %{"threshold" => threshold}, socket) do
+    threshold = Decimal.new(threshold)
+    org_id = socket.assigns.current_user.org_id
+
+    case Treasury.update_transfer_threshold(org_id, threshold) do
+      :ok ->
+        {:noreply, assign(socket, :transfer_threshold, threshold)}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update threshold: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
   def handle_event("set_market_timeframe", %{"tf" => tf}, socket) do
     {:noreply, assign(socket, :market_timeframe, tf)}
   end
@@ -537,7 +601,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       from_currency: "EUR",
       to_currency: "USD",
       # €5M -> High Value
-      amount: "5000000"
+      amount: "5000000",
+      threshold: socket.assigns.transfer_threshold
     }
 
     case Nexus.App.dispatch(command) do

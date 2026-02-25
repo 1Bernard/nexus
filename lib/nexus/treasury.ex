@@ -4,8 +4,9 @@ defmodule Nexus.Treasury do
   exposures, and trade execution coordination.
   """
   alias Nexus.Repo
-  alias Nexus.Treasury.Queries.{MarketTickQuery, ExposureQuery}
+  alias Nexus.Treasury.Queries.{MarketTickQuery, ExposureQuery, TreasuryPolicyQuery}
   alias Nexus.Treasury.Gateways.PriceCache
+  alias Nexus.Treasury.Commands.SetTransferThreshold
 
   @doc """
   Returns a risk summary for an organization, including Net Exposure
@@ -131,5 +132,27 @@ defmodule Nexus.Treasury do
       Enum.min(prices),
       Enum.max(prices)
     ]
+  end
+
+  @doc """
+  Fetches the treasury policy for an organization.
+  """
+  def get_treasury_policy(org_id) do
+    TreasuryPolicyQuery.base()
+    |> TreasuryPolicyQuery.for_org(org_id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Updates the transfer threshold for an organization.
+  """
+  def update_transfer_threshold(org_id, threshold) do
+    command = %SetTransferThreshold{
+      policy_id: Nexus.Schema.generate_uuidv7(),
+      org_id: org_id,
+      threshold: threshold
+    }
+
+    Nexus.App.dispatch(command)
   end
 end

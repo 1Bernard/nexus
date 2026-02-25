@@ -61,4 +61,9 @@ defmodule Nexus.Router do
     to: Nexus.Treasury.Aggregates.Transfer,
     identity: :transfer_id
   )
+
+  dispatch(Nexus.Treasury.Commands.SetTransferThreshold,
+    to: Nexus.Treasury.Aggregates.Policy,
+    identity: :policy_id
+  )
 end

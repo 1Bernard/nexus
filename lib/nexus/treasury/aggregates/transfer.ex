@@ -8,14 +8,16 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   alias Nexus.Treasury.Events.TransferRequested
 
   # --- Constants ---
-  @high_value_limit 1_000_000
+  @default_limit 1_000_000
 
   # --- Command Handlers ---
 
   def execute(%__MODULE__{id: nil}, %RequestTransfer{} = cmd) do
     amount = parse_decimal(cmd.amount)
+    # Use the dynamic threshold from the command, or fall back to default
+    threshold = parse_decimal(cmd.threshold || @default_limit)
 
-    if Decimal.gt?(amount, @high_value_limit) do
+    if Decimal.gt?(amount, threshold) do
       {:error, :step_up_required}
     else
       %TransferRequested{

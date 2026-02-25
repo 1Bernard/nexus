@@ -101,6 +101,11 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
   end
 
   @impl true
+  def handle_event("noop", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("close_modal", _params, socket) do
     send(self(), :close_step_up)
     {:noreply, socket}
@@ -114,7 +119,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
     <div id={@id} class={if(!@show, do: "hidden")}>
       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0B0E14]/90 backdrop-blur-3xl">
         <%!-- Backdrop capture to prevent "goes off" syndrome --%>
-        <div class="absolute inset-0" phx-click={JS.push("", target: @myself)}></div>
+        <div class="absolute inset-0" phx-click={JS.push("noop", target: @myself)}></div>
 
         <div class="w-full max-w-sm bg-[#0B0E14] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
           <!-- Background Glow -->

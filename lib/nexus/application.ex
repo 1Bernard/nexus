@@ -42,7 +42,8 @@ defmodule Nexus.Application do
             Nexus.ERP.Projectors.InvoiceProjector,
             # --- Treasury Domain ---
             Nexus.Treasury.Projectors.MarketTickProjector,
-            Nexus.Treasury.Projectors.ExposureProjector
+            Nexus.Treasury.Projectors.ExposureProjector,
+            Nexus.Treasury.Projectors.PolicyProjector
           ]
       end
 
