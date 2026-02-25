@@ -32,12 +32,17 @@ defmodule Nexus.Application do
       else
         children ++
           [
+            # WebSocket gateway — requires live network; excluded in test env
+            Nexus.Treasury.Gateways.PolygonClient,
             Nexus.Identity.Projectors.UserProjector,
             # --- Organization Domain ---
             Nexus.Organization.Projectors.TenantProjector,
             Nexus.Organization.Projectors.InvitationProjector,
             # --- ERP Domain ---
-            Nexus.ERP.Projectors.InvoiceProjector
+            Nexus.ERP.Projectors.InvoiceProjector,
+            # --- Treasury Domain ---
+            Nexus.Treasury.Projectors.MarketTickProjector,
+            Nexus.Treasury.Projectors.ExposureProjector
           ]
       end
 

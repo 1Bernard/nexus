@@ -38,9 +38,11 @@ defmodule NexusWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", NexusWeb do
-  #   pipe_through :api
-  # end
+  scope "/api", NexusWeb do
+    pipe_through :api
+
+    post "/webhooks/sap", ERP.WebhookController, :create
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:nexus, :dev_routes) do

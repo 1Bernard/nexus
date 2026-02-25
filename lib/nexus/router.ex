@@ -45,4 +45,15 @@ defmodule Nexus.Router do
     to: Nexus.ERP.Aggregates.Invoice,
     identity: :invoice_id
   )
+
+  # --- Treasury Domain ---
+  dispatch(Nexus.Treasury.Commands.RecordMarketTick,
+    to: Nexus.Treasury.Aggregates.Market,
+    identity: :pair
+  )
+
+  dispatch(Nexus.Treasury.Commands.CalculateExposure,
+    to: Nexus.Treasury.Aggregates.Exposure,
+    identity: :id
+  )
 end

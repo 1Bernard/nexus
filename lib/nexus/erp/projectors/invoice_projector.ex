@@ -42,6 +42,23 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
     multi
   end)
 
+  @impl Commanded.Projections.Ecto
+  def after_update(event, _metadata, _changes) do
+    case event do
+      %InvoiceIngested{} ->
+        Phoenix.PubSub.broadcast(
+          Nexus.PubSub,
+          "erp_invoices:#{event.org_id}",
+          {:invoice_ingested, event.invoice_id}
+        )
+
+      _ ->
+        :ok
+    end
+
+    :ok
+  end
+
   defp parse_date(nil), do: nil
   defp parse_date(%DateTime{} = dt), do: dt
 

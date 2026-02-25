@@ -35,11 +35,26 @@ defmodule Nexus.DataCase do
 
   @doc """
   Sets up the sandbox based on the test tags.
+
+  By default, starts a Sandbox owner so all DB writes are rolled back after
+  each test. For feature tests that start projectors via `start_supervised!`,
+  the projector writes would be included in this rollback and never visible.
+
+  Tag a test with `@tag no_sandbox: true` to skip the Sandbox owner. The
+  test is then responsible for cleaning up with `Repo.delete_all` in setup.
   """
   def setup_sandbox(tags) do
     alias Ecto.Adapters.SQL.Sandbox
-    pid = Sandbox.start_owner!(Nexus.Repo, shared: not tags[:async])
-    on_exit(fn -> Sandbox.stop_owner(pid) end)
+
+    if tags[:no_sandbox] do
+      # Manual / unmanaged mode: projector writes commit to real DB rows.
+      # The test module must clean up manually (Repo.delete_all in setup).
+      Sandbox.mode(Nexus.Repo, :manual)
+      :ok
+    else
+      pid = Sandbox.start_owner!(Nexus.Repo, shared: not tags[:async])
+      on_exit(fn -> Sandbox.stop_owner(pid) end)
+    end
   end
 
   @doc """

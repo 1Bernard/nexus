@@ -497,13 +497,16 @@ defmodule NexusWeb.NexusComponents do
       end
 
     ~H"""
-    <div class="overflow-x-auto">
+    <div class="w-full">
       <table class="w-full">
         <thead>
           <tr class="border-b border-[var(--nx-border)]">
             <th
               :for={col <- @col}
-              class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500"
+              class={[
+                "px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500",
+                col[:class] || "text-left"
+              ]}
             >
               {col[:label]}
             </th>
