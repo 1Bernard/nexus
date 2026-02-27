@@ -606,14 +606,22 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
   @impl true
   def handle_info({:step_up_success, _action_id}, socket) do
-    # Biometric verified! Now we can commit the pending action.
-    Process.send_after(self(), :finalize_transfer, 1000)
-    {:noreply, assign(socket, show_step_up: false)}
+    # Give the success screen 1.5s of visibility, then close modal and finalize.
+    Process.send_after(self(), :close_step_up_and_finalize, 1500)
+    {:noreply, socket}
   end
 
   @impl true
   def handle_info(:close_step_up, socket) do
     {:noreply, assign(socket, show_step_up: false, pending_transfer: nil)}
+  end
+
+  @impl true
+  def handle_info(:close_step_up_and_finalize, socket) do
+    # Hide the modal (triggering the success→idle reset in the LiveComponent),
+    # then finalize the transfer after a short delay.
+    Process.send_after(self(), :finalize_transfer, 500)
+    {:noreply, assign(socket, show_step_up: false)}
   end
 
   @impl true

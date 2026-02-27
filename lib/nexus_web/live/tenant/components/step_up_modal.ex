@@ -23,11 +23,26 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
 
   @impl true
   def update(assigns, socket) do
-    # When the modal is first opened or updated with a new action
+    socket = assign(socket, assigns)
+
     socket =
-      socket
-      |> assign(assigns)
-      |> maybe_generate_challenge()
+      cond do
+        # Modal is being opened fresh — generate a challenge
+        socket.assigns[:show] && !socket.assigns.challenge ->
+          maybe_generate_challenge(socket)
+
+        # Modal is being hidden — reset all state so next open is clean
+        !socket.assigns[:show] ->
+          assign(socket,
+            status: "idle",
+            progress: 0,
+            challenge: nil,
+            error_message: nil
+          )
+
+        true ->
+          socket
+      end
 
     {:ok, socket}
   end
@@ -123,57 +138,98 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
 
         <div class="w-full max-w-sm bg-[#0B0E14] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
           <!-- Background Glow -->
-          <div class="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-[80px]">
+          <div class={[
+            "absolute -top-24 -left-24 w-48 h-48 rounded-full blur-[80px]",
+            if(@status == "success",
+              do: "bg-emerald-500/20",
+              else: "bg-indigo-500/10"
+            )
+          ]}>
           </div>
 
-          <div class="mb-6 relative z-10">
-            <div class="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-3 ring-1 ring-indigo-500/30 mx-auto">
-              <span class="hero-shield-check w-6 h-6 text-indigo-400"></span>
+          <%= if @status == "success" do %>
+            <%!-- Success screen --%>
+            <div class="relative z-10 flex flex-col items-center gap-6 py-6">
+              <div class="w-20 h-20 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/30 flex items-center justify-center animate-in zoom-in-75 duration-300">
+                <span class="hero-check-circle w-10 h-10 text-emerald-400"></span>
+              </div>
+              <div>
+                <h3 class="text-xl font-serif italic font-bold text-white tracking-tight">
+                  Identity Verified
+                </h3>
+                <p class="text-emerald-400/80 text-xs mt-2 font-mono tracking-widest uppercase">
+                  Authorizing transfer…
+                </p>
+              </div>
+              <div class="flex gap-1.5">
+                <span
+                  class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"
+                  style="animation-delay: 0ms"
+                >
+                </span>
+                <span
+                  class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"
+                  style="animation-delay: 150ms"
+                >
+                </span>
+                <span
+                  class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"
+                  style="animation-delay: 300ms"
+                >
+                </span>
+              </div>
             </div>
-            <h3 class="text-xl font-serif italic font-bold text-white uppercase tracking-tight">
-              Step-Up Authorization
-            </h3>
-            <p class="text-slate-400 text-xs mt-2 px-4 leading-relaxed">
-              A high-value action has been requested. Physical biometric verification is required.
-            </p>
-          </div>
-
-          <div
-            id={"step-up-container-#{@id}"}
-            class="w-full flex flex-col items-center relative z-10"
-            data-challenge={@challenge}
-            data-action="login"
-          >
-            <.sensor_ring status={@status} progress={@progress} target={@myself} />
+          <% else %>
+            <%!-- Challenge screen --%>
+            <div class="mb-6 relative z-10">
+              <div class="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-3 ring-1 ring-indigo-500/30 mx-auto">
+                <span class="hero-shield-check w-6 h-6 text-indigo-400"></span>
+              </div>
+              <h3 class="text-xl font-serif italic font-bold text-white uppercase tracking-tight">
+                Step-Up Authorization
+              </h3>
+              <p class="text-slate-400 text-xs mt-2 px-4 leading-relaxed">
+                A high-value action has been requested. Physical biometric verification is required.
+              </p>
+            </div>
 
             <div
-              id="biometricHint"
-              phx-update="ignore"
-              class="h-6 text-[10px] font-mono text-slate-500 mt-2"
+              id={"step-up-container-#{@id}"}
+              class="w-full flex flex-col items-center relative z-10"
+              data-challenge={@challenge}
+              data-action="login"
             >
-              <%= if @error_message do %>
-                <span class="text-rose-400">Verification Error: {@error_message}</span>
-              <% else %>
-                <span>⬇️ scan fingerprint to authorize ⬇️</span>
-              <% end %>
-            </div>
-          </div>
+              <.sensor_ring status={@status} progress={@progress} target={@myself} />
 
-          <div class="mt-8 w-full relative z-10">
-            <button
-              phx-click="close_modal"
-              phx-target={@myself}
-              type="button"
-              class="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-slate-300 transition-colors p-4"
-            >
-              [ Cancel Transaction ]
-            </button>
-          </div>
-          
+              <div
+                id="biometricHint"
+                phx-update="ignore"
+                class="h-6 text-[10px] font-mono text-slate-500 mt-2"
+              >
+                <%= if @error_message do %>
+                  <span class="text-rose-400">Verification Error: {@error_message}</span>
+                <% else %>
+                  <span>⬇️ scan fingerprint to authorize ⬇️</span>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="mt-8 w-full relative z-10">
+              <button
+                phx-click="close_modal"
+                phx-target={@myself}
+                type="button"
+                class="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-slate-300 transition-colors p-4"
+              >
+                [ Cancel Transaction ]
+              </button>
+            </div>
+            
     <!-- Security Primitives -->
-          <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
-            <.security_badge />
-          </div>
+            <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
+              <.security_badge />
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
