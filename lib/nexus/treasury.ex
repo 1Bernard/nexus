@@ -4,9 +4,41 @@ defmodule Nexus.Treasury do
   exposures, and trade execution coordination.
   """
   alias Nexus.Repo
-  alias Nexus.Treasury.Queries.{MarketTickQuery, ExposureQuery, TreasuryPolicyQuery}
+
+  alias Nexus.Treasury.Queries.{
+    MarketTickQuery,
+    ExposureQuery,
+    TreasuryPolicyQuery,
+    PolicyAlertQuery,
+    ForecastQuery
+  }
+
   alias Nexus.Treasury.Gateways.PriceCache
   alias Nexus.Treasury.Commands.SetTransferThreshold
+
+  @doc """
+  Lists recent policy alerts for an organization.
+  """
+  def list_policy_alerts(org_id, limit \\ 5) do
+    PolicyAlertQuery.base()
+    |> PolicyAlertQuery.for_org(org_id)
+    |> PolicyAlertQuery.recent(limit)
+    |> Repo.all()
+  end
+
+  @doc """
+  Fetches the latest forecast for a currency.
+  """
+  def get_latest_forecast(org_id, currency) do
+    require Ecto.Query
+
+    ForecastQuery.base()
+    |> ForecastQuery.for_org(org_id)
+    |> ForecastQuery.for_currency(currency)
+    |> ForecastQuery.newest_first()
+    |> Ecto.Query.limit(1)
+    |> Repo.one()
+  end
 
   @doc """
   Returns a risk summary for an organization, including Net Exposure

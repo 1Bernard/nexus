@@ -7,8 +7,8 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     repo: Nexus.Repo,
     name: "Treasury.PolicyProjector"
 
-  alias Nexus.Treasury.Events.TransferThresholdSet
-  alias Nexus.Treasury.Projections.TreasuryPolicy
+  alias Nexus.Treasury.Events.{TransferThresholdSet, PolicyAlertTriggered}
+  alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert}
 
   project(%TransferThresholdSet{} = ev, _metadata, fn multi ->
     Ecto.Multi.insert(
@@ -21,6 +21,24 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
       },
       on_conflict: {:replace, [:transfer_threshold, :updated_at]},
       conflict_target: [:org_id]
+    )
+  end)
+
+  project(%PolicyAlertTriggered{} = ev, _metadata, fn multi ->
+    # Broadcast to PubSub for LiveView updates
+    Phoenix.PubSub.broadcast(Nexus.PubSub, "policy_alerts:#{ev.org_id}", {:policy_alert, ev})
+
+    Ecto.Multi.insert(
+      multi,
+      :policy_alert,
+      %PolicyAlert{
+        id: Nexus.Schema.generate_uuidv7(),
+        org_id: ev.org_id,
+        currency_pair: ev.currency_pair,
+        exposure_amount: parse_decimal(ev.exposure_amount),
+        threshold: parse_decimal(ev.threshold),
+        triggered_at: ev.triggered_at
+      }
     )
   end)
 

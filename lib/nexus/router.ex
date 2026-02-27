@@ -66,4 +66,14 @@ defmodule Nexus.Router do
     to: Nexus.Treasury.Aggregates.Policy,
     identity: :policy_id
   )
+
+  dispatch(Nexus.Treasury.Commands.EvaluateExposurePolicy,
+    to: Nexus.Treasury.Aggregates.Policy,
+    identity: :policy_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.GenerateForecast,
+    to: Nexus.Treasury.Aggregates.Forecast,
+    identity: :org_id
+  )
 end

@@ -50,8 +50,10 @@ defmodule Nexus.Application do
             Nexus.Treasury.Projectors.MarketTickProjector,
             Nexus.Treasury.Projectors.ExposureProjector,
             Nexus.Treasury.Projectors.PolicyProjector,
+            Nexus.Treasury.Projectors.ForecastProjector,
             # --- Bridge Handlers ---
-            Nexus.Treasury.Handlers.ExposureBridge
+            Nexus.Treasury.Handlers.ExposureBridge,
+            Nexus.Treasury.Handlers.ExposurePolicyHandler
           ]
       end
 

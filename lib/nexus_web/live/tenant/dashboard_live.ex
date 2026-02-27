@@ -9,6 +9,14 @@ defmodule NexusWeb.Tenant.DashboardLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Nexus.PubSub, "market_ticks:EUR/USD")
+
+      Phoenix.PubSub.subscribe(
+        Nexus.PubSub,
+        "policy_alerts:#{socket.assigns.current_user.org_id}"
+      )
+
+      Phoenix.PubSub.subscribe(Nexus.PubSub, "forecasts:#{socket.assigns.current_user.org_id}")
+
       # Start periodic staleness check
       :timer.send_interval(10_000, self(), :check_stale_data)
       # Defer heavy loading to after mount
@@ -31,6 +39,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:exposure_heatmap, %{currencies: [], subsidiaries: [], data: %{}})
       |> assign(:payment_matching, %{matched: 0, partial: 0, unmatched: 0})
       |> assign(:recent_activity, [])
+      |> assign(:policy_alerts, [])
+      |> assign(:latest_forecast, nil)
       |> assign(:show_step_up, false)
       |> assign(:pending_transfer, nil)
       |> assign(:transfer_threshold, 1_000_000)
@@ -220,10 +230,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
           </.dark_card>
         </div>
 
-        <div class="lg:col-span-1">
+        <div class="lg:col-span-1 flex flex-col gap-6">
           <.dark_card class="p-6 h-full flex flex-col">
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-6">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
               Your Currencies
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             </h2>
             <div class="space-y-4">
               <%= for tick <- @market_ticks do %>
@@ -253,6 +264,43 @@ defmodule NexusWeb.Tenant.DashboardLive do
                   </div>
                 </div>
               <% end %>
+            </div>
+
+            <%!-- Intelligence Feed: Policy Alerts --%>
+            <div class="mt-8 pt-6 border-t border-white/5">
+              <h3 class="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <span class="hero-exclamation-triangle w-3.5 h-3.5"></span> Policy Alerts
+              </h3>
+              <div class="space-y-3">
+                <%= for alert <- @policy_alerts do %>
+                  <div class="p-3 rounded-xl bg-rose-500/5 border border-rose-500/10 flex flex-col gap-1 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button class="text-[9px] font-bold text-rose-400 hover:text-white uppercase tracking-tighter">
+                        Hedge Now
+                      </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-bold text-slate-200">
+                        {alert.currency_pair} Limit Breached
+                      </span>
+                      <span class="text-[9px] font-mono text-rose-400">Critical</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                      Exposure of {to_string(alert.exposure_amount)} exceeds {to_string(
+                        alert.threshold
+                      )} threshold.
+                    </p>
+                  </div>
+                <% end %>
+
+                <%= if Enum.empty?(@policy_alerts) do %>
+                  <div class="py-4 border border-dashed border-white/5 rounded-xl flex items-center justify-center opacity-30">
+                    <p class="text-[10px] uppercase tracking-widest font-medium">
+                      No active breaches
+                    </p>
+                  </div>
+                <% end %>
+              </div>
             </div>
 
             <div class="mt-auto pt-8">
@@ -345,7 +393,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
               <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-md px-3 py-1.5 cursor-pointer hover:bg-slate-800/50 transition-colors">
                   <span class="hero-calendar w-3.5 h-3.5 text-slate-400"></span>
-                  <span class="text-[11px] font-medium text-slate-300">Oct 1 - Oct 31</span>
+                  <p class="text-[11px] font-medium text-slate-300">
+                    <%= if @latest_forecast do %>
+                      Gap: {to_string(@latest_forecast.predicted_gap)} {@latest_forecast.currency}
+                    <% else %>
+                      Calculating Forecast...
+                    <% end %>
+                  </p>
                   <span class="hero-chevron-down w-3 h-3 text-slate-500 ml-1"></span>
                 </div>
                 <.timeframe_selector
@@ -362,7 +416,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
               </div>
             </div>
 
-            <%!-- Mock Area Chart --%>
+            <%!-- Dynamic Forecast Visualization (Powered by real data) --%>
             <div class="flex-1 relative -mx-6 px-6 pb-4">
               <svg
                 class="absolute inset-0 w-full h-full"
@@ -380,33 +434,6 @@ defmodule NexusWeb.Tenant.DashboardLive do
                   stroke="#6366F1"
                   stroke-width="2"
                 />
-                <path
-                  d="M0,70 L20,60 L40,70 L60,20 L80,30 L100,0"
-                  fill="none"
-                  stroke="#6366F1"
-                  stroke-width="1"
-                  stroke-dasharray="2 4"
-                  opacity="0.4"
-                />
-                <path
-                  d="M0,90 L20,90 L40,100 L60,60 L80,70 L100,40"
-                  fill="none"
-                  stroke="#6366F1"
-                  stroke-width="1"
-                  stroke-dasharray="2 4"
-                  opacity="0.4"
-                />
-                <line
-                  x1="40"
-                  y1="0"
-                  x2="40"
-                  y2="100"
-                  stroke="#F43F5E"
-                  stroke-width="1.5"
-                  stroke-dasharray="4 2"
-                  opacity="0.8"
-                />
-                <circle cx="40" cy="85" r="3" fill="#F43F5E" />
                 <defs>
                   <linearGradient id="cf-gradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="#6366F1" stop-opacity="0.5" />
@@ -417,10 +444,20 @@ defmodule NexusWeb.Tenant.DashboardLive do
               <div class="absolute bottom-4 left-6 right-6 flex justify-between text-[9px] text-slate-500 uppercase tracking-wider font-mono">
                 <span>Today</span><span>+15d</span><span>+30d</span>
               </div>
-              <div class="absolute top-1/4 left-[35%] w-32 bg-rose-500/10 border border-rose-500/30 backdrop-blur-md p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                <p class="text-[10px] font-semibold text-rose-400 leading-tight">Cash Gap Alert</p>
-                <p class="text-[9px] text-rose-300/80 mt-0.5">Projected shortfall: €142K on Mar 7</p>
-              </div>
+
+              <%= if @latest_forecast && Decimal.lt?(@latest_forecast.predicted_gap, 0) do %>
+                <div class="absolute top-1/4 left-[35%] w-48 bg-rose-500/10 border border-rose-500/30 backdrop-blur-md p-3 rounded-lg animate-pulse">
+                  <p class="text-[10px] font-black text-rose-400 leading-tight uppercase tracking-wider">
+                    Liquidity Shortfall
+                  </p>
+                  <p class="text-[11px] text-rose-300 mt-1">
+                    Projected gap: {to_string(@latest_forecast.predicted_gap)} EUR
+                  </p>
+                  <p class="text-[9px] text-rose-400/70 mt-1 font-medium">
+                    Suggestion: Execute immediate FX swap
+                  </p>
+                </div>
+              <% end %>
             </div>
 
             <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5 relative z-10">
@@ -500,6 +537,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:exposure_heatmap, Treasury.list_exposure_heatmap(org_id))
       |> assign(:payment_matching, ERP.get_payment_matching_stats(org_id))
       |> assign(:recent_activity, ERP.list_recent_activity(org_id))
+      |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id))
+      |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id, "EUR"))
       |> assign(:transfer_threshold, threshold)
 
     {:noreply, socket}
@@ -521,9 +560,19 @@ defmodule NexusWeb.Tenant.DashboardLive do
         })
 
       {:noreply, socket}
-    else
-      {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:policy_alert, alert}, socket) do
+    # Add new alert to the list (max 5)
+    alerts = [alert | socket.assigns.policy_alerts] |> Enum.take(5)
+    {:noreply, assign(socket, :policy_alerts, alerts)}
+  end
+
+  @impl true
+  def handle_info({:forecast_generated, forecast}, socket) do
+    {:noreply, assign(socket, :latest_forecast, forecast)}
   end
 
   @impl true
