@@ -11,10 +11,10 @@ defmodule Nexus.Shared.Middleware.TenantGate do
 
   alias Commanded.Middleware.Pipeline
 
-  # We allow ProvisionOrganization to bypass the gate since it creates the org_id context.
-  def before_dispatch(
-        %Pipeline{command: %Nexus.Tenant.Commands.ProvisionOrganization{}} = pipeline
-      ) do
+  # We allow system/genesis commands to bypass the gate.
+  def before_dispatch(%Pipeline{command: cmd} = pipeline)
+      when is_struct(cmd, Nexus.Organization.Commands.ProvisionTenant) or
+             is_struct(cmd, Nexus.Treasury.Commands.RecordMarketTick) do
     pipeline
   end
 

@@ -1,15 +1,12 @@
 defmodule Nexus.Treasury.Gateways.PolygonClient do
   @moduledoc """
-  WebSocket client for ingesting real-time FX market ticks.
+  WebSocket client for ingesting real-time FX market ticks from Massive API.
   Implements a resilient connection strategy that doesn't block the supervision tree.
   """
   use GenServer
   require Logger
 
-  alias Nexus.Treasury.Gateways.PriceCache
-  alias Nexus.Treasury.Commands.RecordMarketTick
-
-  @default_url "wss://socket.polygon.io/forex"
+  @default_url "wss://socket.massive.com/forex"
 
   # --- Client API ---
 
@@ -21,22 +18,24 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
 
   @impl true
   def init(opts) do
-    url = Keyword.get(opts, :url, @default_url)
+    url = Keyword.get(opts, :url, Application.get_env(:nexus, :massive_url, @default_url))
+    api_key = Application.get_env(:nexus, :massive_api_key)
+
     # Defer connection to prevent blocking the supervision tree
-    {:ok, %{url: url, socket: nil}, {:continue, :connect}}
+    {:ok, %{url: url, api_key: api_key, socket: nil}, {:continue, :connect}}
   end
 
   @impl true
   def handle_continue(:connect, state) do
-    Logger.info("[Treasury] Initiating background connection to Market Data Feed...")
+    Logger.info("[Treasury] Initiating background connection to Massive Feed...")
 
-    case WebSockex.start_link(state.url, __MODULE__, %{}, name: :polygon_websocket) do
+    case __MODULE__.SocketHandler.start_link(state.url, state.api_key) do
       {:ok, pid} ->
         {:noreply, %{state | socket: pid}}
 
       {:error, reason} ->
         Logger.error(
-          "[Treasury] Failed to connect to Market Data: #{inspect(reason)}. Retrying in 30s..."
+          "[Treasury] Failed to connect to Massive Feed: #{inspect(reason)}. Retrying in 30s..."
         )
 
         Process.send_after(self(), :connect, 30_000)
@@ -49,10 +48,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
     {:noreply, state, {:continue, :connect}}
   end
 
-  # --- WebSockex Callbacks (as a behavior, though we use it as a standalone process) ---
-  # Note: Since we are starting WebSockex as a separate process in start_link,
-  # the callbacks below are actually for the WebSockex process, not this GenServer.
-  # So we need to separate the modules.
+  # --- Socket Handler Sub-module ---
 
   defmodule SocketHandler do
     use WebSockex
@@ -61,64 +57,89 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
     alias Nexus.Treasury.Gateways.PriceCache
     alias Nexus.Treasury.Commands.RecordMarketTick
 
-    def start_link(url, name) do
-      WebSockex.start_link(url, __MODULE__, %{}, name: name)
+    def start_link(url, api_key) do
+      WebSockex.start_link(url, __MODULE__, %{api_key: api_key})
     end
 
     @impl true
     def handle_connect(_conn, state) do
-      Logger.info("[Treasury] Connected to Market Data Feed.")
+      Logger.info("[Treasury] WebSocket Connection established. Waiting for server status...")
       {:ok, state}
     end
 
     @impl true
     def handle_frame({:text, msg}, state) do
-      with {:ok, payloads} <- Jason.decode(msg) do
-        handle_payloads(List.wrap(payloads))
-      end
+      case Jason.decode(msg) do
+        {:ok, payloads} ->
+          handle_payloads(List.wrap(payloads), state)
 
-      {:ok, state}
+        {:error, _reason} ->
+          Logger.error("[Treasury] Received invalid JSON from Massive: #{inspect(msg)}")
+          {:ok, state}
+      end
     end
 
-    defp handle_payloads(payloads) do
-      Enum.each(payloads, fn
-        %{"ev" => "C", "pair" => pair, "p" => price, "t" => timestamp_ms} ->
+    defp handle_payloads([], state), do: {:ok, state}
+
+    defp handle_payloads([payload | rest], state) do
+      case payload do
+        %{"ev" => "status", "status" => "connected"} ->
+          Logger.info("[Treasury] Massive Feed connected. Authenticating...")
+          auth_msg = Jason.encode!(%{action: "auth", params: state.api_key})
+          {:reply, {:text, auth_msg}, state}
+
+        %{"ev" => "status", "status" => "auth_success"} ->
+          Logger.info("[Treasury] Massive Authentication successful. Subscribing to CAS.*...")
+          sub_msg = Jason.encode!(%{action: "subscribe", params: "CAS.*"})
+          {:reply, {:text, sub_msg}, state}
+
+        %{"ev" => "CAS", "pair" => pair, "c" => price, "s" => timestamp_ms} ->
           process_tick(pair, price, timestamp_ms)
+          handle_payloads(rest, state)
+
+        %{"ev" => "status", "message" => msg} ->
+          Logger.info("[Treasury] Massive Status: #{msg}")
+          handle_payloads(rest, state)
 
         _ ->
-          :ok
-      end)
+          handle_payloads(rest, state)
+      end
     end
 
     defp process_tick(pair, price, timestamp_ms) do
       timestamp = DateTime.from_unix!(timestamp_ms, :millisecond)
-      PriceCache.update_price(pair, price)
-      cmd = %RecordMarketTick{pair: pair, price: price, timestamp: timestamp}
 
-      case Nexus.Router.dispatch(cmd) do
+      # Convert price to Decimal struct to avoid Ecto type errors
+      decimal_price =
+        case price do
+          p when is_binary(p) -> Decimal.new(p)
+          p when is_number(p) -> Decimal.from_float(p * 1.0)
+          _ -> Decimal.new("0")
+        end
+
+      formatted_price = Decimal.to_string(decimal_price, :normal)
+
+      # 1. Update ETS cache
+      PriceCache.update_price(pair, formatted_price)
+
+      # 2. Dispatch command for audit trail
+      cmd = %RecordMarketTick{
+        pair: pair,
+        price: decimal_price,
+        timestamp: timestamp
+      }
+
+      case Nexus.App.dispatch(cmd) do
         :ok ->
           Phoenix.PubSub.broadcast(
             Nexus.PubSub,
             "market_ticks:#{pair}",
-            {:market_tick, pair, price, timestamp}
+            {:market_tick, pair, formatted_price, timestamp}
           )
 
         {:error, reason} ->
           Logger.error("[Treasury] Failed to record market tick: #{inspect(reason)}")
       end
-    end
-  end
-
-  # Re-update the GenServer to use the SocketHandler
-  @impl true
-  def handle_continue(:connect, state) do
-    case SocketHandler.start_link(state.url, :polygon_websocket) do
-      {:ok, pid} ->
-        {:noreply, %{state | socket: pid}}
-
-      {:error, _} ->
-        Process.send_after(self(), :connect, 30_000)
-        {:noreply, state}
     end
   end
 end

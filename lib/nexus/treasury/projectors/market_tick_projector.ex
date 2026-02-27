@@ -12,10 +12,33 @@ defmodule Nexus.Treasury.Projectors.MarketTickProjector do
   alias Nexus.Treasury.Projections.MarketTick
 
   project(%MarketTickRecorded{} = event, _metadata, fn multi ->
+    price =
+      case event.price do
+        p when is_binary(p) -> Decimal.new(p)
+        %Decimal{} = p -> p
+        p when is_number(p) -> Decimal.from_float(p * 1.0)
+        _ -> Decimal.new("0")
+      end
+
+    tick_time =
+      case event.timestamp do
+        t when is_binary(t) ->
+          case DateTime.from_iso8601(t) do
+            {:ok, dt, _offset} -> dt
+            _ -> DateTime.utc_now()
+          end
+
+        %DateTime{} = t ->
+          t
+
+        _ ->
+          DateTime.utc_now()
+      end
+
     Ecto.Multi.insert(multi, :market_tick, %MarketTick{
       pair: event.pair,
-      price: event.price,
-      tick_time: event.timestamp
+      price: price,
+      tick_time: tick_time
     })
   end)
 end

@@ -89,6 +89,11 @@ config :logger, :default_formatter,
 config :hammer,
   backend: {Hammer.Backend.ETS, [expiry_ms: 60_000, cleanup_interval_ms: 60_000]}
 
+# 6. FX Market Intelligence (Massive)
+config :nexus,
+  massive_url: System.get_env("MASSIVE_WS_URL", "wss://socket.massive.com/forex"),
+  massive_api_key: System.get_env("MASSIVE_API_KEY", "MLikrlfIj9JW03esQZrpHllzEZao0Cc1")
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

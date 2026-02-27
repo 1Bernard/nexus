@@ -208,7 +208,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
             <div class="px-6 py-4 flex justify-between items-center border-t border-white/5 bg-slate-900/40">
               <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-                Source: Real-time Polygon Feed
+                Source: Real-time Massive Feed
               </span>
               <div class="flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
