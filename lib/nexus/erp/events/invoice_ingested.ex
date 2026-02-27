@@ -11,7 +11,8 @@ defmodule Nexus.ERP.Events.InvoiceIngested do
     :amount,
     :subsidiary,
     :line_items,
-    :sap_document_number
+    :sap_document_number,
+    :sap_status
   ]
   defstruct [
     :org_id,
@@ -22,6 +23,7 @@ defmodule Nexus.ERP.Events.InvoiceIngested do
     :subsidiary,
     :line_items,
     :sap_document_number,
+    :sap_status,
     :ingested_at
   ]
 end

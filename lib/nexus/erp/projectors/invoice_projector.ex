@@ -24,10 +24,11 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
             org_id: event.org_id,
             entity_id: event.entity_id,
             currency: event.currency,
-            amount: to_string(event.amount),
+            amount: Decimal.from_float(event.amount * 1.0) |> Decimal.to_string(:normal),
             subsidiary: event.subsidiary,
             line_items: event.line_items || [],
             sap_document_number: event.sap_document_number,
+            sap_status: event.sap_status,
             status: "ingested",
             created_at: parse_date(event.ingested_at) || DateTime.utc_now(),
             updated_at: parse_date(event.ingested_at) || DateTime.utc_now()

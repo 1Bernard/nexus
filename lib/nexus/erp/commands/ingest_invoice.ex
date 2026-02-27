@@ -10,7 +10,8 @@ defmodule Nexus.ERP.Commands.IngestInvoice do
     :amount,
     :subsidiary,
     :line_items,
-    :sap_document_number
+    :sap_document_number,
+    :sap_status
   ]
   defstruct [
     :org_id,
@@ -20,6 +21,7 @@ defmodule Nexus.ERP.Commands.IngestInvoice do
     :amount,
     :subsidiary,
     :line_items,
-    :sap_document_number
+    :sap_document_number,
+    :sap_status
   ]
 end

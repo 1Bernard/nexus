@@ -15,6 +15,18 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
     where(query, [i], i.status == ^status)
   end
 
+  def with_currency(query, currency) do
+    where(query, [i], i.currency == ^currency)
+  end
+
+  def for_subsidiary(query, subsidiary) do
+    where(query, [i], i.subsidiary == ^subsidiary)
+  end
+
+  def sum_amount(query) do
+    select(query, [i], fragment("sum(CAST(? AS decimal))", i.amount))
+  end
+
   def count(query) do
     select(query, [i], count(i.id))
   end

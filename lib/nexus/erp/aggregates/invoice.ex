@@ -41,6 +41,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
           subsidiary: cmd.subsidiary,
           line_items: cmd.line_items,
           sap_document_number: cmd.sap_document_number,
+          sap_status: cmd.sap_status,
           ingested_at: DateTime.utc_now()
         }
     end

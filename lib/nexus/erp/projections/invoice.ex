@@ -13,6 +13,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :subsidiary, :string
     field :line_items, {:array, :map}
     field :sap_document_number, :string
+    field :sap_status, :string
     field :status, :string, default: "ingested"
 
     timestamps()
@@ -29,6 +30,7 @@ defmodule Nexus.ERP.Projections.Invoice do
       :subsidiary,
       :line_items,
       :sap_document_number,
+      :sap_status,
       :status
     ])
     |> validate_required([

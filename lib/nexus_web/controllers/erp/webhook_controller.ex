@@ -38,8 +38,8 @@ defmodule NexusWeb.ERP.WebhookController do
   defp process_payload(conn, org_id, entity_id, invoice_id, payload) do
     # 2. "Talk Back" to SAP to verify the webhook payload and enrich it with master data
     case SapAdapter.enrich_invoice(entity_id, invoice_id) do
-      {:ok, _enriched_data} ->
-        dispatch_to_domain(conn, org_id, entity_id, invoice_id, payload)
+      {:ok, enriched_data} ->
+        dispatch_to_domain(conn, org_id, entity_id, invoice_id, enriched_data, payload)
 
       {:error, :network_failure} ->
         conn
@@ -55,7 +55,7 @@ defmodule NexusWeb.ERP.WebhookController do
     end
   end
 
-  defp dispatch_to_domain(conn, org_id, entity_id, invoice_id, payload) do
+  defp dispatch_to_domain(conn, org_id, entity_id, invoice_id, enriched_data, payload) do
     # 3. Translate HTTP Payload into a formal Domain Command
     command = %IngestInvoice{
       org_id: org_id,
@@ -65,7 +65,8 @@ defmodule NexusWeb.ERP.WebhookController do
       amount: Map.get(payload, "amount", "0.0"),
       subsidiary: Map.get(payload, "subsidiary", "Unknown Subsidiary"),
       line_items: Map.get(payload, "line_items", []),
-      sap_document_number: "SAP-#{invoice_id}"
+      sap_document_number: "SAP-#{invoice_id}",
+      sap_status: Map.get(enriched_data, :sap_status, "Verified")
     }
 
     # 4. Dispatch the command. Our existing CQRS Aggregates will handle idempotency and validation.

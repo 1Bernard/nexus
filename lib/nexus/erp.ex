@@ -25,6 +25,18 @@ defmodule Nexus.ERP do
   end
 
   @doc """
+  Calculates the total exposure amount for a subsidiary and currency.
+  """
+  def get_total_exposure(org_id, subsidiary, currency) do
+    InvoiceQuery.base()
+    |> InvoiceQuery.for_org(org_id)
+    |> InvoiceQuery.for_subsidiary(subsidiary)
+    |> InvoiceQuery.with_currency(currency)
+    |> InvoiceQuery.sum_amount()
+    |> Repo.one() || Decimal.new(0)
+  end
+
+  @doc """
   Lists the 5 most recent activities related to invoices.
   """
   def list_recent_activity(org_id) do

@@ -30,6 +30,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
      |> assign(has_more: length(invoices) == 10)
      |> assign(showing: length(invoices))
      |> assign(last_cursor: List.last(invoices) && List.last(invoices).created_at)
+     |> assign(selected_invoice: nil)
      |> stream(:invoices, invoices)}
   end
 
@@ -41,6 +42,17 @@ defmodule NexusWeb.ERP.InvoiceLive do
   @impl true
   def handle_event("toggle-manual-modal", _, socket) do
     {:noreply, assign(socket, show_manual_modal: !socket.assigns.show_manual_modal)}
+  end
+
+  @impl true
+  def handle_event("select_invoice", %{"id" => id}, socket) do
+    invoice = Repo.get(Invoice, id)
+    {:noreply, assign(socket, selected_invoice: invoice)}
+  end
+
+  @impl true
+  def handle_event("close_modal", _, socket) do
+    {:noreply, assign(socket, selected_invoice: nil)}
   end
 
   @impl true
@@ -246,6 +258,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           id="invoices-table"
           rows={@streams.invoices}
           row_item={fn {_, inv} -> inv end}
+          row_click={fn {_, inv} -> JS.push("select_invoice", value: %{id: inv.id}) end}
         >
           <:col :let={_invoice} label="Status">
             <NexusWeb.NexusComponents.badge variant="success" label="Synced" />
@@ -365,6 +378,81 @@ defmodule NexusWeb.ERP.InvoiceLive do
           <div class="flex gap-3 justify-center pt-2">
             <NexusWeb.NexusComponents.nx_button variant="ghost" phx-click="toggle-manual-modal">
               Dismiss
+            </NexusWeb.NexusComponents.nx_button>
+          </div>
+        </div>
+      </NexusWeb.NexusComponents.modal>
+      
+    <!-- Line Item Details Modal -->
+      <NexusWeb.NexusComponents.modal
+        :if={@selected_invoice}
+        id="line-item-modal"
+        show={@selected_invoice != nil}
+        on_close="close_modal"
+      >
+        <div class="space-y-6">
+          <div class="flex items-center justify-between border-b border-[var(--nx-border)] pb-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Invoice Details</h2>
+              <p class="text-sm text-slate-400 font-mono">{@selected_invoice.sap_document_number}</p>
+            </div>
+            <NexusWeb.NexusComponents.badge variant="success" label="Synced" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Vendor</div>
+              <div class="text-slate-200">{@selected_invoice.entity_id}</div>
+            </div>
+            <div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                Subsidiary
+              </div>
+              <div class="text-slate-200">{@selected_invoice.subsidiary}</div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider mb-2">
+              Line Items
+            </div>
+            <div class="border border-[var(--nx-border)] rounded-xl overflow-hidden bg-white/[0.02]">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--nx-border)] bg-white/[0.04]">
+                    <th class="px-4 py-2 font-medium text-slate-400">Description</th>
+                    <th class="px-4 py-2 text-right font-medium text-slate-400">Amount</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--nx-border)]">
+                  <%= for item <- (@selected_invoice.line_items || []) do %>
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                      <td class="px-4 py-3 text-slate-300">{item["description"]}</td>
+                      <td class="px-4 py-3 text-right text-slate-200 font-mono">
+                        {format_currency_symbol(@selected_invoice.currency)}{format_amount(
+                          item["amount"]
+                        )}
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+                <tfoot>
+                  <tr class="bg-white/[0.04] font-bold">
+                    <td class="px-4 py-3 text-white">Total</td>
+                    <td class="px-4 py-3 text-right text-indigo-400 font-mono">
+                      {format_currency_symbol(@selected_invoice.currency)}{format_amount(
+                        @selected_invoice.amount
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <NexusWeb.NexusComponents.nx_button variant="outline" size="sm" phx-click="close_modal">
+              Close
             </NexusWeb.NexusComponents.nx_button>
           </div>
         </div>

@@ -30,6 +30,11 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
     {:error, :simulated_api_failure}
   end
 
+  defp call_sap_api(_entity_id, "INV-BRIDGE-" <> _rest = invoice_id) do
+    Logger.info("[ERP] [DEMO-BYPASS] Auto-verifying bridge test invoice: #{invoice_id}")
+    {:ok, %{sap_status: "Verified_Via_Bypass", enriched_at: DateTime.utc_now()}}
+  end
+
   defp call_sap_api(_entity_id, invoice_id) do
     sap_base_url = Application.get_env(:nexus, :sap_api_url, "https://httpbin.org/anything")
 

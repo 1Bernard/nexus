@@ -28,7 +28,12 @@ defmodule Nexus.Application do
 
     children =
       if Mix.env() == :test do
-        children
+        children ++
+          [
+            Nexus.ERP.Projectors.InvoiceProjector,
+            Nexus.Treasury.Projectors.ExposureProjector,
+            Nexus.Treasury.Handlers.ExposureBridge
+          ]
       else
         children ++
           [
@@ -43,7 +48,9 @@ defmodule Nexus.Application do
             # --- Treasury Domain ---
             Nexus.Treasury.Projectors.MarketTickProjector,
             Nexus.Treasury.Projectors.ExposureProjector,
-            Nexus.Treasury.Projectors.PolicyProjector
+            Nexus.Treasury.Projectors.PolicyProjector,
+            # --- Bridge Handlers ---
+            Nexus.Treasury.Handlers.ExposureBridge
           ]
       end
 
