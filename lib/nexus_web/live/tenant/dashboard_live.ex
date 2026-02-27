@@ -17,11 +17,26 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
       Phoenix.PubSub.subscribe(Nexus.PubSub, "forecasts:#{socket.assigns.current_user.org_id}")
 
+      Phoenix.PubSub.subscribe(
+        Nexus.PubSub,
+        "policy_mode:#{socket.assigns.current_user.org_id}"
+      )
+
       # Start periodic staleness check
       :timer.send_interval(10_000, self(), :check_stale_data)
       # Defer heavy loading to after mount
       send(self(), :load_initial_data)
     end
+
+    # Load persisted policy mode from the database (survives page reloads)
+    org_id = socket.assigns.current_user.org_id
+    saved_policy = Treasury.get_policy_mode(org_id)
+
+    {persisted_threshold, persisted_mode} =
+      case saved_policy do
+        %{transfer_threshold: t, mode: m} -> {t, m}
+        nil -> {Decimal.new("1000000"), "standard"}
+      end
 
     socket =
       socket
@@ -43,7 +58,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:latest_forecast, nil)
       |> assign(:show_step_up, false)
       |> assign(:pending_transfer, nil)
-      |> assign(:transfer_threshold, 1_000_000)
+      |> assign(:transfer_threshold, persisted_threshold)
+      |> assign(:policy_mode, persisted_mode)
       |> assign(:host, get_host(socket))
 
     {:ok, socket}
@@ -72,11 +88,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
         <div class="flex items-center gap-3">
           <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl mr-2">
             <button
+              id="policy-mode-standard"
               phx-click="update_threshold"
               phx-value-threshold="1000000"
+              phx-value-mode="standard"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(Decimal.eq?(@transfer_threshold, 1_000_000),
+                if(@policy_mode == "standard",
                   do: "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20",
                   else: "text-slate-500 hover:text-slate-300"
                 )
@@ -85,11 +103,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
               Standard
             </button>
             <button
+              id="policy-mode-strict"
               phx-click="update_threshold"
               phx-value-threshold="50000"
+              phx-value-mode="strict"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(Decimal.eq?(@transfer_threshold, 50_000),
+                if(@policy_mode == "strict",
                   do: "bg-rose-600 text-white shadow-lg shadow-rose-600/20",
                   else: "text-slate-500 hover:text-slate-300"
                 )
@@ -98,8 +118,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
               Strict
             </button>
             <button
+              id="policy-mode-relaxed"
               phx-click="update_threshold"
               phx-value-threshold="10000000"
+              phx-value-mode="relaxed"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
                 if(Decimal.eq?(@transfer_threshold, 10_000_000),
@@ -605,6 +627,39 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
+  def handle_info({:policy_mode_changed, ev}, socket) do
+    # Real-time update when another browser session changes the risk mode
+    {:noreply,
+     socket
+     |> assign(:policy_mode, ev.mode)
+     |> assign(:transfer_threshold, ev.threshold)}
+  end
+
+  @impl true
+  def handle_event("update_threshold", %{"threshold" => threshold, "mode" => mode}, socket) do
+    org_id = socket.assigns.current_user.org_id
+    threshold_decimal = Decimal.new(threshold)
+
+    cmd = %Nexus.Treasury.Commands.SetPolicyMode{
+      policy_id: org_id,
+      org_id: org_id,
+      mode: mode,
+      threshold: threshold_decimal
+    }
+
+    case Nexus.App.dispatch(cmd) do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign(:transfer_threshold, threshold_decimal)
+         |> assign(:policy_mode, mode)}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update policy: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
   def handle_event("biometric_start", _params, socket) do
     {:noreply, socket}
   end
@@ -617,20 +672,6 @@ defmodule NexusWeb.Tenant.DashboardLive do
   @impl true
   def handle_event("biometric_login", _params, socket) do
     {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("update_threshold", %{"threshold" => threshold}, socket) do
-    threshold = Decimal.new(threshold)
-    org_id = socket.assigns.current_user.org_id
-
-    case Treasury.update_transfer_threshold(org_id, threshold) do
-      :ok ->
-        {:noreply, assign(socket, :transfer_threshold, threshold)}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to update threshold: #{inspect(reason)}")}
-    end
   end
 
   @impl true

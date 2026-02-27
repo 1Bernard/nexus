@@ -7,7 +7,7 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     repo: Nexus.Repo,
     name: "Treasury.PolicyProjector"
 
-  alias Nexus.Treasury.Events.{TransferThresholdSet, PolicyAlertTriggered}
+  alias Nexus.Treasury.Events.{TransferThresholdSet, PolicyAlertTriggered, PolicyModeChanged}
   alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert}
 
   project(%TransferThresholdSet{} = ev, _metadata, fn multi ->
@@ -20,6 +20,28 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
         transfer_threshold: parse_decimal(ev.threshold)
       },
       on_conflict: {:replace, [:transfer_threshold, :updated_at]},
+      conflict_target: [:org_id]
+    )
+  end)
+
+  project(%PolicyModeChanged{} = ev, _metadata, fn multi ->
+    # Broadcast so DashboardLive can update the active tab in real time
+    Phoenix.PubSub.broadcast(
+      Nexus.PubSub,
+      "policy_mode:#{ev.org_id}",
+      {:policy_mode_changed, ev}
+    )
+
+    Ecto.Multi.insert(
+      multi,
+      :treasury_policy,
+      %TreasuryPolicy{
+        id: ev.policy_id,
+        org_id: ev.org_id,
+        mode: ev.mode,
+        transfer_threshold: parse_decimal(ev.threshold)
+      },
+      on_conflict: {:replace, [:mode, :transfer_threshold, :updated_at]},
       conflict_target: [:org_id]
     )
   end)

@@ -67,6 +67,11 @@ defmodule Nexus.Router do
     identity: :policy_id
   )
 
+  dispatch(Nexus.Treasury.Commands.SetPolicyMode,
+    to: Nexus.Treasury.Aggregates.Policy,
+    identity: :policy_id
+  )
+
   dispatch(Nexus.Treasury.Commands.EvaluateExposurePolicy,
     to: Nexus.Treasury.Aggregates.Policy,
     identity: :policy_id

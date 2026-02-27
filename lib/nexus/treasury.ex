@@ -15,6 +15,7 @@ defmodule Nexus.Treasury do
 
   alias Nexus.Treasury.Gateways.PriceCache
   alias Nexus.Treasury.Commands.SetTransferThreshold
+  alias Nexus.Treasury.Projections.TreasuryPolicy
 
   @doc """
   Lists recent policy alerts for an organization.
@@ -24,6 +25,15 @@ defmodule Nexus.Treasury do
     |> PolicyAlertQuery.for_org(org_id)
     |> PolicyAlertQuery.recent(limit)
     |> Repo.all()
+  end
+
+  @doc """
+  Fetches the current policy mode and threshold for an organisation.
+  Returns a `%TreasuryPolicy{}` or nil if no policy has been set.
+  """
+  def get_policy_mode(org_id) do
+    import Ecto.Query
+    Repo.one(from p in TreasuryPolicy, where: p.org_id == ^org_id)
   end
 
   @doc """
