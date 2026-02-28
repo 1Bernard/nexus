@@ -27,7 +27,7 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
     payload = %{"ev" => "C", "pair" => pair, "p" => price, "t" => System.os_time(:millisecond)}
     json = Jason.encode!([payload])
 
-    PolygonClient.handle_frame({:text, json}, %{})
+    PolygonClient.SocketHandler.handle_frame({:text, json}, %{})
 
     {:ok, Map.merge(state, %{pair: pair, expected_price: price})}
   end

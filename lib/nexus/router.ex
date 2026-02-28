@@ -46,6 +46,11 @@ defmodule Nexus.Router do
     identity: :invoice_id
   )
 
+  dispatch(Nexus.ERP.Commands.UploadStatement,
+    to: Nexus.ERP.Aggregates.Statement,
+    identity: :statement_id
+  )
+
   # --- Treasury Domain ---
   dispatch(Nexus.Treasury.Commands.RecordMarketTick,
     to: Nexus.Treasury.Aggregates.Market,
@@ -80,5 +85,10 @@ defmodule Nexus.Router do
   dispatch(Nexus.Treasury.Commands.GenerateForecast,
     to: Nexus.Treasury.Aggregates.Forecast,
     identity: :org_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.ReconcileTransaction,
+    to: Nexus.Treasury.Aggregates.Reconciliation,
+    identity: :reconciliation_id
   )
 end

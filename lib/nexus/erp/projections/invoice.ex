@@ -16,7 +16,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :sap_status, :string
     field :status, :string, default: "ingested"
 
-    timestamps()
+    timestamps(inserted_at: :created_at)
   end
 
   def changeset(struct, attrs) do

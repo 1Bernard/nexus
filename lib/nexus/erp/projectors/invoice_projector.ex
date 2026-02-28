@@ -24,7 +24,7 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
             org_id: event.org_id,
             entity_id: event.entity_id,
             currency: event.currency,
-            amount: Decimal.from_float(event.amount * 1.0) |> Decimal.to_string(:normal),
+            amount: coerce_to_string(event.amount),
             subsidiary: event.subsidiary,
             line_items: event.line_items || [],
             sap_document_number: event.sap_document_number,
@@ -63,6 +63,14 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
 
     :ok
   end
+
+  defp coerce_to_string(%Decimal{} = d), do: Decimal.to_string(d, :normal)
+  defp coerce_to_string(val) when is_binary(val), do: val
+
+  defp coerce_to_string(val) when is_number(val),
+    do: Decimal.from_float(val * 1.0) |> Decimal.to_string(:normal)
+
+  defp coerce_to_string(_), do: "0.00"
 
   defp parse_date(nil), do: nil
   defp parse_date(%DateTime{} = dt), do: dt

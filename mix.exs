@@ -90,6 +90,8 @@ defmodule Nexus.MixProject do
       {:timescale, "~> 0.1"},
       # Financial precision for currency math
       {:decimal, "~> 2.3"},
+      # CSV parsing for bank statement uploads
+      {:nimble_csv, "~> 1.2"},
 
       # --- Testing & BDD ---
       # Gherkin BDD implementation

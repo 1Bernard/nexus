@@ -52,7 +52,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:market_ticks, [])
       |> assign(:risk_summary, %{total_exposure: "€0.0", at_risk: "€0.0"})
       |> assign(:exposure_heatmap, %{currencies: [], subsidiaries: [], data: %{}})
-      |> assign(:payment_matching, %{matched: 0, partial: 0, unmatched: 0})
+      |> assign(:payment_matching, %{matched: 0, partial: 0, unmatched: 0, unmatched_lines: 0})
       |> assign(:recent_activity, [])
       |> assign(:policy_alerts, [])
       |> assign(:latest_forecast, nil)
@@ -143,60 +143,79 @@ defmodule NexusWeb.Tenant.DashboardLive do
         </div>
       </div>
 
-      <%!-- KPI Header Row (Simplified for focus) --%>
+      <%!-- KPI Header Row --%>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 w-full">
-        <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden group">
-          <div>
-            <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
-              Engine Status
-            </h2>
-            <p class="text-xs text-slate-300 font-medium tracking-wide">Payment Matching</p>
-          </div>
-          <div class="flex items-center gap-2 mt-4">
-            <span class="relative flex h-2 w-2">
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
-              Active & Scanning
-            </span>
-          </div>
-        </.dark_card>
+        <.link navigate={~p"/reconciliation"} class="block group">
+          <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/40 transition-all h-full">
+            <div>
+              <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+                Engine Status
+              </h2>
+              <p class="text-xs text-slate-300 font-medium tracking-wide">Payment Matching</p>
+            </div>
+            <div class="flex items-center gap-2 mt-4">
+              <span class="relative flex h-2 w-2">
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
+                Active & Scanning
+              </span>
+            </div>
+          </.dark_card>
+        </.link>
 
-        <.kpi_card
-          title="Successfully Matched"
-          value={to_string(@payment_matching.matched)}
-          label="Transactions"
-          color="emerald"
-          progress={94}
-        />
-        <.kpi_card
-          title="Partial Matches"
-          value={to_string(@payment_matching.partial)}
-          label="Requires Review"
-          color="amber"
-          progress={4}
-        />
-        <.kpi_card
-          title="Unmatched Alerts"
-          value={to_string(@payment_matching.unmatched)}
-          label="Anomalies"
-          color="rose"
-          progress={2}
-        />
+        <.link navigate={~p"/reconciliation"} class="block group">
+          <.kpi_card
+            title="Successfully Matched"
+            value={to_string(@payment_matching.matched)}
+            label="Transactions"
+            color="emerald"
+            progress={94}
+            class="hover:border-emerald-500/40 transition-all"
+          />
+        </.link>
 
-        <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-indigo-500/5 hover:border-indigo-500/40 transition-colors border-indigo-500/20 cursor-pointer group">
-          <div class="flex justify-between items-start">
-            <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em]">Auto-Match Rate</p>
-            <span class="hero-bolt w-4 h-4 text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
-            </span>
-          </div>
-          <div class="mt-2 flex items-end justify-between">
-            <p class="text-3xl font-bold tracking-tight text-white leading-none">94%</p>
-            <span class="text-[10px] text-indigo-300 group-hover:text-white transition-colors uppercase tracking-wider font-semibold flex items-center gap-1 group-hover:translate-x-1 duration-300">
-              View All <span class="hero-arrow-right w-3 h-3"></span>
-            </span>
-          </div>
-        </.dark_card>
+        <.link navigate={~p"/reconciliation"} class="block group">
+          <.kpi_card
+            title="Partial Matches"
+            value={to_string(@payment_matching.partial)}
+            label="Requires Review"
+            color="amber"
+            progress={4}
+            class="hover:border-amber-500/40 transition-all"
+          />
+        </.link>
+
+        <.link navigate={~p"/reconciliation"} class="block group">
+          <.kpi_card
+            title="Unmatched Alerts"
+            value={to_string(@payment_matching.unmatched_lines)}
+            label="Anomalies"
+            color="rose"
+            progress={2}
+            class="hover:border-rose-500/40 transition-all"
+          />
+        </.link>
+
+        <.link navigate={~p"/reconciliation"} class="block group">
+          <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-indigo-500/5 hover:border-indigo-500/40 transition-colors border-indigo-500/20 cursor-pointer h-full">
+            <div class="flex justify-between items-start">
+              <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em]">Auto-Match Rate</p>
+              <span class="hero-bolt w-4 h-4 text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
+              </span>
+            </div>
+            <% total =
+              @payment_matching.matched + @payment_matching.partial + @payment_matching.unmatched
+
+            rate = if total > 0, do: round(@payment_matching.matched / total * 100), else: 0 %>
+            <div class="mt-2 flex items-end justify-between">
+              <p class="text-3xl font-bold tracking-tight text-white leading-none">{rate}%</p>
+              <span class="text-[10px] text-indigo-300 group-hover:text-white transition-colors uppercase tracking-wider font-semibold flex items-center gap-1 group-hover:translate-x-1 duration-300">
+                View All <span class="hero-arrow-right w-3 h-3"></span>
+              </span>
+            </div>
+          </.dark_card>
+        </.link>
       </div>
 
       <%!-- Main Content: Real-time FX & Risk --%>

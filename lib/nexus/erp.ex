@@ -1,9 +1,11 @@
 defmodule Nexus.ERP do
   @moduledoc """
-  The ERP context. Handles invoice ingestion and status tracking.
+  The ERP context. Handles invoice ingestion, status tracking, and bank statement uploads.
   """
+  import Ecto.Query
   alias Nexus.Repo
   alias Nexus.ERP.Queries.InvoiceQuery
+  alias Nexus.ERP.Projections.{Statement, StatementLine}
 
   @doc """
   Returns payment matching statistics for an organization.
@@ -12,8 +14,17 @@ defmodule Nexus.ERP do
     %{
       matched: count_invoices_by_status(org_id, "matched"),
       partial: count_invoices_by_status(org_id, "partial"),
-      unmatched: count_invoices_by_status(org_id, "unmatched")
+      unmatched: count_invoices_by_status(org_id, "unmatched"),
+      unmatched_lines: count_lines_by_status(org_id, "unmatched")
     }
+  end
+
+  defp count_lines_by_status(org_id, status) do
+    from(l in StatementLine,
+      where: l.org_id == ^org_id and l.status == ^status,
+      select: count(l.id)
+    )
+    |> Repo.one() || 0
   end
 
   defp count_invoices_by_status(org_id, status) do
@@ -72,5 +83,27 @@ defmodule Nexus.ERP do
       "unmatched" -> "⚠ Action Required"
       _ -> "New Invoice Received"
     end
+  end
+
+  @doc """
+  Lists all bank statements for an organisation, newest first.
+  """
+  def list_statements(org_id) do
+    from(s in Statement,
+      where: s.org_id == ^org_id,
+      order_by: [desc: s.uploaded_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all parsed transaction lines for a given statement.
+  """
+  def list_statement_lines(statement_id) do
+    from(l in StatementLine,
+      where: l.statement_id == ^statement_id,
+      order_by: [asc: l.date]
+    )
+    |> Repo.all()
   end
 end

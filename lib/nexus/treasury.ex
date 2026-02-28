@@ -15,7 +15,47 @@ defmodule Nexus.Treasury do
 
   alias Nexus.Treasury.Gateways.PriceCache
   alias Nexus.Treasury.Commands.SetTransferThreshold
-  alias Nexus.Treasury.Projections.TreasuryPolicy
+  alias Nexus.Treasury.Projections.{TreasuryPolicy, Reconciliation}
+  alias Nexus.ERP.Projections.{Invoice, StatementLine}
+
+  @doc """
+  Lists all successful reconciliations for an organization.
+  """
+  def list_reconciliations(org_id) do
+    import Ecto.Query
+
+    from(r in Reconciliation,
+      where: r.org_id == ^org_id,
+      order_by: [desc: r.matched_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all invoices that are currently unmatched.
+  """
+  def list_unmatched_invoices(org_id) do
+    import Ecto.Query
+
+    from(i in Invoice,
+      where: i.org_id == ^org_id and i.status == "ingested",
+      order_by: [desc: i.created_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all statement lines that are currently unmatched.
+  """
+  def list_unmatched_statement_lines(org_id) do
+    import Ecto.Query
+
+    from(l in StatementLine,
+      where: l.org_id == ^org_id and l.status == "unmatched",
+      order_by: [desc: l.created_at]
+    )
+    |> Repo.all()
+  end
 
   @doc """
   Lists recent policy alerts for an organization.
@@ -193,6 +233,27 @@ defmodule Nexus.Treasury do
       policy_id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
       threshold: threshold
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Manually reconciles an invoice with a statement line.
+  """
+  def reconcile_manually(org_id, invoice_id, statement_line_id) do
+    # Fetch details to populate the command
+    invoice = Repo.get_by!(Invoice, id: invoice_id, org_id: org_id)
+    line = Repo.get_by!(StatementLine, id: statement_line_id, org_id: org_id)
+
+    command = %Nexus.Treasury.Commands.ReconcileTransaction{
+      reconciliation_id: Nexus.Schema.generate_uuidv7(),
+      org_id: org_id,
+      invoice_id: invoice.id,
+      statement_id: line.statement_id,
+      statement_line_id: line.id,
+      amount: line.amount,
+      currency: line.currency
     }
 
     Nexus.App.dispatch(command)

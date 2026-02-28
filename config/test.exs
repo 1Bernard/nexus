@@ -21,7 +21,7 @@ config :nexus, Nexus.EventStore,
   username: System.get_env("DB_USER") || "postgres",
   password: System.get_env("DB_PASSWORD") || "postgres_password",
   hostname: System.get_env("DB_HOST") || "localhost",
-  database: System.get_env("DB_NAME") || "nexus_test",
+  database: System.get_env("DB_NAME") || "nexus_test_industrial",
   pool_size: 10
 
 # We don't run a server during test. If one is required,

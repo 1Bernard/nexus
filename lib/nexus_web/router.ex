@@ -30,6 +30,8 @@ defmodule NexusWeb.Router do
     live_session :authenticated, on_mount: [{NexusWeb.UserAuth, :mount_current_user}] do
       live "/dashboard", Tenant.DashboardLive
       live "/invoices", ERP.InvoiceLive
+      live "/statements", ERP.StatementLive
+      live "/reconciliation", Treasury.ReconciliationLive, :index
     end
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
