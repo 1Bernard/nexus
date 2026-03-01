@@ -1,7 +1,4 @@
-defmodule Nexus.Treasury.Commands.ReconcileTransaction do
-  @moduledoc """
-  Command to record a successful match between an invoice and a statement line.
-  """
+defmodule Nexus.Treasury.Commands.ProposeReconciliation do
   @derive Jason.Encoder
   defstruct [
     :org_id,

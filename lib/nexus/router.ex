@@ -91,4 +91,24 @@ defmodule Nexus.Router do
     to: Nexus.Treasury.Aggregates.Reconciliation,
     identity: :reconciliation_id
   )
+
+  dispatch(Nexus.Treasury.Commands.ProposeReconciliation,
+    to: Nexus.Treasury.Aggregates.Reconciliation,
+    identity: :reconciliation_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.ApproveReconciliation,
+    to: Nexus.Treasury.Aggregates.Reconciliation,
+    identity: :reconciliation_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.RejectReconciliation,
+    to: Nexus.Treasury.Aggregates.Reconciliation,
+    identity: :reconciliation_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.ReverseReconciliation,
+    to: Nexus.Treasury.Aggregates.Reconciliation,
+    identity: :reconciliation_id
+  )
 end

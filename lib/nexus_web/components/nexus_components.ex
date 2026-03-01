@@ -676,13 +676,15 @@ defmodule NexusWeb.NexusComponents do
   attr :label, :string, required: true
   attr :color, :string, default: "emerald", values: ~w(emerald amber rose indigo)
 
+  attr :class, :string, default: nil
+
   attr :progress, :integer,
     default: nil,
     doc: "Percentage 0-100 to show as a progress bar at the bottom"
 
   def kpi_card(assigns) do
     ~H"""
-    <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden">
+    <.dark_card class={["p-5 flex flex-col justify-between relative overflow-hidden", @class]}>
       <p class="text-[10px] text-slate-500 uppercase tracking-[0.1em]">{@title}</p>
       <div class="mt-2 flex items-baseline gap-2">
         <p class={[

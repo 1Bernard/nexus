@@ -241,19 +241,88 @@ defmodule Nexus.Treasury do
   @doc """
   Manually reconciles an invoice with a statement line.
   """
-  def reconcile_manually(org_id, invoice_id, statement_line_id) do
+  def reconcile_manually(
+        org_id,
+        invoice_id,
+        statement_line_id,
+        variance \\ nil,
+        reason \\ nil,
+        actor_email \\ nil
+      ) do
     # Fetch details to populate the command
     invoice = Repo.get_by!(Invoice, id: invoice_id, org_id: org_id)
     line = Repo.get_by!(StatementLine, id: statement_line_id, org_id: org_id)
 
-    command = %Nexus.Treasury.Commands.ReconcileTransaction{
-      reconciliation_id: Nexus.Schema.generate_uuidv7(),
+    needs_approval =
+      variance &&
+        Decimal.compare(Decimal.abs(Decimal.new(variance)), Decimal.new("500.00")) == :gt
+
+    command =
+      if needs_approval do
+        %Nexus.Treasury.Commands.ProposeReconciliation{
+          reconciliation_id: Nexus.Schema.generate_uuidv7(),
+          org_id: org_id,
+          invoice_id: invoice.id,
+          statement_id: line.statement_id,
+          statement_line_id: line.id,
+          amount: line.amount,
+          variance: variance,
+          variance_reason: reason,
+          actor_email: actor_email,
+          currency: line.currency
+        }
+      else
+        %Nexus.Treasury.Commands.ReconcileTransaction{
+          reconciliation_id: Nexus.Schema.generate_uuidv7(),
+          org_id: org_id,
+          invoice_id: invoice.id,
+          statement_id: line.statement_id,
+          statement_line_id: line.id,
+          amount: line.amount,
+          variance: variance,
+          variance_reason: reason,
+          actor_email: actor_email,
+          currency: line.currency
+        }
+      end
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Approves a pending reconciliation.
+  """
+  def approve_reconciliation(org_id, reconciliation_id, approver_email) do
+    command = %Nexus.Treasury.Commands.ApproveReconciliation{
       org_id: org_id,
-      invoice_id: invoice.id,
-      statement_id: line.statement_id,
-      statement_line_id: line.id,
-      amount: line.amount,
-      currency: line.currency
+      reconciliation_id: reconciliation_id,
+      approver_email: approver_email
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Rejects a pending reconciliation.
+  """
+  def reject_reconciliation(org_id, reconciliation_id, rejector_email) do
+    command = %Nexus.Treasury.Commands.RejectReconciliation{
+      org_id: org_id,
+      reconciliation_id: reconciliation_id,
+      rejector_email: rejector_email
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Reverses a previously matched reconciliation.
+  """
+  def reverse_reconciliation(org_id, reconciliation_id, actor_email \\ nil) do
+    command = %Nexus.Treasury.Commands.ReverseReconciliation{
+      org_id: org_id,
+      reconciliation_id: reconciliation_id,
+      actor_email: actor_email
     }
 
     Nexus.App.dispatch(command)

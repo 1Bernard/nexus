@@ -175,7 +175,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
           />
         </.link>
 
-        <.link navigate={~p"/reconciliation"} class="block group">
+        <.link navigate={~p"/reconciliation?type=manual"} class="block group">
           <.kpi_card
             title="Partial Matches"
             value={to_string(@payment_matching.partial)}
@@ -186,7 +186,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
           />
         </.link>
 
-        <.link navigate={~p"/reconciliation"} class="block group">
+        <.link navigate={~p"/reconciliation?type=pending"} class="block group">
           <.kpi_card
             title="Unmatched Alerts"
             value={to_string(@payment_matching.unmatched_lines)}

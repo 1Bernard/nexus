@@ -8,8 +8,11 @@ defmodule Nexus.Treasury.Projections.Reconciliation do
     field :statement_id, :string
     field :statement_line_id, :string
     field :amount, :decimal
+    field :variance, :decimal
+    field :variance_reason, :string
+    field :actor_email, :string
     field :currency, :string
-    field :status, Ecto.Enum, values: [:matched, :unmatched]
+    field :status, Ecto.Enum, values: [:matched, :unmatched, :reversed, :pending, :rejected]
     field :matched_at, :utc_datetime_usec
 
     timestamps()

@@ -231,3 +231,18 @@ if (process.env.NODE_ENV === "development") {
   })
 }
 
+// Handle file downloads triggered by LiveView push_event
+window.addEventListener("download", (event) => {
+  const { filename, content } = event.detail
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  
+  const a = document.createElement('a')
+  a.style.display = 'none'
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+})
