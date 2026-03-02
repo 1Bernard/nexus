@@ -7,6 +7,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
 
   alias Nexus.Treasury.Commands.GenerateForecast
   alias Nexus.Treasury.Events.ForecastGenerated
+  alias Nexus.Treasury.Projections.ForecastSnapshot
   alias Nexus.Treasury.Projectors.ForecastProjector
   alias Nexus.Treasury.Projections.Forecast
 
@@ -40,9 +41,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: org_id,
       currency: curr,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: gap_dec,
-      predicted_gap: gap_dec
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}]
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -51,9 +50,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: org_id,
       currency: curr,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: gap_dec,
-      predicted_gap: gap_dec,
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}],
       generated_at: DateTime.utc_now()
     }
 
@@ -81,9 +78,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: state.org_id,
       currency: state.currency,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: new_gap,
-      predicted_gap: new_gap
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}]
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -92,9 +87,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: state.org_id,
       currency: state.currency,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: new_gap,
-      predicted_gap: new_gap,
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}],
       generated_at: DateTime.utc_now()
     }
 
@@ -116,9 +109,9 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: state.org_id,
       currency: state.currency,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: amount_dec,
-      predicted_gap: Decimal.negate(amount_dec)
+      predictions: [
+        %{date: "2026-03-03", predicted_amount: Decimal.to_string(Decimal.negate(amount_dec))}
+      ]
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -127,9 +120,9 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: state.org_id,
       currency: state.currency,
       horizon_days: 30,
-      predicted_inflow: Decimal.new("0"),
-      predicted_outflow: amount_dec,
-      predicted_gap: Decimal.negate(amount_dec),
+      predictions: [
+        %{date: "2026-03-03", predicted_amount: Decimal.to_string(Decimal.negate(amount_dec))}
+      ],
       generated_at: DateTime.utc_now()
     }
 
@@ -137,18 +130,23 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
 
     forecast = get_forecast(state.org_id, state.currency, 30)
     assert forecast != nil
-    assert Decimal.eq?(forecast.predicted_outflow, amount_dec)
+    # Check if the predicted amount matches
+    [point | _] = forecast.data_points
+    assert Decimal.equal?(point["predicted_amount"], Decimal.negate(amount_dec))
     {:ok, state}
   end
 
   defthen ~r/^the consolidated "EUR" cash gap should be recalculated using the new "(?<rate>[^"]+)" rate$/,
           %{rate: rate},
           state do
-    forecast = get_forecast(state.org_id, state.currency, 30)
-    assert forecast != nil
     {rate_dec, _} = Decimal.parse(rate)
     expected_gap = Decimal.mult(state.gap, rate_dec)
-    assert Decimal.eq?(forecast.predicted_gap, expected_gap)
+
+    forecast = get_forecast(state.org_id, state.currency, 30)
+
+    assert forecast != nil
+    [point | _] = forecast.data_points
+    assert Decimal.equal?(Decimal.new(point["predicted_amount"]), expected_gap)
     {:ok, state}
   end
 
@@ -170,8 +168,10 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       import Ecto.Query
 
       Nexus.Repo.one(
-        from f in Forecast,
-          where: f.org_id == ^org_id and f.currency == ^currency and f.horizon_days == ^horizon
+        from f in ForecastSnapshot,
+          where: f.org_id == ^org_id and f.currency == ^currency and f.horizon_days == ^horizon,
+          order_by: [desc: f.generated_at, desc: f.created_at],
+          limit: 1
       )
     end)
   end

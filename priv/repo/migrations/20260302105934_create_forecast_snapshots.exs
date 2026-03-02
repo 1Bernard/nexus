@@ -8,7 +8,7 @@ defmodule Nexus.Repo.Migrations.CreateForecastSnapshots do
       add :currency, :string, null: false
       add :horizon_days, :integer, null: false
       add :data_points, {:array, :map}, null: false
-      add :generated_at, :naive_datetime, null: false
+      add :generated_at, :naive_datetime_usec, null: false
 
       timestamps(updated_at: false, inserted_at: :created_at)
     end

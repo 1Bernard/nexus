@@ -27,7 +27,7 @@ config :nexus, Nexus.EventStore,
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :nexus, NexusWeb.Endpoint,
-  # ... (hidden)
+  secret_key_base: "VzS5jK0v2p9l3Xj8f7R4mN2qC6zB1hD4wG9xL5yT8uR2nJ4mK9zB1hD4wG9xL5yT",
   server: false
 
 # In test we don't send emails

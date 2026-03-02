@@ -16,6 +16,6 @@ defmodule Nexus.Treasury.Queries.ForecastQuery do
   end
 
   def newest_first(query) do
-    from(f in query, order_by: [desc: f.generated_at])
+    from(f in query, order_by: [desc: f.generated_at, desc: f.created_at])
   end
 end

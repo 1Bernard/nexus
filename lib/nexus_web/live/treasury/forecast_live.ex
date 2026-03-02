@@ -12,7 +12,7 @@ defmodule NexusWeb.Treasury.ForecastLive do
     org_id = socket.assigns.current_user.org_id
     # Default
     currency = "EUR"
-    horizon_days = 30
+    _horizon_days = 30
 
     forecast = Treasury.get_latest_forecast(org_id, currency)
     historical_data = Treasury.list_historical_cash_flow(org_id, currency)

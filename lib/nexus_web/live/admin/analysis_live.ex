@@ -1,6 +1,7 @@
 defmodule NexusWeb.Admin.AnalysisLive do
   use NexusWeb, :live_view
 
+  @impl true
   def mount(_params, _session, socket) do
     # In a real app, we would subscribe to the Intelligence PubSub
     # or query the Read Model for recent anomalies and sentiment data.
@@ -78,6 +79,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
      put_flash(socket, :info, "Transitioning to investigation environment... (Simulated)")}
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-6 w-full px-4 md:px-6 pb-12">

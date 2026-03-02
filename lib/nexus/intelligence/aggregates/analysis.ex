@@ -26,9 +26,6 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
       {:ok, %{is_anomaly: false}} ->
         # No anomaly, no state change
         []
-
-      {:error, _reason} ->
-        []
     end
   end
 
@@ -43,9 +40,6 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
           confidence: confidence,
           scored_at: DateTime.utc_now()
         }
-
-      {:error, _reason} ->
-        []
     end
   end
 

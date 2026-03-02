@@ -85,10 +85,6 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
     end)
   end
 
-  defp coerce_decimal(%Decimal{} = d), do: d
-  defp coerce_decimal(val) when is_binary(val), do: Decimal.new(val)
-  defp coerce_decimal(val) when is_number(val), do: Decimal.from_float(val * 1.0)
-
   defp parse_datetime(%DateTime{} = dt), do: dt
   defp parse_datetime(nil), do: DateTime.utc_now()
 

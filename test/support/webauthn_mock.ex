@@ -21,7 +21,7 @@ defmodule Nexus.Identity.WebAuthn.MockAdapter do
     {:ok, {auth_data, %{}}}
   end
 
-  def authenticate(_raw_id, _auth_data, _sig, _client_data, _challenge) do
+  def authenticate(_raw_id, _auth_data, _sig, _client_data, _challenge, _credentials \\ []) do
     {:ok, %{}}
   end
 
