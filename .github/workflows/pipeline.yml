@@ -19,19 +19,20 @@ jobs:
 
     services:
       db:
-        # Use TimescaleDB image (PostgreSQL 15 based) to support market_ticks migrations
-        image: timescale/timescaledb:latest-pg15-oss
+        # Use full TimescaleDB image (PostgreSQL 15 based) to support all time-series features
+        image: timescale/timescaledb:latest-pg15
         env:
           POSTGRES_USER: ${{ env.DB_USER }}
           POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
-          # Do not set POSTGRES_DB to avoid 'already exists' errors during mix ecto.create
+          # Set a default DB that is NOT the test DB to avoid conflicts with mix ecto.create
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4

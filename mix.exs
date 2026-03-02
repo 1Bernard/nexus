@@ -113,14 +113,12 @@ defmodule Nexus.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: [
         "ecto.create --quiet",
-        "event_store.create --quiet -e Nexus.EventStore",
         "event_store.init --quiet -e Nexus.EventStore",
         "ecto.migrate --quiet",
         "test"
       ],
       "test.features": [
         "ecto.create --quiet",
-        "event_store.create --quiet -e Nexus.EventStore",
         "event_store.init --quiet -e Nexus.EventStore",
         "ecto.migrate --quiet",
         "test --only feature"
