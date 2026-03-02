@@ -19,11 +19,12 @@ jobs:
 
     services:
       db:
-        image: postgres:15-alpine
+        # Use TimescaleDB image (PostgreSQL 15 based) to support market_ticks migrations
+        image: timescale/timescaledb:latest-pg15-oss
         env:
           POSTGRES_USER: ${{ env.DB_USER }}
           POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
-          POSTGRES_DB: ${{ env.DB_NAME }}
+          # Do not set POSTGRES_DB to avoid 'already exists' errors during mix ecto.create
         ports:
           - 5432:5432
         options: >-
