@@ -118,7 +118,7 @@ defmodule Nexus.Treasury do
           predictions: predictions
         }
 
-        Nexus.App.dispatch(command)
+        Nexus.App.dispatch(command, consistency: :strong)
 
       {:error, reason} ->
         {:error, reason}

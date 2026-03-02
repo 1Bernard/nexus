@@ -71,7 +71,7 @@ defmodule Nexus.Treasury.Services.ForecastEngine do
     |> Enum.map(fn {val, i} ->
       %{
         date: Date.to_iso8601(Date.add(Date.utc_today(), i)),
-        predicted_amount: Float.round(val, 2)
+        predicted_amount: val |> Float.round(2) |> Float.to_string()
       }
     end)
   end

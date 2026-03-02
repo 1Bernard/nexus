@@ -2,7 +2,6 @@ defmodule NexusWeb.Treasury.ForecastLive do
   use NexusWeb, :live_view
 
   alias Nexus.Treasury
-  alias Nexus.Treasury.Projections.ForecastSnapshot
 
   @impl true
   def mount(_params, _session, socket) do
@@ -40,8 +39,20 @@ defmodule NexusWeb.Treasury.ForecastLive do
         Process.send_after(self(), :refresh_forecast, 2000)
         {:noreply, assign(socket, :loading, true)}
 
+      {:error, :insufficient_data} ->
+        {:noreply,
+         socket
+         |> assign(:loading, false)
+         |> put_flash(
+           :error,
+           "Insufficient historical data. Ensure at least 60 days of ERP statements are imported to generate a reliable predictive model."
+         )}
+
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to generate forecast: #{inspect(reason)}")}
+        {:noreply,
+         socket
+         |> assign(:loading, false)
+         |> put_flash(:error, "Failed to generate forecast: #{inspect(reason)}")}
     end
   end
 
@@ -106,16 +117,19 @@ defmodule NexusWeb.Treasury.ForecastLive do
               </h3>
               <div class="space-y-4">
                 <% last_point = List.last(@forecast.data_points) %>
+                <% amt =
+                  case Float.parse(to_string(last_point["predicted_amount"])) do
+                    {v, _} -> v
+                    :error -> 0.0
+                  end %>
                 <div>
                   <label class="block text-xs text-slate-500 mb-1">Target End Gap</label>
-                  <div class={"text-xl font-bold #{if last_point["predicted_amount"] >= 0, do: "text-emerald-400", else: "text-rose-400"}"}>
-                    €{:erlang.float_to_binary(last_point["predicted_amount"] * 1.0, decimals: 2)}
+                  <div class={"text-xl font-bold #{if amt >= 0, do: "text-emerald-400", else: "text-rose-400"}"}>
+                    €{:erlang.float_to_binary(amt * 1.0, decimals: 2)}
                   </div>
                 </div>
                 <p class="text-xs text-slate-500 leading-relaxed">
-                  Based on historical volatility and pending commitments, the liquidity position is expected to {if last_point[
-                                                                                                                      "predicted_amount"
-                                                                                                                    ] >=
+                  Based on historical volatility and pending commitments, the liquidity position is expected to {if amt >=
                                                                                                                       0,
                                                                                                                     do:
                                                                                                                       "strengthen",
@@ -153,9 +167,11 @@ defmodule NexusWeb.Treasury.ForecastLive do
               </div>
             <% else %>
               <div class="flex flex-col items-center justify-center h-[440px] text-slate-600">
-                <span class="hero-chart-bar-square w-16 h-16 mb-4 opacity-20"></span>
-                <p>No forecast data available for this selection.</p>
-                <p class="text-sm">Click "Regenerate Forecast" to run the engine.</p>
+                <span class="hero-chart-bar-square w-16 h-16 mb-4 opacity-20 hidden md:block"></span>
+                <p class="text-slate-400 font-medium">Awaiting Initial Model Generation</p>
+                <p class="text-sm mt-1 max-w-sm text-center px-4">
+                  Run the "Regenerate Forecast" action to fit the Scholar Linear Regression model against your historical cash flow data.
+                </p>
               </div>
             <% end %>
           </div>

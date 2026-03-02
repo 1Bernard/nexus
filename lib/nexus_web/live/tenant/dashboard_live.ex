@@ -435,7 +435,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
                   <span class="hero-calendar w-3.5 h-3.5 text-slate-400"></span>
                   <p class="text-[11px] font-medium text-slate-300">
                     <%= if @latest_forecast do %>
-                      Gap: {to_string(@latest_forecast.predicted_gap)} {@latest_forecast.currency}
+                      <% gap = get_forecast_gap(@latest_forecast) %> Gap: {to_string(gap)} {@latest_forecast.currency}
                     <% else %>
                       Calculating Forecast...
                     <% end %>
@@ -485,18 +485,21 @@ defmodule NexusWeb.Tenant.DashboardLive do
                 <span>Today</span><span>+15d</span><span>+30d</span>
               </div>
 
-              <%= if @latest_forecast && Decimal.lt?(@latest_forecast.predicted_gap, 0) do %>
-                <div class="absolute top-1/4 left-[35%] w-48 bg-rose-500/10 border border-rose-500/30 backdrop-blur-md p-3 rounded-lg animate-pulse">
-                  <p class="text-[10px] font-black text-rose-400 leading-tight uppercase tracking-wider">
-                    Liquidity Shortfall
-                  </p>
-                  <p class="text-[11px] text-rose-300 mt-1">
-                    Projected gap: {to_string(@latest_forecast.predicted_gap)} EUR
-                  </p>
-                  <p class="text-[9px] text-rose-400/70 mt-1 font-medium">
-                    Suggestion: Execute immediate FX swap
-                  </p>
-                </div>
+              <%= if @latest_forecast do %>
+                <% gap = get_forecast_gap(@latest_forecast) %>
+                <%= if Decimal.lt?(gap, 0) do %>
+                  <div class="absolute top-1/4 left-[35%] w-48 bg-rose-500/10 border border-rose-500/30 backdrop-blur-md p-3 rounded-lg animate-pulse">
+                    <p class="text-[10px] font-black text-rose-400 leading-tight uppercase tracking-wider">
+                      Liquidity Shortfall
+                    </p>
+                    <p class="text-[11px] text-rose-300 mt-1">
+                      Projected gap: {to_string(gap)} EUR
+                    </p>
+                    <p class="text-[9px] text-rose-400/70 mt-1 font-medium">
+                      Suggestion: Execute immediate FX swap
+                    </p>
+                  </div>
+                <% end %>
               <% end %>
             </div>
 
@@ -833,5 +836,14 @@ defmodule NexusWeb.Tenant.DashboardLive do
       end
 
     "#{symbol}#{formatted}"
+  end
+
+  defp get_forecast_gap(nil), do: Decimal.new(0)
+  defp get_forecast_gap(%{data_points: []}), do: Decimal.new(0)
+
+  defp get_forecast_gap(%{data_points: points}) do
+    last_point = List.last(points)
+    val = Map.get(last_point, "predicted_amount", "0.0")
+    Decimal.from_float(String.to_float(to_string(val)))
   end
 end

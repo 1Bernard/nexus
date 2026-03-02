@@ -31,7 +31,7 @@ const ForecastChart = {
     if (!this.chart || data.length === 0) return;
 
     const dates = data.map(d => d.date);
-    const predictions = data.map(d => d.predicted_amount);
+    const predictions = data.map(d => parseFloat(d.predicted_amount) || 0.0);
 
     const option = {
       backgroundColor: 'transparent',

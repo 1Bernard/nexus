@@ -41,6 +41,11 @@ defmodule NexusWeb.UserAuth do
             |> Phoenix.Component.assign(:current_user_id, user_id)
             |> Phoenix.Component.assign(:current_user, user)
             |> Phoenix.Component.assign(:session_id, String.slice(String.upcase(user_id), 0, 8))
+            |> Phoenix.LiveView.attach_hook(:set_current_path, :handle_params, fn _params,
+                                                                                  url,
+                                                                                  socket ->
+              {:cont, Phoenix.Component.assign(socket, :current_path, URI.parse(url).path)}
+            end)
 
           {:cont, socket}
       end

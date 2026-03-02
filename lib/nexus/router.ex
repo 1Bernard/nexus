@@ -84,7 +84,8 @@ defmodule Nexus.Router do
 
   dispatch(Nexus.Treasury.Commands.GenerateForecast,
     to: Nexus.Treasury.Aggregates.Forecast,
-    identity: :org_id
+    identity: :org_id,
+    identity_prefix: "forecast-"
   )
 
   dispatch(Nexus.Treasury.Commands.ReconcileTransaction,

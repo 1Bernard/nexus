@@ -3,9 +3,9 @@ defmodule Nexus.Treasury.Queries.ForecastQuery do
   Query builder for liquidity forecasts.
   """
   import Ecto.Query
-  alias Nexus.Treasury.Projections.Forecast
+  alias Nexus.Treasury.Projections.ForecastSnapshot
 
-  def base, do: Forecast
+  def base, do: ForecastSnapshot
 
   def for_org(query, org_id) do
     from(f in query, where: f.org_id == ^org_id)
