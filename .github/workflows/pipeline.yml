@@ -62,16 +62,15 @@ jobs:
       - name: Security Scan (Sobelow)
         run: mix sobelow --config
 
-      - name: Verify PostgreSQL connection
-        run: |
-          echo "Waiting for PostgreSQL..."
-          sudo apt-get update -qq && sudo apt-get install -y postgresql-client
-          until pg_isready -h localhost -U $DB_USER; do
-            sleep 2
-          done
-          echo "PostgreSQL is ready!"
-
       - name: Initialize and Run Feature Tests (Gherkin/Cabbage)
         run: |
-          # The test.features alias now handles ecto.create, event_store.create/init, and ecto.migrate
+          # The test.features alias handles database creation and migration
           mix test.features
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "Dumping service container logs..."
+          docker logs $(docker ps -qf "name=db") || true
+          echo "Checking for application-specific logs..."
+          [ -d priv/log ] && ls -R priv/log && cat priv/log/*.log || echo "No app logs found in priv/log"
