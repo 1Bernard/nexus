@@ -61,6 +61,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:transfer_threshold, persisted_threshold)
       |> assign(:policy_mode, persisted_mode)
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
+      |> assign(:recon_stats, %{match_rate: 0, auto_matched_count: 0})
       |> assign(:host, get_host(socket))
 
     {:ok, socket}
@@ -205,10 +206,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
               <span class="hero-bolt w-4 h-4 text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
               </span>
             </div>
-            <% total =
-              @payment_matching.matched + @payment_matching.partial + @payment_matching.unmatched
-
-            rate = if total > 0, do: round(@payment_matching.matched / total * 100), else: 0 %>
+            <% rate = @recon_stats.match_rate %>
             <div class="mt-2 flex items-end justify-between">
               <p class="text-3xl font-bold tracking-tight text-white leading-none">{rate}%</p>
               <span class="text-[10px] text-indigo-300 group-hover:text-white transition-colors uppercase tracking-wider font-semibold flex items-center gap-1 group-hover:translate-x-1 duration-300">
@@ -621,6 +619,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id, "EUR"))
       |> assign(:transfer_threshold, threshold)
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
+      |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id))
 
     {:noreply, socket}
   end

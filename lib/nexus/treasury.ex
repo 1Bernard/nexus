@@ -341,4 +341,25 @@ defmodule Nexus.Treasury do
 
     Nexus.App.dispatch(command)
   end
+
+  @doc """
+  Returns reconciliation statistics for an organization.
+  """
+  def get_reconciliation_stats(org_id) do
+    import Ecto.Query
+
+    query = from(r in Reconciliation, where: r.org_id == ^org_id)
+    all = Repo.all(query)
+
+    auto_matched =
+      Enum.count(all, &(&1.status == :matched and &1.actor_email == "system@nexus.ai"))
+
+    total_matched = Enum.count(all, &(&1.status == :matched))
+
+    %{
+      auto_matched_count: auto_matched,
+      total_matched_count: total_matched,
+      match_rate: if(total_matched > 0, do: round(auto_matched / total_matched * 100), else: 0)
+    }
+  end
 end

@@ -51,10 +51,18 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
           <.dark_card class="px-4 py-2 flex items-center gap-4 bg-emerald-500/5 border-emerald-500/10">
             <div class="flex flex-col">
               <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">
-                Auto-Match Status
+                Auto-Match Rate
               </span>
               <span class="text-xs text-emerald-400 font-black uppercase tracking-tight">
-                Active & Optimizing
+                {@auto_match_rate}% Efficiency
+              </span>
+            </div>
+            <div class="flex flex-col border-l border-white/5 pl-4">
+              <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">
+                Daily Velocity
+              </span>
+              <span class="text-xs text-indigo-400 font-black uppercase tracking-tight">
+                {@auto_matched_count} Matched
               </span>
             </div>
             <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -733,10 +741,23 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       |> filter_by_date(socket.assigns.filter_date_from, socket.assigns.filter_date_to)
       |> filter_by_type(socket.assigns.filter_type)
 
+    auto_matched_count =
+      Enum.count(
+        all_reconciliations,
+        &(&1.status == :matched and &1.actor_email == "system@nexus.ai")
+      )
+
+    total_matched = Enum.count(all_reconciliations, &(&1.status == :matched))
+
+    match_rate =
+      if total_matched > 0, do: round(auto_matched_count / total_matched * 100), else: 0
+
     socket
     |> assign(:unmatched_invoices, invoices)
     |> assign(:unmatched_lines, lines)
     |> assign(:reconciliations, filtered_reconciliations)
+    |> assign(:auto_matched_count, auto_matched_count)
+    |> assign(:auto_match_rate, match_rate)
   end
 
   defp filter_by_date(reconciliations, "", ""), do: reconciliations
