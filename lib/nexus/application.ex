@@ -18,6 +18,11 @@ defmodule Nexus.Application do
       # 2. Domain Supervisors (The "Monolith" Segregation)
       Nexus.Identity.AuthChallengeStore,
       Nexus.Treasury.Gateways.PriceCache,
+      {Nx.Serving,
+       serving: Nexus.Intelligence.Services.SentimentAnalyzer.serving(),
+       name: Nexus.Intelligence.SentimentServing,
+       batch_size: 1,
+       batch_timeout: 100},
 
       # 3. Commanded Application (Command Dispatcher)
       Nexus.App,

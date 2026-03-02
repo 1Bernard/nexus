@@ -8,8 +8,8 @@ defmodule Nexus.Identity.WebAuthn.WaxAdapter do
     Wax.register(attestation, client_data, challenge)
   end
 
-  def authenticate(raw_id, auth_data, sig, client_data, challenge) do
-    Wax.authenticate(raw_id, auth_data, sig, client_data, challenge)
+  def authenticate(raw_id, auth_data, sig, client_data, challenge, credentials \\ []) do
+    Wax.authenticate(raw_id, auth_data, sig, client_data, challenge, credentials)
   end
 
   def new_registration_challenge(opts \\ []) do

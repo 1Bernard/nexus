@@ -1,7 +1,7 @@
 defmodule Nexus.Identity.WebAuthn do
   @moduledoc "Port for WebAuthn integrations."
   @callback register(binary(), binary(), any()) :: {:ok, {any(), any()}} | {:error, any()}
-  @callback authenticate(binary(), binary(), binary(), binary(), any()) ::
+  @callback authenticate(binary(), binary(), binary(), binary(), any(), list()) ::
               {:ok, any()} | {:error, any()}
   @callback new_registration_challenge(Keyword.t()) :: any()
   @callback new_authentication_challenge(Keyword.t()) :: any()
@@ -10,8 +10,8 @@ defmodule Nexus.Identity.WebAuthn do
     impl().register(attestation, client_data, challenge)
   end
 
-  def authenticate(raw_id, auth_data, sig, client_data, challenge) do
-    impl().authenticate(raw_id, auth_data, sig, client_data, challenge)
+  def authenticate(raw_id, auth_data, sig, client_data, challenge, credentials \\ []) do
+    impl().authenticate(raw_id, auth_data, sig, client_data, challenge, credentials)
   end
 
   def new_registration_challenge(opts \\ []) do

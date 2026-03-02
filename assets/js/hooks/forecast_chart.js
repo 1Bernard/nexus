@@ -27,6 +27,7 @@ const ForecastChart = {
 
   updateChart() {
     if (!this.chart) return;
+    const isSimplified = this.el.dataset.simplified === "true";
 
     const historicalData = JSON.parse(this.el.dataset.historical || "[]");
     const predictedData = JSON.parse(this.el.dataset.points || "[]");
@@ -58,7 +59,7 @@ const ForecastChart = {
       .filter(d => parseFloat(d.predicted_amount) < 0)
       .map(d => d.date);
 
-    const markLines = gapDates.map(date => ({
+    const markLines = isSimplified ? [] : gapDates.map(date => ({
       xAxis: date,
       lineStyle: { color: '#f43f5e', type: 'dashed', width: 1 },
       label: { show: false }
@@ -72,16 +73,26 @@ const ForecastChart = {
         borderColor: '#334155',
         textStyle: { color: '#f1f5f9' },
         formatter: (params) => {
-          // Filter out series with no data at this point
-          const validParams = params.filter(p => p.value !== null && p.value !== undefined && !isNaN(parseFloat(p.value)) && p.seriesName !== 'Upper' && p.seriesName !== 'Lower');
+          const getVal = (p) => {
+            const v = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value;
+            return parseFloat(v);
+          };
+
+          // Filter out series with no data or helper series
+          const validParams = params.filter(p => {
+            const val = getVal(p);
+            const isHelper = p.seriesName === 'Upper' || p.seriesName === 'Lower';
+            return val !== null && !isNaN(val) && !isHelper;
+          });
+
           if (validParams.length === 0) return '';
           
-          // Use the Predicted series as primary if both exist (at the pivot), otherwise use the valid one
+          // Pivot logic: If both exist, 'Predicted' takes precedence for future dates
           const p = validParams.find(x => x.seriesName === 'Predicted') || validParams[0];
           
           const isHistorical = p.seriesName === 'Historical';
           const color = isHistorical ? 'text-slate-400' : 'text-indigo-400';
-          const val = parseFloat(p.value) || 0;
+          const val = getVal(p);
           
           let html = `<div class="p-1">
             <div class="text-[10px] text-slate-500 uppercase font-bold">${p.name}</div>
@@ -90,11 +101,11 @@ const ForecastChart = {
               <span class="text-sm font-bold">€${val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>`;
 
-          if (p.seriesName === 'Predicted') {
+          if (p.seriesName === 'Predicted' && !isSimplified) {
             const up = val * 1.08;
             const lo = val * 0.92;
             html += `<div class="text-[9px] text-slate-500 mt-1 font-medium italic">
-              95% CI: €${lo.toLocaleString()} – €${up.toLocaleString()}
+              Confidence Range: €${lo.toLocaleString(undefined, {maximumFractionDigits: 0})} – €${up.toLocaleString(undefined, {maximumFractionDigits: 0})}
             </div>`;
             
             if (val < 0) {
@@ -154,7 +165,7 @@ const ForecastChart = {
         {
           name: 'Lower',
           type: 'line',
-          data: lowerValues,
+          data: isSimplified ? [] : lowerValues,
           lineStyle: { opacity: 0 },
           stack: 'confidence-band',
           symbol: 'none'
@@ -162,7 +173,7 @@ const ForecastChart = {
         {
           name: 'Upper',
           type: 'line',
-          data: upperValues.map((v, i) => v === null ? null : v - (lowerValues[i] || 0)),
+          data: isSimplified ? [] : upperValues.map((v, i) => v === null ? null : v - (lowerValues[i] || 0)),
           lineStyle: { opacity: 0 },
           stack: 'confidence-band',
           symbol: 'none',

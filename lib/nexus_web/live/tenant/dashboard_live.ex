@@ -56,6 +56,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:recent_activity, [])
       |> assign(:policy_alerts, [])
       |> assign(:latest_forecast, nil)
+      |> assign(:historical_forecast_data, [])
       |> assign(:show_step_up, false)
       |> assign(:pending_transfer, nil)
       |> assign(:transfer_threshold, persisted_threshold)
@@ -425,8 +426,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       <%!-- Lower Row: Trends & Activity (2/3 & 1/3) --%>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 flex flex-col">
-          <.dark_card class="p-4 md:p-6 min-h-[300px] h-full flex flex-col relative overflow-hidden group">
-            <div class="flex items-center justify-between mb-6">
+          <.dark_card class="p-4 md:p-6 h-[460px] flex flex-col relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-6 shrink-0">
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                 Cash Flow Outlook
               </h2>
@@ -448,7 +449,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
                   on_change="set_cash_flow_timeframe"
                   variant="solid"
                 />
-                <button class="flex items-center gap-1.5 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800/40 hover:bg-slate-700/50 px-3 py-1.5 rounded-md transition-colors border border-slate-700/50 group">
+                <button
+                  phx-click="download_forecast_csv"
+                  class="flex items-center gap-1.5 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800/40 hover:bg-slate-700/50 px-3 py-1.5 rounded-md transition-colors border border-slate-700/50 group"
+                >
                   <span class="hero-arrow-down-tray w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition-colors">
                   </span>
                   CSV
@@ -457,32 +461,16 @@ defmodule NexusWeb.Tenant.DashboardLive do
             </div>
 
             <%!-- Dynamic Forecast Visualization (Powered by real data) --%>
-            <div class="flex-1 relative -mx-6 px-6 pb-4">
-              <svg
-                class="absolute inset-0 w-full h-full"
-                preserveAspectRatio="none"
-                viewBox="0 0 100 100"
+            <div class="flex-1 min-h-0 relative -mx-6 px-6 pb-2">
+              <div
+                id="dashboard-forecast-chart"
+                class="absolute inset-0 px-6 pb-2"
+                phx-update="ignore"
+                phx-hook="ForecastChart"
+                data-historical={Jason.encode!(@historical_forecast_data)}
+                data-points={Jason.encode!((@latest_forecast && @latest_forecast.data_points) || [])}
+                data-simplified="true"
               >
-                <path
-                  d="M0,80 L20,75 L40,85 L60,40 L80,50 L100,20 L100,100 L0,100 Z"
-                  fill="url(#cf-gradient)"
-                  opacity="0.3"
-                />
-                <path
-                  d="M0,80 L20,75 L40,85 L60,40 L80,50 L100,20"
-                  fill="none"
-                  stroke="#6366F1"
-                  stroke-width="2"
-                />
-                <defs>
-                  <linearGradient id="cf-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#6366F1" stop-opacity="0.5" />
-                    <stop offset="100%" stop-color="#6366F1" stop-opacity="0.0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div class="absolute bottom-4 left-6 right-6 flex justify-between text-[9px] text-slate-500 uppercase tracking-wider font-mono">
-                <span>Today</span><span>+15d</span><span>+30d</span>
               </div>
 
               <%= if @latest_forecast do %>
@@ -503,9 +491,9 @@ defmodule NexusWeb.Tenant.DashboardLive do
               <% end %>
             </div>
 
-            <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/5 relative z-10">
+            <div class="flex justify-between items-center mt-auto pt-3 border-t border-white/5 relative z-10">
               <p class="text-[11px] font-medium text-slate-400 tracking-wide">
-                Last updated: 10:45 UTC
+                Last updated: {Calendar.strftime(DateTime.utc_now(), "%H:%M")} UTC
               </p>
             </div>
           </.dark_card>
@@ -513,18 +501,21 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
         <div class="lg:col-span-1 flex flex-col">
           <%!-- Section E: Recent Activity Feed --%>
-          <.dark_card class="p-4 md:p-6 h-full flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-6">
+          <.dark_card class="p-4 md:p-6 h-[460px] flex flex-col">
+            <div class="flex flex-col flex-1 min-h-0">
+              <div class="flex items-center justify-between mb-6 shrink-0">
                 <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                   Recent Activity
                 </h2>
-                <button class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold">
+                <.link
+                  navigate={~p"/activity"}
+                  class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold"
+                >
                   View All
-                </button>
+                </.link>
               </div>
 
-              <div class="space-y-5 relative max-h-[400px] overflow-y-auto pr-2 scroll-soft">
+              <div class="space-y-5 relative flex-1 min-h-0 overflow-y-auto pr-2 scroll-soft">
                 <div class="absolute left-[11px] top-2 bottom-2 w-px bg-white/5"></div>
 
                 <%= for item <- @recent_activity do %>
@@ -547,14 +538,14 @@ defmodule NexusWeb.Tenant.DashboardLive do
             </div>
 
             <%!-- Nested Policy Audit Feed --%>
-            <div class="mt-8 pt-6 border-t border-white/5">
+            <div class="shrink-0 mt-8 pt-6 border-t border-white/5">
               <div class="flex items-center gap-2 mb-4">
                 <span class="hero-shield-check w-4 h-4 text-emerald-500/70"></span>
                 <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
                   Security & Policy Audit
                 </h2>
               </div>
-              <div class="space-y-3">
+              <div class="space-y-3 max-h-[160px] overflow-y-auto pr-1 scroll-soft">
                 <%= for log <- @policy_audit_logs do %>
                   <div class="flex items-start justify-between gap-3 text-[10px] bg-white/[0.02] p-2 rounded-lg border border-white/5">
                     <div class="flex flex-col gap-1">
@@ -620,6 +611,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:recent_activity, ERP.list_recent_activity(org_id))
       |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id))
       |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id, "EUR"))
+      |> assign(:historical_forecast_data, Treasury.list_historical_cash_flow(org_id, "EUR", 14))
       |> assign(:transfer_threshold, threshold)
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
       |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id))
@@ -785,7 +777,32 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   def handle_event("set_cash_flow_timeframe", %{"tf" => tf}, socket) do
+    # Strip "D" and convert to integer (e.g., "7D" -> 7)
+    days =
+      case Integer.parse(tf) do
+        {n, _} -> n
+        :error -> 30
+      end
+
+    org_id = socket.assigns.current_user.org_id
+
+    # For the dashboard, we trigger a new forecast generation if the timeframe changes
+    # This ensures the dashboard stays "live" with the user's focus
+    Treasury.generate_forecast(org_id, "EUR", days)
+
     {:noreply, assign(socket, :cash_flow_timeframe, tf)}
+  end
+
+  def handle_event("download_forecast_csv", _params, socket) do
+    org_id = socket.assigns.current_user.org_id
+    csv_data = Treasury.list_forecast_csv(org_id, "EUR")
+
+    {:noreply,
+     push_event(socket, "download-file", %{
+       filename: "nexus_forecast_#{Date.utc_today()}.csv",
+       content: csv_data,
+       type: "text/csv"
+     })}
   end
 
   defp get_host(socket) do

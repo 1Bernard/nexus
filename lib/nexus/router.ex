@@ -112,4 +112,15 @@ defmodule Nexus.Router do
     to: Nexus.Treasury.Aggregates.Reconciliation,
     identity: :reconciliation_id
   )
+
+  # --- Intelligence Domain ---
+  dispatch(Nexus.Intelligence.Commands.AnalyzeInvoice,
+    to: Nexus.Intelligence.Aggregates.Analysis,
+    identity: :analysis_id
+  )
+
+  dispatch(Nexus.Intelligence.Commands.AnalyzeSentiment,
+    to: Nexus.Intelligence.Aggregates.Analysis,
+    identity: :analysis_id
+  )
 end

@@ -97,6 +97,9 @@ config :nexus,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Set EXLA as the default backend for Nx (used by Bumblebee & Scholar)
+config :nx, :default_backend, EXLA.Backend
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 config :mime, :types, %{

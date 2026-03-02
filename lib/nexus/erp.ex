@@ -48,13 +48,17 @@ defmodule Nexus.ERP do
   end
 
   @doc """
-  Lists the 5 most recent activities related to invoices.
+  Lists activities related to invoices with support for pagination.
   """
-  def list_recent_activity(org_id) do
+  def list_activity(org_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+    offset = Keyword.get(opts, :offset, 0)
+
     InvoiceQuery.base()
     |> InvoiceQuery.for_org(org_id)
     |> InvoiceQuery.newest_first()
-    |> InvoiceQuery.limit_results(5)
+    |> InvoiceQuery.limit_results(limit)
+    |> offset(^offset)
     |> Repo.all()
     |> Enum.map(fn invoice ->
       %{
@@ -63,10 +67,28 @@ defmodule Nexus.ERP do
         color: activity_color(invoice.status),
         title: activity_title(invoice),
         subtitle: "SAP: #{invoice.sap_document_number}",
-        # Simple for the demo bridge
-        time: "Just now"
+        # In a real app we'd use invoice.created_at
+        time: format_time(invoice.created_at)
       }
     end)
+  end
+
+  @doc """
+  Lists the 5 most recent activities related to invoices.
+  """
+  def list_recent_activity(org_id) do
+    list_activity(org_id, limit: 5)
+  end
+
+  defp format_time(dt) do
+    diff = DateTime.diff(DateTime.utc_now(), dt)
+
+    cond do
+      diff < 60 -> "Just now"
+      diff < 3600 -> "#{div(diff, 60)} min ago"
+      diff < 86400 -> "#{div(diff, 3600)}h ago"
+      true -> Calendar.strftime(dt, "%b %d")
+    end
   end
 
   defp activity_icon("matched"), do: "hero-check-circle"

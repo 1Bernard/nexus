@@ -6,6 +6,7 @@
 >
   <:topbar_title>{assigns[:page_title] || "Nexus"}</:topbar_title>
   <:topbar_subtitle>{assigns[:page_subtitle]}</:topbar_subtitle>
+  <:topbar_actions>{render_slot(assigns[:topbar_actions] || [])}</:topbar_actions>
   <:content>
     <.flash_group flash={@flash} />
     {@inner_content}

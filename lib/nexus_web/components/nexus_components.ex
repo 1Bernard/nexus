@@ -66,6 +66,7 @@ defmodule NexusWeb.NexusComponents do
   attr :current_user, :any, required: true, doc: "The authenticated user struct"
   slot :topbar_title
   slot :topbar_subtitle
+  slot :topbar_actions
   slot :content, required: true
 
   def app_shell(assigns) do
@@ -93,6 +94,7 @@ defmodule NexusWeb.NexusComponents do
         <.topbar current_user={@current_user} session_id={@session_id}>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
+          <:actions>{render_slot(@topbar_actions)}</:actions>
         </.topbar>
 
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
@@ -124,11 +126,13 @@ defmodule NexusWeb.NexusComponents do
       %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
       %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
       %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"},
-      %{path: "/forecast", label: "Liquidity Forecast", icon: "hero-presentation-chart-line"}
+      %{path: "/forecast", label: "Cash Flow Outlook", icon: "hero-presentation-chart-line"}
     ]
 
     admin_nav = [
       %{path: "/admin/users", label: "Manage Users", icon: "hero-users"},
+      %{path: "/activity", label: "Activity & Audit", icon: "hero-shield-check"},
+      %{path: "/admin/analysis", label: "AI Sentinel", icon: "hero-cpu-chip"},
       %{path: "/backoffice", label: "Backoffice", icon: "hero-cpu-chip"}
     ]
 

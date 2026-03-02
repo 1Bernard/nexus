@@ -52,6 +52,10 @@ defmodule Nexus.Identity.Aggregates.User do
     end
   end
 
+  def execute(%__MODULE__{id: nil}, %VerifyBiometric{}) do
+    {:error, :unregistered_user}
+  end
+
   def execute(
         %__MODULE__{id: id, cose_key: cose_key_bin, credential_id: cred_id} = _state,
         %VerifyBiometric{} = cmd
@@ -69,13 +73,16 @@ defmodule Nexus.Identity.Aggregates.User do
       end
     else
       with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
+           raw_cred_id = decode_or_raw(cred_id),
+           raw_cose_key = decode_and_unmarshal_cose(cose_key_bin),
            {:ok, _} <-
              WebAuthn.authenticate(
                cmd.raw_id,
                cmd.authenticator_data,
                cmd.signature,
                cmd.client_data_json,
-               challenge
+               challenge,
+               [{raw_cred_id, raw_cose_key}]
              ) do
         %BiometricVerified{
           user_id: id,
@@ -88,6 +95,10 @@ defmodule Nexus.Identity.Aggregates.User do
         {:error, reason} -> {:error, {:webauthn_error, reason}}
       end
     end
+  end
+
+  def execute(%__MODULE__{id: nil}, %VerifyStepUp{}) do
+    {:error, :unregistered_user}
   end
 
   def execute(
@@ -107,13 +118,16 @@ defmodule Nexus.Identity.Aggregates.User do
       end
     else
       with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
+           raw_cred_id = decode_or_raw(cred_id),
+           raw_cose_key = decode_and_unmarshal_cose(cose_key_bin),
            {:ok, _} <-
              WebAuthn.authenticate(
                cmd.raw_id,
                cmd.authenticator_data,
                cmd.signature,
                cmd.client_data_json,
-               challenge
+               challenge,
+               [{raw_cred_id, raw_cose_key}]
              ) do
         %StepUpVerified{
           user_id: id,
@@ -137,8 +151,38 @@ defmodule Nexus.Identity.Aggregates.User do
   # Returns true when the user is a bootstrapped admin using placeholder credentials,
   # meaning real WebAuthn verification is skipped and we only validate the challenge exists.
   defp bootstrap_user?(cose_key_bin, cred_id) do
-    cose_key_bin in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_cose_key")] or
-      cred_id in ["BOOTSTRAP_PLACEHOLDER", Base.encode64("bootstrap_credential_id")]
+    IO.inspect({cose_key_bin, cred_id}, label: "BOOTSTRAP CHECK")
+
+    cose_key_bin in [
+      "BOOTSTRAP_PLACEHOLDER",
+      "bootstrap_cose_key",
+      Base.encode64("bootstrap_cose_key")
+    ] or
+      cred_id in [
+        "BOOTSTRAP_PLACEHOLDER",
+        "bootstrap_credential_id",
+        Base.encode64("bootstrap_credential_id")
+      ]
+  end
+
+  # Ecto might return the base64 string or the raw DB binary depending on projections
+  defp decode_or_raw(nil), do: nil
+
+  defp decode_or_raw(string) do
+    case Base.decode64(string, padding: false) do
+      {:ok, decoded} -> decoded
+      :error -> string
+    end
+  end
+
+  defp decode_and_unmarshal_cose(string) do
+    raw = decode_or_raw(string)
+
+    try do
+      :erlang.binary_to_term(raw)
+    rescue
+      ArgumentError -> raw
+    end
   end
 
   # --- State Transitions ---
