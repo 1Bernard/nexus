@@ -14,9 +14,10 @@ defmodule Nexus.Treasury do
   }
 
   alias Nexus.Treasury.Gateways.PriceCache
-  alias Nexus.Treasury.Commands.SetTransferThreshold
+  alias Nexus.Treasury.Commands.{SetTransferThreshold, GenerateForecast}
   alias Nexus.Treasury.Projections.{TreasuryPolicy, Reconciliation}
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
+  alias Nexus.Treasury.Services.ForecastEngine
 
   @doc """
   Lists all successful reconciliations for an organization.
@@ -102,6 +103,26 @@ defmodule Nexus.Treasury do
     |> ForecastQuery.newest_first()
     |> Ecto.Query.limit(1)
     |> Repo.one()
+  end
+
+  @doc """
+  Triggers a liquidity forecast calculation and dispatches the command.
+  """
+  def generate_forecast(org_id, currency, horizon_days \\ 30) do
+    case ForecastEngine.calculate(org_id, currency, horizon_days) do
+      {:ok, predictions} ->
+        command = %GenerateForecast{
+          org_id: org_id,
+          currency: currency,
+          horizon_days: horizon_days,
+          predictions: predictions
+        }
+
+        Nexus.App.dispatch(command)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """

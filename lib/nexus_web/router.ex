@@ -32,6 +32,7 @@ defmodule NexusWeb.Router do
       live "/invoices", ERP.InvoiceLive
       live "/statements", ERP.StatementLive
       live "/reconciliation", Treasury.ReconciliationLive, :index
+      live "/forecast", Treasury.ForecastLive, :index
     end
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do

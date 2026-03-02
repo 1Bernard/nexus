@@ -12,10 +12,12 @@
 import WebAuthnHook from "./webauthn";
 import { CursorFollower, ScrollReveal } from "./cinematic";
 import EChartsHook from "./echarts";
+import ForecastChart from "./forecast_chart";
 
 export default {
   WebAuthnHook,
   CursorFollower,
   ScrollReveal,
-  ECharts: EChartsHook
+  ECharts: EChartsHook,
+  ForecastChart
 };

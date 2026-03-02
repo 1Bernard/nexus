@@ -92,6 +92,9 @@ defmodule Nexus.MixProject do
       {:decimal, "~> 2.3"},
       # CSV parsing for bank statement uploads
       {:nimble_csv, "~> 1.2"},
+      # Numerical Elixir for forecasting
+      {:nx, "~> 0.11.0"},
+      {:scholar, "~> 0.3"},
 
       # --- Testing & BDD ---
       # Gherkin BDD implementation

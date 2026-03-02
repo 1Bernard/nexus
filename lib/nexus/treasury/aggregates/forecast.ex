@@ -12,9 +12,7 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
       org_id: cmd.org_id,
       currency: cmd.currency,
       horizon_days: cmd.horizon_days,
-      predicted_inflow: cmd.predicted_inflow,
-      predicted_outflow: cmd.predicted_outflow,
-      predicted_gap: cmd.predicted_gap,
+      predictions: cmd.predictions,
       generated_at: DateTime.utc_now()
     }
   end
@@ -25,7 +23,7 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
       | id: "#{ev.org_id}-#{ev.currency}-#{ev.horizon_days}",
         org_id: ev.org_id,
         currency: ev.currency,
-        last_forecast: ev.predicted_gap
+        last_forecast: ev.predictions
     }
   end
 end

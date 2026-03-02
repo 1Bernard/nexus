@@ -5,30 +5,30 @@ defmodule Nexus.Treasury.Projectors.ForecastProjector do
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
-    name: "Treasury.ForecastProjector"
+    name: "Treasury.ForecastProjector",
+    consistency: :strong
 
   alias Nexus.Treasury.Events.ForecastGenerated
-  alias Nexus.Treasury.Projections.Forecast
+  alias Nexus.Treasury.Projections.ForecastSnapshot
 
   project(%ForecastGenerated{} = ev, _metadata, fn multi ->
-    # Broadcast to PubSub for LiveView updates
-    Phoenix.PubSub.broadcast(Nexus.PubSub, "forecasts:#{ev.org_id}", {:forecast_generated, ev})
+    # Generate a deterministic ID for this forecast version (e.g., daily per org/currency)
+    id = Ecto.UUID.generate()
+
+    attrs = %{
+      id: id,
+      org_id: ev.org_id,
+      currency: ev.currency,
+      horizon_days: ev.horizon_days,
+      # Assuming it was passed in the event
+      data_points: ev.predictions,
+      generated_at: ev.generated_at
+    }
 
     Ecto.Multi.insert(
       multi,
-      :forecast,
-      %Forecast{
-        id: Nexus.Schema.generate_uuidv7(),
-        org_id: ev.org_id,
-        currency: ev.currency,
-        horizon_days: ev.horizon_days,
-        predicted_inflow: ev.predicted_inflow,
-        predicted_outflow: ev.predicted_outflow,
-        predicted_gap: ev.predicted_gap,
-        generated_at: ev.generated_at
-      },
-      on_conflict: :replace_all,
-      conflict_target: [:org_id, :currency, :horizon_days]
+      :forecast_snapshot,
+      ForecastSnapshot.changeset(%ForecastSnapshot{}, attrs)
     )
   end)
 end

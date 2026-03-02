@@ -123,7 +123,8 @@ defmodule NexusWeb.NexusComponents do
     ops_nav = [
       %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
       %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
-      %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"}
+      %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"},
+      %{path: "/forecast", label: "Liquidity Forecast", icon: "hero-presentation-chart-line"}
     ]
 
     admin_nav = [
