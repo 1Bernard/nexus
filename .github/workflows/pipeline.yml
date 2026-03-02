@@ -64,7 +64,20 @@ jobs:
 
       - name: Initialize and Run Feature Tests (Gherkin/Cabbage)
         run: |
-          # The test.features alias handles database creation and migration
+          # 1. Create the database (non-failing if exists)
+          mix ecto.create || true
+
+          # 2. Ensure event_store schema exists (Ecto create doesn't do this)
+          # We use mix run -e to avoid installing psql client
+          mix run -e "Nexus.Repo.start_link(); Ecto.Adapters.SQL.query!(Nexus.Repo, \"CREATE SCHEMA IF NOT EXISTS event_store;\")"
+
+          # 3. Initialize EventStore tables
+          mix event_store.init -e Nexus.EventStore
+
+          # 4. Run migrations
+          mix ecto.migrate
+
+          # 5. Run feature tests
           mix test.features
 
       - name: Dump logs on failure

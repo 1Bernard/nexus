@@ -111,13 +111,7 @@ defmodule Nexus.MixProject do
         "event_store.init -e Nexus.EventStore"
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "test.setup": [
-        "ecto.create --quiet",
-        "event_store.init --quiet -e Nexus.EventStore",
-        "ecto.migrate --quiet"
-      ],
       "test.features": [
-        "test.setup",
         "test --only feature"
       ],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
