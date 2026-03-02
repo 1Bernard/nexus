@@ -67,9 +67,10 @@ jobs:
           # 1. Create the database (non-failing if exists)
           mix ecto.create || true
 
-          # 2. Ensure event_store schema exists (Ecto create doesn't do this)
-          # We use mix run -e to avoid installing psql client
-          mix run -e "Nexus.Repo.start_link(); Ecto.Adapters.SQL.query!(Nexus.Repo, \"CREATE SCHEMA IF NOT EXISTS event_store;\")"
+          # 2. Ensure event_store schema exists in the test database
+          # We use docker exec to run psql directly in the service container
+          echo "Creating event_store schema..."
+          docker exec $(docker ps -qf "name=db") psql -U $DB_USER -d $DB_NAME -c "CREATE SCHEMA IF NOT EXISTS event_store;"
 
           # 3. Initialize EventStore tables
           mix event_store.init -e Nexus.EventStore
