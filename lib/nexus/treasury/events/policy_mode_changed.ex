@@ -4,6 +4,6 @@ defmodule Nexus.Treasury.Events.PolicyModeChanged do
   Records the new mode name, corresponding threshold, and timestamp for audit purposes.
   """
   @derive Jason.Encoder
-  @enforce_keys [:policy_id, :org_id, :mode, :threshold, :changed_at]
-  defstruct [:policy_id, :org_id, :mode, :threshold, :changed_at]
+  @enforce_keys [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
+  defstruct [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
 end

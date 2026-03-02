@@ -14,18 +14,31 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
     # invoice_id -> %{amount, currency}
     invoices: %{},
     # statement_line_id -> %{statement_id, amount, currency}
-    statement_lines: %{}
+    statement_lines: %{},
+    # reconciliation_id -> %{invoice_id, statement_line_id, invoice_data, line_data}
+    pending_matches: %{},
+    # reconciliation_id -> %{invoice_id, statement_line_id, invoice_data, line_data}
+    matched_items: %{}
   ]
 
   alias Nexus.ERP.Events.InvoiceIngested
   alias Nexus.ERP.Events.StatementUploaded
   alias Nexus.Treasury.Commands.ReconcileTransaction
-  alias Nexus.Treasury.Events.TransactionReconciled
+
+  alias Nexus.Treasury.Events.{
+    TransactionReconciled,
+    ReconciliationProposed,
+    ReconciliationRejected,
+    ReconciliationReversed
+  }
 
   # Route process managers by org_id so each tenant has an isolated matching engine
   def interested?(%InvoiceIngested{org_id: org_id}), do: {:start!, org_id}
   def interested?(%StatementUploaded{org_id: org_id}), do: {:start!, org_id}
   def interested?(%TransactionReconciled{org_id: org_id}), do: {:continue!, org_id}
+  def interested?(%ReconciliationProposed{org_id: org_id}), do: {:continue!, org_id}
+  def interested?(%ReconciliationRejected{org_id: org_id}), do: {:continue!, org_id}
+  def interested?(%ReconciliationReversed{org_id: org_id}), do: {:continue!, org_id}
 
   # --- Handle Events (Emit Commands) ---
 
@@ -96,6 +109,9 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   end
 
   def handle(%__MODULE__{}, %TransactionReconciled{}), do: []
+  def handle(%__MODULE__{}, %ReconciliationProposed{}), do: []
+  def handle(%__MODULE__{}, %ReconciliationRejected{}), do: []
+  def handle(%__MODULE__{}, %ReconciliationReversed{}), do: []
 
   # --- Mutate State ---
 
@@ -139,8 +155,85 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   end
 
   def apply(%__MODULE__{} = pm, %TransactionReconciled{} = event) do
+    # Ensure items are removed from unmatched lists
     invoices = Map.delete(pm.invoices || %{}, event.invoice_id)
     lines = Map.delete(pm.statement_lines || %{}, event.statement_line_id)
-    %__MODULE__{pm | org_id: event.org_id, invoices: invoices, statement_lines: lines}
+
+    # Move from pending to matched if applicable
+    pending = Map.delete(pm.pending_matches || %{}, event.reconciliation_id)
+
+    # Store in matched_items so we can restore on reversal
+    matched =
+      Map.put(pm.matched_items || %{}, event.reconciliation_id, %{
+        invoice_id: event.invoice_id,
+        statement_line_id: event.statement_line_id,
+        amount: event.amount,
+        currency: event.currency
+      })
+
+    %__MODULE__{
+      pm
+      | org_id: event.org_id,
+        invoices: invoices,
+        statement_lines: lines,
+        pending_matches: pending,
+        matched_items: matched
+    }
+  end
+
+  def apply(%__MODULE__{} = pm, %ReconciliationProposed{} = event) do
+    # Remove from unmatched lists while pending
+    invoices = Map.delete(pm.invoices || %{}, event.invoice_id)
+    lines = Map.delete(pm.statement_lines || %{}, event.statement_line_id)
+
+    # Store in pending_matches so we can restore on rejection
+    pending =
+      Map.put(pm.pending_matches || %{}, event.reconciliation_id, %{
+        invoice_id: event.invoice_id,
+        statement_line_id: event.statement_line_id,
+        amount: event.amount,
+        currency: event.currency
+      })
+
+    %__MODULE__{
+      pm
+      | org_id: event.org_id,
+        invoices: invoices,
+        statement_lines: lines,
+        pending_matches: pending
+    }
+  end
+
+  def apply(%__MODULE__{} = pm, %ReconciliationRejected{} = event) do
+    # Restore from pending back to unmatched
+    case Map.get(pm.pending_matches || %{}, event.reconciliation_id) do
+      %{invoice_id: inv_id, statement_line_id: line_id, amount: amt, currency: cur} ->
+        invoices = Map.put(pm.invoices || %{}, inv_id, %{amount: amt, currency: cur})
+        lines = Map.put(pm.statement_lines || %{}, line_id, %{amount: amt, currency: cur})
+        pending = Map.delete(pm.pending_matches, event.reconciliation_id)
+        %__MODULE__{pm | invoices: invoices, statement_lines: lines, pending_matches: pending}
+
+      nil ->
+        pm
+    end
+  end
+
+  def apply(%__MODULE__{} = pm, %ReconciliationReversed{} = event) do
+    # Restore from matched back to unmatched
+    case Map.get(pm.matched_items || %{}, event.reconciliation_id) do
+      %{invoice_id: inv_id, statement_line_id: line_id, amount: amt, currency: cur} ->
+        invoices = Map.put(pm.invoices || %{}, inv_id, %{amount: amt, currency: cur})
+        lines = Map.put(pm.statement_lines || %{}, line_id, %{amount: amt, currency: cur})
+        matched = Map.delete(pm.matched_items, event.reconciliation_id)
+        %__MODULE__{pm | invoices: invoices, statement_lines: lines, matched_items: matched}
+
+      nil ->
+        # Fallback if matched_items was empty (historical data)
+        # Using event fields if available
+        invoices =
+          Map.put(pm.invoices || %{}, event.invoice_id, %{amount: 0, currency: "Unknown"})
+
+        %__MODULE__{pm | invoices: invoices}
+    end
   end
 end

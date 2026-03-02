@@ -25,6 +25,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
       org_id: cmd.org_id,
       mode: cmd.mode,
       threshold: cmd.threshold,
+      actor_email: cmd.actor_email,
       changed_at: DateTime.utc_now()
     }
   end

@@ -68,6 +68,20 @@ defmodule Nexus.Treasury do
   end
 
   @doc """
+  Lists policy audit logs for an organization.
+  """
+  def list_policy_audit_logs(org_id) do
+    import Ecto.Query
+
+    from(l in Nexus.Treasury.Projections.PolicyAuditLog,
+      where: l.org_id == ^org_id,
+      order_by: [desc: l.changed_at],
+      limit: 10
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Fetches the current policy mode and threshold for an organisation.
   Returns a `%TreasuryPolicy{}` or nil if no policy has been set.
   """

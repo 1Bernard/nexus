@@ -94,7 +94,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       :update_invoice_status,
       from(i in Invoice,
         join: r in Reconciliation,
-        on: i.id == r.invoice_id,
+        on: fragment("?::text", i.id) == r.invoice_id,
         where: r.reconciliation_id == ^event.reconciliation_id
       ),
       set: [status: "ingested"]
@@ -103,7 +103,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       :update_line_status,
       from(l in StatementLine,
         join: r in Reconciliation,
-        on: l.id == r.statement_line_id,
+        on: fragment("?::text", l.id) == r.statement_line_id,
         where: r.reconciliation_id == ^event.reconciliation_id
       ),
       set: [status: "unmatched"]

@@ -395,7 +395,7 @@ defmodule NexusWeb.NexusComponents do
         <p>Content</p>
       </.dark_card>
   """
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
   attr :title, :string, default: nil
   attr :subtitle, :string, default: nil
   slot :inner_block, required: true
@@ -676,7 +676,7 @@ defmodule NexusWeb.NexusComponents do
   attr :label, :string, required: true
   attr :color, :string, default: "emerald", values: ~w(emerald amber rose indigo)
 
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
 
   attr :progress, :integer,
     default: nil,

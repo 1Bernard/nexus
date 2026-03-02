@@ -60,6 +60,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:pending_transfer, nil)
       |> assign(:transfer_threshold, persisted_threshold)
       |> assign(:policy_mode, persisted_mode)
+      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
       |> assign(:host, get_host(socket))
 
     {:ok, socket}
@@ -511,37 +512,75 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
         <div class="lg:col-span-1 flex flex-col">
           <%!-- Section E: Recent Activity Feed --%>
-          <.dark_card class="p-4 md:p-6 h-full">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
-                Recent Activity
-              </h2>
-              <button class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold">
-                View All
-              </button>
+          <.dark_card class="p-4 md:p-6 h-full flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
+                  Recent Activity
+                </h2>
+                <button class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold">
+                  View All
+                </button>
+              </div>
+
+              <div class="space-y-5 relative max-h-[400px] overflow-y-auto pr-2 scroll-soft">
+                <div class="absolute left-[11px] top-2 bottom-2 w-px bg-white/5"></div>
+
+                <%= for item <- @recent_activity do %>
+                  <.activity_item
+                    icon={item.icon}
+                    color={item.color}
+                    title={item.title}
+                    subtitle={item.subtitle}
+                    time_ago={item.time}
+                  />
+                <% end %>
+
+                <%= if Enum.empty?(@recent_activity) do %>
+                  <div class="flex flex-col items-center justify-center h-32 opacity-30">
+                    <span class="hero-inbox w-8 h-8 mb-2"></span>
+                    <p class="text-[10px] uppercase tracking-widest font-bold">No Recent Activity</p>
+                  </div>
+                <% end %>
+              </div>
             </div>
 
-            <div class="space-y-5 relative max-h-[400px] overflow-y-auto pr-2 scroll-soft">
-              <div class="absolute left-[11px] top-2 bottom-2 w-px bg-white/5"></div>
-
-              <%= for item <- @recent_activity do %>
-                <.activity_item
-                  icon={item.icon}
-                  color={item.color}
-                  title={item.title}
-                  subtitle={item.subtitle}
-                  time_ago={item.time}
-                />
-              <% end %>
-
-              <%= if Enum.empty?(@recent_activity) do %>
-                <div class="flex flex-col items-center justify-center h-32 opacity-30">
-                  <span class="hero-inbox w-8 h-8 mb-2"></span>
-                  <p class="text-[10px] uppercase tracking-widest font-bold">No Recent Activity</p>
-                </div>
-              <% end %>
-
-              <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/80 to-transparent pointer-events-none z-10">
+            <%!-- Nested Policy Audit Feed --%>
+            <div class="mt-8 pt-6 border-t border-white/5">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="hero-shield-check w-4 h-4 text-emerald-500/70"></span>
+                <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                  Security & Policy Audit
+                </h2>
+              </div>
+              <div class="space-y-3">
+                <%= for log <- @policy_audit_logs do %>
+                  <div class="flex items-start justify-between gap-3 text-[10px] bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                    <div class="flex flex-col gap-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-slate-300 font-bold">{log.actor_email}</span>
+                        <span class="text-slate-600">changed mode to</span>
+                        <span class={[
+                          "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                          log.mode == "strict" && "bg-rose-500/20 text-rose-400",
+                          log.mode == "relaxed" && "bg-emerald-500/20 text-emerald-400",
+                          log.mode == "standard" && "bg-indigo-500/20 text-indigo-400"
+                        ]}>
+                          {log.mode}
+                        </span>
+                      </div>
+                      <span class="text-slate-500 font-mono">
+                        Threshold: €{Decimal.div(log.threshold, 1_000_000) |> Decimal.round(1)}M
+                      </span>
+                    </div>
+                    <span class="text-slate-600 shrink-0">
+                      {Calendar.strftime(log.changed_at, "%H:%M UTC")}
+                    </span>
+                  </div>
+                <% end %>
+                <%= if Enum.empty?(@policy_audit_logs) do %>
+                  <p class="text-[9px] text-slate-600 italic">No historical policy changes found.</p>
+                <% end %>
               </div>
             </div>
           </.dark_card>
@@ -581,6 +620,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id))
       |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id, "EUR"))
       |> assign(:transfer_threshold, threshold)
+      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
 
     {:noreply, socket}
   end
@@ -659,7 +699,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
     {:noreply,
      socket
      |> assign(:policy_mode, ev.mode)
-     |> assign(:transfer_threshold, ev.threshold)}
+     |> assign(:transfer_threshold, ev.threshold)
+     |> assign(
+       :policy_audit_logs,
+       Treasury.list_policy_audit_logs(socket.assigns.current_user.org_id)
+     )}
   end
 
   @impl true
@@ -671,7 +715,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       policy_id: org_id,
       org_id: org_id,
       mode: mode,
-      threshold: threshold_decimal
+      threshold: threshold_decimal,
+      actor_email: socket.assigns.current_user.email
     }
 
     case Nexus.App.dispatch(cmd) do

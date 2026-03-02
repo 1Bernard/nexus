@@ -46,7 +46,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       policy_id: state.org_id,
       org_id: state.org_id,
       mode: mode,
-      threshold: threshold
+      threshold: threshold,
+      actor_email: "test@example.com"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -56,6 +57,7 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
+      actor_email: "test@example.com",
       changed_at: DateTime.utc_now()
     }
 
@@ -79,7 +81,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       policy_id: state.org_id,
       org_id: state.org_id,
       mode: mode,
-      threshold: threshold
+      threshold: threshold,
+      actor_email: "test@example.com"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -89,6 +92,7 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
+      actor_email: "test@example.com",
       changed_at: DateTime.utc_now()
     }
 
@@ -104,7 +108,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       policy_id: state.org_id,
       org_id: state.org_id,
       mode: mode,
-      threshold: threshold
+      threshold: threshold,
+      actor_email: "test@example.com"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -114,6 +119,7 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
+      actor_email: "test@example.com",
       changed_at: DateTime.utc_now()
     }
 
