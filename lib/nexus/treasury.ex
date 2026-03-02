@@ -106,6 +106,50 @@ defmodule Nexus.Treasury do
   end
 
   @doc """
+  Lists historical daily net cash flow for an organization and currency.
+  """
+  def list_historical_cash_flow(org_id, currency, days \\ 60) do
+    import Ecto.Query
+    end_date = Date.utc_today()
+    start_date = Date.add(end_date, -days)
+
+    from(l in StatementLine,
+      where: l.org_id == ^org_id and l.currency == ^currency,
+      where: l.date >= ^Date.to_string(start_date) and l.date <= ^Date.to_string(end_date),
+      group_by: l.date,
+      select: %{date: l.date, amount: sum(l.amount)},
+      order_by: [asc: l.date]
+    )
+    |> Repo.all()
+    |> Enum.map(fn %{date: date_str, amount: amount} ->
+      %{
+        date: date_str,
+        amount: Decimal.to_float(amount) |> Float.round(2)
+      }
+    end)
+  end
+
+  @doc """
+  Returns a CSV-formatted string of the latest forecast data points.
+  """
+  def list_forecast_csv(org_id, currency) do
+    case get_latest_forecast(org_id, currency) do
+      nil ->
+        "Date,Predicted Amount\n"
+
+      forecast ->
+        header = "Date,Predicted Amount (#{currency})\n"
+
+        body =
+          forecast.data_points
+          |> Enum.map(fn p -> "#{p["date"]},#{p["predicted_amount"]}" end)
+          |> Enum.join("\n")
+
+        header <> body
+    end
+  end
+
+  @doc """
   Triggers a liquidity forecast calculation and dispatches the command.
   """
   def generate_forecast(org_id, currency, horizon_days \\ 30) do

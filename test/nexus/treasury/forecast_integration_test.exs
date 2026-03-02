@@ -60,7 +60,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
 
       # 3. Manually project the event
       {:ok, [%{data: event, event_number: num}]} =
-        Nexus.EventStore.read_stream_forward(@org_id)
+        Nexus.EventStore.read_stream_forward("forecast-" <> @org_id)
 
       project_event(
         event,
@@ -78,7 +78,8 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
       # Verify downward trend carries through (prediction < last historical point)
       # Oldest was 1600, newest was 1010, next should be 1000 or 990.
       [first_pred | _] = snapshot.data_points
-      assert first_pred["predicted_amount"] < 1010
+      {val, _} = Float.parse(to_string(first_pred["predicted_amount"]))
+      assert val < 1010
     end
   end
 
