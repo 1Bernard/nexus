@@ -33,12 +33,37 @@ defmodule NexusWeb.ERP.StatementComponents do
         <p class="text-[10px] text-slate-500 uppercase tracking-wider">lines</p>
       </div>
 
+      <%!-- Match Rate progress bar --%>
+      <div class="hidden md:flex flex-col gap-1.5 w-32 flex-shrink-0">
+        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+          <span class="text-slate-500">Match Rate</span>
+          <span class="text-emerald-400 font-mono">{calculate_match_rate(@statement)}%</span>
+        </div>
+        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+          <div
+            class="h-full bg-emerald-500 rounded-full transition-all"
+            style={"width: #{calculate_match_rate(@statement)}%"}
+          />
+        </div>
+      </div>
+
       <%!-- Status pill --%>
-      <div class={[
-        "flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-        status_pill_class(@statement.status)
-      ]}>
-        {@statement.status}
+      <div class="flex items-center gap-3">
+        <%= if @statement.overlap_warning do %>
+          <div class="group/warn relative" title="Potential duplicate statement detected">
+            <span class="hero-exclamation-triangle w-4 h-4 text-amber-500 cursor-help"></span>
+            <div class="absolute bottom-full mb-2 hidden group-hover/warn:block bg-slate-900 border border-white/10 rounded-lg p-2 text-[10px] text-amber-200 w-32 shadow-xl z-30">
+              Potential duplicate statement detected by filename.
+            </div>
+          </div>
+        <% end %>
+
+        <div class={[
+          "flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+          status_pill_class(@statement.status)
+        ]}>
+          {@statement.status}
+        </div>
       </div>
     </div>
     """
@@ -49,12 +74,23 @@ defmodule NexusWeb.ERP.StatementComponents do
 
   def statement_line_row(assigns) do
     ~H"""
-    <div class="flex items-center gap-4 px-4 py-2.5 text-xs border-b border-white/[0.04] last:border-0">
-      <span class="w-24 flex-shrink-0 text-slate-400 font-mono tabular-nums">{@line.date}</span>
-      <span class="flex-1 text-slate-300 truncate">{@line.narrative}</span>
-      <span class="w-28 text-right flex-shrink-0 font-mono font-semibold tabular-nums text-white">
-        {format_amount(@line.amount, @line.currency)}
-      </span>
+    <div class={[
+      "flex flex-col px-4 py-2.5 text-xs border-b border-white/[0.04] last:border-0",
+      @line.error_message && "bg-rose-500/5"
+    ]}>
+      <div class="flex items-center gap-4">
+        <span class="w-24 flex-shrink-0 text-slate-400 font-mono tabular-nums">{@line.date}</span>
+        <span class="flex-1 text-slate-300 truncate">{@line.narrative}</span>
+        <span class="w-28 text-right flex-shrink-0 font-mono font-semibold tabular-nums text-white">
+          {format_amount(@line.amount, @line.currency)}
+        </span>
+      </div>
+      <%= if @line.error_message do %>
+        <div class="mt-1 ml-28 flex items-center gap-1.5">
+          <span class="hero-exclamation-circle w-3 h-3 text-rose-400"></span>
+          <span class="text-[10px] text-rose-400/80 font-medium italic">{@line.error_message}</span>
+        </div>
+      <% end %>
     </div>
     """
   end
@@ -101,4 +137,10 @@ defmodule NexusWeb.ERP.StatementComponents do
   end
 
   defp format_amount(_, _), do: "—"
+
+  defp calculate_match_rate(%{line_count: 0}), do: 0
+
+  defp calculate_match_rate(%{line_count: total, matched_count: matched}) do
+    round(matched / total * 100)
+  end
 end

@@ -14,24 +14,24 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 
   project(%StatementUploaded{} = ev, _metadata, fn multi ->
-    lines = Enum.with_index(ev.lines, 1)
+    statement_attrs = %{
+      id: ev.statement_id,
+      org_id: ev.org_id,
+      filename: ev.filename,
+      format: ev.format,
+      status: "uploaded",
+      line_count: length(ev.lines),
+      matched_count: 0,
+      overlap_warning: exists_similar_statement?(ev.org_id, ev.filename),
+      uploaded_at: parse_datetime(ev.uploaded_at)
+    }
 
     multi
-    |> Ecto.Multi.insert(
-      :statement,
-      %Statement{
-        id: ev.statement_id,
-        org_id: ev.org_id,
-        filename: ev.filename,
-        format: ev.format,
-        status: "uploaded",
-        line_count: length(ev.lines),
-        uploaded_at: parse_datetime(ev.uploaded_at)
-      },
+    |> Ecto.Multi.insert(:statement, Statement.changeset(%Statement{}, statement_attrs),
       on_conflict: :nothing,
       conflict_target: :id
     )
-    |> insert_statement_lines(lines, ev.statement_id, ev.org_id)
+    |> insert_statement_lines(ev.lines, ev.statement_id, ev.org_id)
   end)
 
   project(%StatementRejected{} = _ev, _metadata, fn multi ->
@@ -60,24 +60,25 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  defp insert_statement_lines(multi, [], _statement_id, _org_id), do: multi
-
   defp insert_statement_lines(multi, lines, statement_id, org_id) do
-    Enum.reduce(lines, multi, fn {line, idx}, acc ->
+    Enum.with_index(lines, 1)
+    |> Enum.reduce(multi, fn {line, idx}, acc ->
+      attrs = %{
+        id: line.id,
+        statement_id: statement_id,
+        org_id: org_id,
+        date: line.date,
+        ref: Map.get(line, :ref, ""),
+        amount: line.amount,
+        currency: Map.get(line, :currency, ""),
+        narrative: Map.get(line, :narrative, ""),
+        status: "unmatched"
+      }
+
       Ecto.Multi.insert(
         acc,
         {:line, idx},
-        %StatementLine{
-          id: line.id,
-          statement_id: statement_id,
-          org_id: org_id,
-          date: line.date,
-          ref: Map.get(line, :ref, ""),
-          amount: coerce_decimal(line.amount),
-          currency: Map.get(line, :currency, ""),
-          narrative: Map.get(line, :narrative, ""),
-          status: "unmatched"
-        },
+        StatementLine.changeset(%StatementLine{}, attrs),
         on_conflict: :nothing,
         conflict_target: :id
       )
@@ -96,5 +97,17 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
       {:ok, dt, _} -> dt
       _ -> DateTime.utc_now()
     end
+  end
+
+  defp exists_similar_statement?(org_id, filename) do
+    import Ecto.Query
+    alias Nexus.ERP.Projections.Statement
+
+    from(s in Statement,
+      where: s.org_id == ^org_id and s.filename == ^filename,
+      select: count(s.id)
+    )
+    |> Nexus.Repo.one()
+    |> Kernel.>(0)
   end
 end

@@ -13,7 +13,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
   }
 
   alias Nexus.Treasury.Projections.Reconciliation
-  alias Nexus.ERP.Projections.{Invoice, StatementLine}
+  alias Nexus.ERP.Projections.{Invoice, StatementLine, Statement}
   import Ecto.Query
 
   project(%ReconciliationProposed{} = event, metadata, fn multi ->
@@ -81,6 +81,11 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       from(l in StatementLine, where: l.id == ^event.statement_line_id),
       set: [status: "matched"]
     )
+    |> Ecto.Multi.update_all(
+      :increment_matched_count,
+      from(s in Statement, where: s.id == ^event.statement_id),
+      inc: [matched_count: 1]
+    )
   end)
 
   project(%ReconciliationRejected{} = event, _metadata, fn multi ->
@@ -108,6 +113,15 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       ),
       set: [status: "unmatched"]
     )
+    |> Ecto.Multi.update_all(
+      :decrement_matched_count,
+      from(s in Statement,
+        join: r in Reconciliation,
+        on: fragment("?::text", s.id) == r.statement_id,
+        where: r.reconciliation_id == ^event.reconciliation_id
+      ),
+      inc: [matched_count: -1]
+    )
   end)
 
   project(%ReconciliationReversed{} = event, _metadata, fn multi ->
@@ -126,6 +140,15 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       :update_line_status,
       from(l in StatementLine, where: l.id == ^event.statement_line_id),
       set: [status: "unmatched"]
+    )
+    |> Ecto.Multi.update_all(
+      :decrement_matched_count,
+      from(s in Statement,
+        join: r in Reconciliation,
+        on: fragment("?::text", s.id) == r.statement_id,
+        where: r.reconciliation_id == ^event.reconciliation_id
+      ),
+      inc: [matched_count: -1]
     )
   end)
 

@@ -22,11 +22,13 @@ defmodule NexusWeb.ERP.StatementLive do
 
     socket =
       socket
-      |> assign(:statements, ERP.list_statements(org_id))
+      |> assign(:statements, ERP.list_statements(org_id, "", ""))
       |> assign(:expanded_statement_id, nil)
       |> assign(:expanded_lines, [])
       |> assign(:upload_error, nil)
       |> assign(:upload_status, :idle)
+      |> assign(:search_query, "")
+      |> assign(:date_filter, "")
       |> allow_upload(:statement,
         accept: @accepted_formats,
         max_entries: 1,
@@ -98,9 +100,47 @@ defmodule NexusWeb.ERP.StatementLive do
   end
 
   @impl true
+  def handle_event("search", %{"query" => query}, socket) do
+    {:noreply, assign(socket, search_query: query)}
+  end
+
+  @impl true
+  def handle_event("filter_date", %{"date" => date}, socket) do
+    {:noreply, assign(socket, date_filter: date)}
+  end
+
+  @impl true
+  def handle_event("download_original", %{"id" => id}, socket) do
+    statement = Enum.find(socket.assigns.statements, &(&1.id == id))
+
+    if statement do
+      # In a real app, this would be a proper send_download or a link to a controller.
+      # For the demo, we'll push an event that the hooks can handle to download a blob.
+      raw_content = ERP.get_statement_content(id)
+
+      socket =
+        push_event(socket, "download-file", %{
+          filename: statement.filename,
+          content: raw_content,
+          type: "text/plain"
+        })
+
+      {:noreply, socket}
+    else
+      {:noreply, put_flash(socket, :error, "Statement not found")}
+    end
+  end
+
+  @impl true
   def handle_info({:statement_uploaded, _statement_id}, socket) do
     org_id = socket.assigns.current_user.org_id
-    {:noreply, assign(socket, :statements, ERP.list_statements(org_id))}
+
+    {:noreply,
+     assign(
+       socket,
+       :statements,
+       ERP.list_statements(org_id, socket.assigns.search_query, socket.assigns.date_filter)
+     )}
   end
 
   @impl true
@@ -196,7 +236,27 @@ defmodule NexusWeb.ERP.StatementLive do
           <div class="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
             <span class="hero-rectangle-stack w-4 h-4 text-slate-500"></span>
             <h2 class="text-sm font-semibold text-white">Uploaded Statements</h2>
-            <span class="ml-auto text-xs text-slate-500">{length(@statements)} total</span>
+            <div class="ml-auto flex items-center gap-3">
+              <div class="relative group">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 hero-magnifying-glass w-3.5 h-3.5 text-slate-500 group-focus-within:text-indigo-400">
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search statements..."
+                  phx-keyup="search"
+                  phx-debounce="200"
+                  class="bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all w-48"
+                  value={@search_query}
+                />
+              </div>
+              <input
+                type="date"
+                phx-change="filter_date"
+                class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                value={@date_filter}
+              />
+              <span class="text-xs text-slate-500">{length(@statements)} total</span>
+            </div>
           </div>
 
           <%= if Enum.empty?(@statements) do %>
@@ -205,13 +265,23 @@ defmodule NexusWeb.ERP.StatementLive do
             <div class="flex flex-col gap-1.5 p-3">
               <%= for statement <- @statements do %>
                 <div>
-                  <button
-                    class="w-full text-left"
-                    phx-click="expand_statement"
-                    phx-value-id={statement.id}
-                  >
-                    <.statement_row statement={statement} />
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="flex-1 text-left"
+                      phx-click="expand_statement"
+                      phx-value-id={statement.id}
+                    >
+                      <.statement_row statement={statement} />
+                    </button>
+                    <button
+                      phx-click="download_original"
+                      phx-value-id={statement.id}
+                      class="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                      title="Download Original"
+                    >
+                      <span class="hero-arrow-down-tray w-4 h-4"></span>
+                    </button>
+                  </div>
 
                   <%!-- Expanded lines --%>
                   <%= if @expanded_statement_id == statement.id do %>

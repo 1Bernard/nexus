@@ -87,13 +87,37 @@ defmodule Nexus.ERP do
 
   @doc """
   Lists all bank statements for an organisation, newest first.
+  Supports filtering by filename and date.
   """
-  def list_statements(org_id) do
+  def list_statements(org_id, query \\ "", date \\ "") do
     from(s in Statement,
       where: s.org_id == ^org_id,
       order_by: [desc: s.uploaded_at]
     )
+    |> filter_by_filename(query)
+    |> filter_by_date(date)
     |> Repo.all()
+  end
+
+  defp filter_by_filename(q, ""), do: q
+
+  defp filter_by_filename(q, query) do
+    from(s in q, where: ilike(s.filename, ^"%#{query}%"))
+  end
+
+  defp filter_by_date(q, ""), do: q
+
+  defp filter_by_date(q, date) do
+    # Simple date string prefix match for the demo
+    from(s in q, where: fragment("?::text", s.uploaded_at) |> ilike(^"#{date}%"))
+  end
+
+  @doc """
+  Returns the raw content of a bank statement.
+  """
+  def get_statement_content(id) do
+    from(s in Statement, where: s.id == ^id, select: s.raw_content)
+    |> Repo.one()
   end
 
   @doc """
