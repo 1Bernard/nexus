@@ -8,7 +8,7 @@ defmodule Nexus.Treasury.PolicyModeTest do
   alias Nexus.Treasury.Commands.{SetPolicyMode, EvaluateExposurePolicy, SetTransferThreshold}
   alias Nexus.Treasury.Events.{PolicyModeChanged, TransferThresholdSet, PolicyAlertTriggered}
   alias Nexus.Treasury.Projectors.PolicyProjector
-  alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert}
+  alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert, PolicyAuditLog}
 
   @mode_thresholds %{
     "standard" => Decimal.new("1000000"),
@@ -20,6 +20,7 @@ defmodule Nexus.Treasury.PolicyModeTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       import Ecto.Query
       Nexus.Repo.delete_all(PolicyAlert)
+      Nexus.Repo.delete_all(PolicyAuditLog)
       Nexus.Repo.delete_all(TreasuryPolicy)
 
       Nexus.Repo.delete_all(
@@ -201,6 +202,20 @@ defmodule Nexus.Treasury.PolicyModeTest do
     {:ok, state}
   end
 
+  defthen ~r/^an audit log should be recorded for "(?<mode>[^"]+)" mode$/, %{mode: mode}, state do
+    logs = get_audit_logs(state.org_id)
+    assert Enum.any?(logs, fn log -> log.mode == mode end)
+    {:ok, state}
+  end
+
+  defthen ~r/^the audit log should attribute the change to "(?<email>[^"]+)"$/,
+          %{email: email},
+          state do
+    logs = get_audit_logs(state.org_id)
+    assert Enum.any?(logs, fn log -> log.actor_email == email end)
+    {:ok, state}
+  end
+
   # --- Helpers ---
 
   defp project_event(event, event_number) do
@@ -225,6 +240,13 @@ defmodule Nexus.Treasury.PolicyModeTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       import Ecto.Query
       Nexus.Repo.all(from a in PolicyAlert, where: a.org_id == ^org_id)
+    end)
+  end
+
+  defp get_audit_logs(org_id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      import Ecto.Query
+      Nexus.Repo.all(from l in PolicyAuditLog, where: l.org_id == ^org_id)
     end)
   end
 end

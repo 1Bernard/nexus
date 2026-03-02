@@ -20,3 +20,9 @@ Feature: Policy Mode Persistence
         And the strict mode threshold is "50000"
         When the system evaluates an exposure of "60000" EUR/USD
         Then a policy alert should be triggered
+
+    Scenario: Policy changes are recorded in the audit trail with the actor's email
+        Given the organization "Nexus Corp" is on "standard" mode
+        When the treasury manager switches to "strict" mode
+        Then an audit log should be recorded for "strict" mode
+        And the audit log should attribute the change to "test@example.com"
