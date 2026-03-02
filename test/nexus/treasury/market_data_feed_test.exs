@@ -24,7 +24,7 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
   defwhen ~r/^a market tick is received for "(?<pair>[^"]+)" at price "(?<price>[^"]+)"$/,
           %{pair: pair, price: price},
           state do
-    payload = %{"ev" => "C", "pair" => pair, "p" => price, "t" => System.os_time(:millisecond)}
+    payload = %{"ev" => "CAS", "pair" => pair, "c" => price, "s" => System.os_time(:millisecond)}
     json = Jason.encode!([payload])
 
     PolygonClient.SocketHandler.handle_frame({:text, json}, %{})
