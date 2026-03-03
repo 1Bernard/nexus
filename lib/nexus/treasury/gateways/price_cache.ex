@@ -8,7 +8,7 @@ defmodule Nexus.Treasury.Gateways.PriceCache do
   use GenServer
   require Logger
 
-  @table :market_rates
+  @table :market_rates_v3
 
   # --- Client API ---
 
@@ -19,7 +19,9 @@ defmodule Nexus.Treasury.Gateways.PriceCache do
   end
 
   def get_last_tick(pair) do
-    case :ets.lookup(@table, pair) do
+    result = :ets.lookup(@table, pair)
+
+    case result do
       [{_key, price, at, source}] ->
         {:ok, {price, at, source}}
 
