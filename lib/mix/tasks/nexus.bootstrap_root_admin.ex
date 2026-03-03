@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Nexus.BootstrapRootAdmin do
 
     # Predictable UUID for root
     root_org_id = "00000000-0000-0000-0000-000000000000"
-    admin_id = Nexus.Schema.generate_uuidv7()
+    admin_id = "019c9247-5ee0-7732-9423-5627160214ce"
     admin_email = "admin@nexus-platform.io"
 
     # 1. Provision Root Organization

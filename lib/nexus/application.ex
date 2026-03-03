@@ -4,9 +4,12 @@ defmodule Nexus.Application do
   @moduledoc false
 
   use Application
+  require Logger
 
   @impl true
   def start(_type, _args) do
+    Logger.info("[Nexus] Application starting in #{Mix.env()} environment")
+
     children = [
       # 1. Infrastructure (Database & Event Store)
       NexusWeb.Telemetry,

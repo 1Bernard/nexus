@@ -119,8 +119,8 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
 
       formatted_price = Decimal.to_string(decimal_price, :normal)
 
-      # 1. Update ETS cache
-      PriceCache.update_price(pair, formatted_price)
+      # 1. Update ETS cache with :live source
+      PriceCache.update_price(pair, formatted_price, :live)
 
       # 2. Dispatch command for audit trail
       cmd = %RecordMarketTick{
@@ -129,8 +129,10 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
         timestamp: timestamp
       }
 
-      case Nexus.App.dispatch(cmd) do
+      case Nexus.App.dispatch(cmd, consistency: :eventual) do
         :ok ->
+          Logger.info("[Treasury] [LIVE] Recorded tick for #{pair}: #{formatted_price}")
+
           Phoenix.PubSub.broadcast(
             Nexus.PubSub,
             "market_ticks:#{pair}",

@@ -41,7 +41,22 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     change = :rand.uniform() * 0.0005 * if :rand.uniform() > 0.5, do: 1, else: -1
     new_price = old_price * (1 + change)
 
-    process_simulated_tick(pair, new_price)
+    # Smart Yielding: Only skip if a LIVE tick was received within the last 5 seconds.
+    # We do NOT yield to our own :simulated ticks.
+    case PriceCache.get_last_tick(pair) do
+      {:ok, {_any_price, %DateTime{} = at, :live}} ->
+        if DateTime.diff(DateTime.utc_now(), at) > 5 do
+          process_simulated_tick(pair, new_price)
+        else
+          Logger.info(
+            "[Treasury] [SIMULATOR] Yielding to live feed for #{pair} (Last live tick #{DateTime.diff(DateTime.utc_now(), at)}s ago)"
+          )
+        end
+
+      _ ->
+        # No live tick recently, or it was just us. Proceed.
+        process_simulated_tick(pair, new_price)
+    end
 
     new_state = put_in(state.prices[pair], new_price)
     schedule_tick()
@@ -56,10 +71,11 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     # Format for UI/Logging
     formatted_price = Decimal.to_string(decimal_price, :normal)
 
-    # 1. Update ETS cache
-    PriceCache.update_price(pair, formatted_price)
+    # 1. Update ETS cache with :simulated source
+    PriceCache.update_price(pair, formatted_price, :simulated)
 
-    # 2. Dispatch command via App (Dispatcher)
+    # 2. Dispatch command via App (Dispatcher) with eventual consistency
+    # Market ticks don't require ACID guarantees across the whole platform for every single 2s update.
     cmd = %RecordMarketTick{
       pair: pair,
       # Use Decimal struct for domain
@@ -67,9 +83,9 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
       timestamp: timestamp
     }
 
-    case Nexus.App.dispatch(cmd) do
+    case Nexus.App.dispatch(cmd, consistency: :eventual) do
       :ok ->
-        Logger.debug(
+        Logger.info(
           "[Treasury] [SIMULATOR] Successfully recorded tick for #{pair}: #{formatted_price}"
         )
 

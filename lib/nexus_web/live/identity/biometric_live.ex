@@ -133,12 +133,15 @@ defmodule NexusWeb.Identity.BiometricLive do
         client_data_json: decode_base64_url!(client)
       }
 
+      IO.inspect({user.id, user.org_id}, label: "BIOMETRIC LOGIN ATTEMPT")
+
       case App.dispatch(command) do
         :ok ->
           Process.send_after(self(), :advance_screening_1, 800)
           {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
 
         {:error, reason} ->
+          IO.inspect(reason, label: "BIOMETRIC DISPATCH ERROR")
           {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
       end
     else

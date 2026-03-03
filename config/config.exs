@@ -15,9 +15,7 @@ config :nexus,
   generators: [timestamp_type: :utc_datetime_usec, binary_id: true]
 
 # 2. Register the Event Store
-# We set this to empty to prevent the library from auto-starting it,
-# as it will be managed as a child of Nexus.App.
-config :nexus, event_stores: []
+config :nexus, event_stores: [Nexus.EventStore]
 
 # 3. Configure Event Store database settings
 # column_data_type: "jsonb" allows for efficient metadata queries.

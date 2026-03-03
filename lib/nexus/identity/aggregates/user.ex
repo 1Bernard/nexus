@@ -73,8 +73,9 @@ defmodule Nexus.Identity.Aggregates.User do
       end
     else
       with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
-           raw_cred_id = decode_or_raw(cred_id),
-           raw_cose_key = decode_and_unmarshal_cose(cose_key_bin),
+           raw_cred_id <- decode_or_raw(cred_id),
+           raw_cose_key <- decode_and_unmarshal_cose(cose_key_bin),
+           :ok <- validate_credentials(raw_cred_id, raw_cose_key),
            {:ok, _} <-
              WebAuthn.authenticate(
                cmd.raw_id,
@@ -91,6 +92,7 @@ defmodule Nexus.Identity.Aggregates.User do
           verified_at: DateTime.utc_now()
         }
       else
+        {:error, :missing_credentials} -> {:error, :missing_credentials}
         {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
         {:error, reason} -> {:error, {:webauthn_error, reason}}
       end
@@ -118,8 +120,9 @@ defmodule Nexus.Identity.Aggregates.User do
       end
     else
       with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
-           raw_cred_id = decode_or_raw(cred_id),
-           raw_cose_key = decode_and_unmarshal_cose(cose_key_bin),
+           raw_cred_id <- decode_or_raw(cred_id),
+           raw_cose_key <- decode_and_unmarshal_cose(cose_key_bin),
+           :ok <- validate_credentials(raw_cred_id, raw_cose_key),
            {:ok, _} <-
              WebAuthn.authenticate(
                cmd.raw_id,
@@ -136,6 +139,7 @@ defmodule Nexus.Identity.Aggregates.User do
           verified_at: DateTime.utc_now()
         }
       else
+        {:error, :missing_credentials} -> {:error, :missing_credentials}
         {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
         {:error, reason} -> {:error, {:webauthn_error, reason}}
       end
@@ -168,15 +172,19 @@ defmodule Nexus.Identity.Aggregates.User do
   # Ecto might return the base64 string or the raw DB binary depending on projections
   defp decode_or_raw(nil), do: nil
 
-  defp decode_or_raw(string) do
+  defp decode_or_raw(string) when is_binary(string) do
     case Base.decode64(string, padding: false) do
       {:ok, decoded} -> decoded
       :error -> string
     end
   end
 
-  defp decode_and_unmarshal_cose(string) do
-    raw = decode_or_raw(string)
+  defp decode_or_raw(other), do: other
+
+  defp decode_and_unmarshal_cose(nil), do: nil
+
+  defp decode_and_unmarshal_cose(binary) when is_binary(binary) do
+    raw = decode_or_raw(binary)
 
     try do
       :erlang.binary_to_term(raw)
@@ -184,6 +192,12 @@ defmodule Nexus.Identity.Aggregates.User do
       ArgumentError -> raw
     end
   end
+
+  defp decode_and_unmarshal_cose(other), do: other
+
+  defp validate_credentials(nil, _), do: {:error, :missing_credentials}
+  defp validate_credentials(_, nil), do: {:error, :missing_credentials}
+  defp validate_credentials(_, _), do: :ok
 
   # --- State Transitions ---
 
