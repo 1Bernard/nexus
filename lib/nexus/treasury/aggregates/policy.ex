@@ -2,12 +2,39 @@ defmodule Nexus.Treasury.Aggregates.Policy do
   @moduledoc """
   Aggregate for managing Treasury-specific policies — thresholds and named risk tolerance modes.
   """
-  defstruct [:id, :org_id, :transfer_threshold, :mode]
+  defstruct [
+    :id,
+    :org_id,
+    :transfer_threshold,
+    :mode,
+    mode_thresholds: %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
+  ]
 
-  alias Nexus.Treasury.Commands.{SetTransferThreshold, EvaluateExposurePolicy, SetPolicyMode}
-  alias Nexus.Treasury.Events.{TransferThresholdSet, PolicyAlertTriggered, PolicyModeChanged}
+  alias Nexus.Treasury.Commands.{
+    SetTransferThreshold,
+    EvaluateExposurePolicy,
+    SetPolicyMode,
+    ConfigureModeThresholds
+  }
+
+  alias Nexus.Treasury.Events.{
+    TransferThresholdSet,
+    PolicyAlertTriggered,
+    PolicyModeChanged,
+    ModeThresholdsConfigured
+  }
 
   @valid_modes ~w[standard strict relaxed]
+
+  def execute(%__MODULE__{} = _state, %ConfigureModeThresholds{} = cmd) do
+    %ModeThresholdsConfigured{
+      policy_id: cmd.policy_id,
+      org_id: cmd.org_id,
+      mode_thresholds: cmd.mode_thresholds,
+      actor_email: cmd.actor_email,
+      configured_at: DateTime.utc_now()
+    }
+  end
 
   def execute(%__MODULE__{} = _state, %SetTransferThreshold{} = cmd) do
     %TransferThresholdSet{
@@ -18,13 +45,15 @@ defmodule Nexus.Treasury.Aggregates.Policy do
     }
   end
 
-  def execute(%__MODULE__{} = _state, %SetPolicyMode{mode: mode} = cmd)
+  def execute(%__MODULE__{} = state, %SetPolicyMode{mode: mode} = cmd)
       when mode in @valid_modes do
+    threshold_val = Map.get(state.mode_thresholds, mode, "1000000")
+
     %PolicyModeChanged{
       policy_id: cmd.policy_id,
       org_id: cmd.org_id,
       mode: cmd.mode,
-      threshold: cmd.threshold,
+      threshold: Decimal.new(threshold_val),
       actor_email: cmd.actor_email,
       changed_at: DateTime.utc_now()
     }
@@ -69,6 +98,15 @@ defmodule Nexus.Treasury.Aggregates.Policy do
         org_id: ev.org_id,
         mode: ev.mode,
         transfer_threshold: ev.threshold
+    }
+  end
+
+  def apply(%__MODULE__{} = state, %ModeThresholdsConfigured{} = ev) do
+    %__MODULE__{
+      state
+      | id: ev.policy_id,
+        org_id: ev.org_id,
+        mode_thresholds: ev.mode_thresholds
     }
   end
 

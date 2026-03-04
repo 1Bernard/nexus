@@ -1,10 +1,10 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+<.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in">
+  <.page_header title="User Management" subtitle="Manage your team and their access levels" />
+
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <div class="md:col-span-3">
       <.data_grid
         id="users-grid"
-        title="User Management"
-        subtitle="Manage your team and their access levels"
         rows={@users}
         total={@total_count}
         params={@datagrid_params}
@@ -119,7 +119,7 @@
       </div>
     </div>
   </div>
-</div>
+</.page_container>
 
   <.modal 
     :if={@show_invite_modal} 

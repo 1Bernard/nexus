@@ -7,7 +7,13 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     repo: Nexus.Repo,
     name: "Treasury.PolicyProjector"
 
-  alias Nexus.Treasury.Events.{TransferThresholdSet, PolicyAlertTriggered, PolicyModeChanged}
+  alias Nexus.Treasury.Events.{
+    TransferThresholdSet,
+    PolicyAlertTriggered,
+    PolicyModeChanged,
+    ModeThresholdsConfigured
+  }
+
   alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert}
 
   project(%TransferThresholdSet{} = ev, _metadata, fn multi ->
@@ -54,6 +60,20 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
         threshold: parse_decimal(ev.threshold),
         changed_at: to_datetime(ev.changed_at)
       }
+    )
+  end)
+
+  project(%ModeThresholdsConfigured{} = ev, _metadata, fn multi ->
+    Ecto.Multi.insert(
+      multi,
+      :treasury_policy,
+      %TreasuryPolicy{
+        id: ev.policy_id,
+        org_id: ev.org_id,
+        mode_thresholds: ev.mode_thresholds
+      },
+      on_conflict: {:replace, [:mode_thresholds, :updated_at]},
+      conflict_target: [:org_id]
     )
   end)
 

@@ -103,16 +103,16 @@ defmodule NexusWeb.Treasury.ForecastLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto space-y-6">
-      <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <.timeframe_selector
-          options={["7", "14", "30"]}
-          active={"#{@horizon_days}"}
-          on_change="set_horizon_btn"
-          variant="solid"
-        />
+    <.page_container class="px-6">
+      <.page_header title="Cash Flow Outlook" subtitle="Predictive Liquidity Intelligence">
+        <:actions>
+          <.timeframe_selector
+            options={["7", "14", "30"]}
+            active={"#{@horizon_days}"}
+            on_change="set_horizon_btn"
+            variant="solid"
+          />
 
-        <div class="flex gap-3">
           <.nx_button
             phx-click="download_csv"
             variant="outline"
@@ -130,8 +130,8 @@ defmodule NexusWeb.Treasury.ForecastLive do
           >
             {if @loading, do: "ANALYZING...", else: "REGENERATE FORECAST"}
           </.nx_button>
-        </div>
-      </div>
+        </:actions>
+      </.page_header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <%= if @forecast do %>
@@ -295,7 +295,7 @@ defmodule NexusWeb.Treasury.ForecastLive do
           </div>
         <% end %>
       </div>
-    </div>
+    </.page_container>
     """
   end
 end

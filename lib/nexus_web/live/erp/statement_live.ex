@@ -22,6 +22,8 @@ defmodule NexusWeb.ERP.StatementLive do
 
     socket =
       socket
+      |> assign(:page_title, "Document Gateway")
+      |> assign(:current_path, "/statements")
       |> assign(:statements, ERP.list_statements(org_id, "", ""))
       |> assign(:expanded_statement_id, nil)
       |> assign(:expanded_lines, [])
@@ -146,21 +148,14 @@ defmodule NexusWeb.ERP.StatementLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-[#080B11] text-white px-6 py-8">
-      <%!-- Page header --%>
-      <div class="max-w-5xl mx-auto">
-        <div class="mb-8">
-          <h1 class="text-2xl font-serif italic font-bold text-white tracking-tight">
-            Document Gateway
-          </h1>
-          <p class="text-slate-400 text-sm mt-1">
-            Upload MT940 SWIFT or CSV bank statements to begin reconciliation.
-          </p>
-        </div>
-
+    <.page_container class="px-6">
+      <.page_header
+        title="Document Gateway"
+        subtitle="Upload MT940 SWIFT or CSV bank statements to begin reconciliation."
+      />
         <%!-- Upload zone --%>
-        <div
-          class="mb-8 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] p-10 flex flex-col items-center gap-4 transition-colors hover:border-indigo-500/30 hover:bg-white/[0.03]"
+        <.dark_card
+          class="p-10 flex flex-col items-center gap-4 transition-colors hover:border-indigo-500/30 hover:bg-white/[0.03]"
           phx-drop-target={@uploads.statement.ref}
         >
           <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 ring-1 ring-indigo-500/20 flex items-center justify-center">
@@ -177,12 +172,14 @@ defmodule NexusWeb.ERP.StatementLive do
 
           <form id="upload-form" phx-submit="upload" phx-change="validate">
             <.live_file_input upload={@uploads.statement} class="sr-only" />
-            <label
-              for={@uploads.statement.ref}
-              class="cursor-pointer px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
-            >
-              Browse Files
-            </label>
+            <div class="flex justify-center mt-2">
+              <label
+                for={@uploads.statement.ref}
+                class="cursor-pointer px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+              >
+                Browse Files
+              </label>
+            </div>
 
             <%!-- Upload queue --%>
             <%= for entry <- @uploads.statement.entries do %>
@@ -208,17 +205,19 @@ defmodule NexusWeb.ERP.StatementLive do
               </div>
 
               <%= for err <- upload_errors(@uploads.statement, entry) do %>
-                <p class="text-rose-400 text-xs mt-1">{upload_error_to_string(err)}</p>
+                <p class="text-rose-400 text-xs mt-1 text-center">{upload_error_to_string(err)}</p>
               <% end %>
             <% end %>
 
             <%= if length(@uploads.statement.entries) > 0 do %>
-              <button
-                type="submit"
-                class="mt-4 px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors"
-              >
-                Upload Statement
-              </button>
+              <div class="flex justify-center">
+                <button
+                  type="submit"
+                  class="mt-4 px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors"
+                >
+                  Upload Statement
+                </button>
+              </div>
             <% end %>
           </form>
 
@@ -229,14 +228,17 @@ defmodule NexusWeb.ERP.StatementLive do
           <%= if @upload_status == :success do %>
             <p class="text-emerald-400 text-xs font-mono mt-2">✓ Statement uploaded and parsed</p>
           <% end %>
-        </div>
+        </.dark_card>
 
         <%!-- Statement list --%>
-        <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
-            <span class="hero-rectangle-stack w-4 h-4 text-slate-500"></span>
-            <h2 class="text-sm font-semibold text-white">Uploaded Statements</h2>
-            <div class="ml-auto flex items-center gap-3">
+        <.dark_card>
+          <div class="px-5 py-3.5 border-b border-white/[0.06] flex flex-col md:flex-row md:items-center gap-3 justify-between">
+            <div class="flex items-center gap-3">
+              <span class="hero-rectangle-stack w-4 h-4 text-slate-500"></span>
+              <h2 class="text-sm font-semibold text-white">Uploaded Statements</h2>
+              <span class="text-xs text-slate-500">{length(@statements)} total</span>
+            </div>
+            <div class="flex items-center gap-3">
               <div class="relative group">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 hero-magnifying-glass w-3.5 h-3.5 text-slate-500 group-focus-within:text-indigo-400">
                 </span>
@@ -255,7 +257,6 @@ defmodule NexusWeb.ERP.StatementLive do
                 class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                 value={@date_filter}
               />
-              <span class="text-xs text-slate-500">{length(@statements)} total</span>
             </div>
           </div>
 
@@ -273,14 +274,16 @@ defmodule NexusWeb.ERP.StatementLive do
                     >
                       <.statement_row statement={statement} />
                     </button>
-                    <button
+                    <.nx_button
                       phx-click="download_original"
                       phx-value-id={statement.id}
-                      class="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                       title="Download Original"
+                      variant="outline"
+                      size="sm"
+                      icon="hero-arrow-down-tray"
+                      class="ml-2"
                     >
-                      <span class="hero-arrow-down-tray w-4 h-4"></span>
-                    </button>
+                    </.nx_button>
                   </div>
 
                   <%!-- Expanded lines --%>
@@ -306,9 +309,8 @@ defmodule NexusWeb.ERP.StatementLive do
               <% end %>
             </div>
           <% end %>
-        </div>
-      </div>
-    </div>
+        </.dark_card>
+    </.page_container>
     """
   end
 

@@ -82,32 +82,23 @@ defmodule NexusWeb.Admin.AnalysisLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col gap-6 w-full px-4 md:px-6 pb-12">
+    <.page_container class="px-4 md:px-6">
       <!-- Live Stream Header -->
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <div class="flex items-center gap-4">
-            <h1 class="text-3xl font-serif italic font-bold text-white tracking-tight">
-              AI Sentinel
-            </h1>
-            <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
-                </span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      <.page_header title="AI Sentinel" subtitle="Real-time intelligence • 12ms latency • 142 ev/s">
+        <:actions>
+          <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
               </span>
-              <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5">
-                Live Stream
-              </span>
-            </div>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5">
+              Live Stream
+            </span>
           </div>
-          <p class="text-slate-500 text-sm mt-1">
-            Real-time intelligence • <span class="text-slate-400 font-medium">12ms latency</span>
-            • <span class="text-slate-400 font-medium tracking-tight">142 ev/s</span>
-          </p>
-        </div>
-      </div>
-      
+        </:actions>
+      </.page_header>
+
     <!-- Top KPIs -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full">
         <.dark_card class="p-6 flex flex-col justify-between">
@@ -171,7 +162,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </div>
         </.dark_card>
       </div>
-      
+
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-2 w-full">
         <.tab_button
@@ -252,7 +243,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       </span>
                       {anomaly.reason}
                     </div>
-                    
+
     <!-- Actions -->
                     <div class="flex items-center gap-3 pt-4 border-t border-white/5 mt-auto">
                       <button
@@ -282,7 +273,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
             </div>
           </.dark_card>
         <% end %>
-        
+
     <!-- Sentiments List -->
         <%= if @active_tab in ["overview", "sentiment"] do %>
           <.dark_card class="p-6 relative overflow-hidden h-fit">
@@ -339,7 +330,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       }>
                           {sent.sentiment}
                         </p>
-                        
+
     <!-- Confidence Bar -->
                         <div class="w-24 mt-2">
                           <div class="flex items-center justify-between text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
@@ -363,7 +354,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </.dark_card>
         <% end %>
       </div>
-    </div>
+    </.page_container>
     """
   end
 

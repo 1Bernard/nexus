@@ -49,8 +49,19 @@ defmodule NexusWeb.Tenant.AnalysisLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-8 max-w-7xl mx-auto pb-12">
-      <%!-- Intelligence Protocol Header --%>
+    <.page_container>
+      <.page_header title="Smart Insights" subtitle="AI-Powered Intelligence">
+        <:actions>
+          <div class="px-4 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-right">
+            <span class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">
+              Protocol Status
+            </span>
+            <span class="text-xs font-mono text-emerald-400">NOMINAL // AUTO-SCALE</span>
+          </div>
+        </:actions>
+      </.page_header>
+
+      <%!-- Intelligence Protocol Banner --%>
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-3xl backdrop-blur-sm relative overflow-hidden group">
         <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/15 transition-all duration-700">
         </div>
@@ -68,14 +79,6 @@ defmodule NexusWeb.Tenant.AnalysisLive do
           </div>
         </div>
 
-        <div class="relative z-10 flex items-center gap-4">
-          <div class="px-4 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-right">
-            <span class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">
-              Protocol Status
-            </span>
-            <span class="text-xs font-mono text-emerald-400">NOMINAL // AUTO-SCALE</span>
-          </div>
-        </div>
       </div>
 
       <%!-- Dashboard Stats --%>
@@ -255,7 +258,7 @@ defmodule NexusWeb.Tenant.AnalysisLive do
           <% end %>
         </div>
       </.dark_card>
-    </div>
+    </.page_container>
     """
   end
 end

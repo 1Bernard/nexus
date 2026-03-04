@@ -62,15 +62,9 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col gap-6 w-full px-4 md:px-6 pb-12">
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <h1 class="text-3xl font-serif italic font-bold text-white tracking-tight">
-            Match Engine
-          </h1>
-          <p class="text-slate-500 text-sm mt-1">Cross-system reconciliation & anomaly detection</p>
-        </div>
-        <div class="flex items-center gap-3">
+    <.page_container class="px-4 md:px-6">
+      <.page_header title="Match Engine" subtitle="Cross-system reconciliation & anomaly detection">
+        <:actions>
           <.dark_card class="px-4 py-2 flex items-center gap-4 bg-emerald-500/5 border-emerald-500/10">
             <div class="flex flex-col">
               <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">
@@ -90,8 +84,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
             </div>
             <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
           </.dark_card>
-        </div>
-      </div>
+        </:actions>
+      </.page_header>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <%!-- Column 1: Unmatched Invoices --%>
@@ -566,7 +560,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
           <% end %>
         </:action>
       </NexusWeb.NexusComponents.data_grid>
-    </div>
+    </.page_container>
     """
   end
 

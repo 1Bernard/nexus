@@ -71,7 +71,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col gap-6 w-full px-4 md:px-6 pb-12">
+    <.page_container class="px-4 md:px-6">
       <.live_component
         module={NexusWeb.Tenant.Components.StepUpModal}
         id="step-up-modal"
@@ -81,19 +81,12 @@ defmodule NexusWeb.Tenant.DashboardLive do
         host={@host}
       />
 
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <h1 class="text-3xl font-serif italic font-bold text-white tracking-tight">
-            Institutional Dashboard
-          </h1>
-          <p class="text-slate-500 text-sm mt-1">Real-time treasury & exposure intelligence</p>
-        </div>
-        <div class="flex items-center gap-3">
+      <.page_header title="Institutional Dashboard" subtitle="Real-time treasury & exposure intelligence">
+        <:actions>
           <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl mr-2">
             <button
               id="policy-mode-standard"
               phx-click="update_threshold"
-              phx-value-threshold="1000000"
               phx-value-mode="standard"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
@@ -108,7 +101,6 @@ defmodule NexusWeb.Tenant.DashboardLive do
             <button
               id="policy-mode-strict"
               phx-click="update_threshold"
-              phx-value-threshold="50000"
               phx-value-mode="strict"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
@@ -123,11 +115,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
             <button
               id="policy-mode-relaxed"
               phx-click="update_threshold"
-              phx-value-threshold="10000000"
               phx-value-mode="relaxed"
               class={[
                 "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(Decimal.eq?(@transfer_threshold, 10_000_000),
+                if(@policy_mode == "relaxed",
                   do: "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20",
                   else: "text-slate-500 hover:text-slate-300"
                 )
@@ -143,8 +134,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
           >
             <span class="hero-arrows-right-left w-4 h-4"></span> Transfer Funds
           </button>
-        </div>
-      </div>
+        </:actions>
+      </.page_header>
 
       <%!-- KPI Header Row --%>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 w-full">
@@ -578,7 +569,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
           </.dark_card>
         </div>
       </div>
-    </div>
+    </.page_container>
     """
   end
 
@@ -701,24 +692,19 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
-  def handle_event("update_threshold", %{"threshold" => threshold, "mode" => mode}, socket) do
+  def handle_event("update_threshold", %{"mode" => mode}, socket) do
     org_id = socket.assigns.current_user.org_id
-    threshold_decimal = Decimal.new(threshold)
 
     cmd = %Nexus.Treasury.Commands.SetPolicyMode{
       policy_id: org_id,
       org_id: org_id,
       mode: mode,
-      threshold: threshold_decimal,
       actor_email: socket.assigns.current_user.email
     }
 
     case Nexus.App.dispatch(cmd) do
       :ok ->
-        {:noreply,
-         socket
-         |> assign(:transfer_threshold, threshold_decimal)
-         |> assign(:policy_mode, mode)}
+        {:noreply, assign(socket, :policy_mode, mode)}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to update policy: #{inspect(reason)}")}

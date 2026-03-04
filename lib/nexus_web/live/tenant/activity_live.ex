@@ -24,7 +24,9 @@ defmodule NexusWeb.Tenant.ActivityLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <.page_container class="px-4 sm:px-6 lg:px-8">
+      <.page_header title="Activity History" subtitle="Comprehensive audit trail of ERP and system events" />
+
       <%!-- Elite KPI Header --%>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <.dark_card class="p-6">
@@ -133,7 +135,7 @@ defmodule NexusWeb.Tenant.ActivityLive do
           </div>
         </:col>
       </.data_grid>
-    </div>
+    </.page_container>
     """
   end
 end

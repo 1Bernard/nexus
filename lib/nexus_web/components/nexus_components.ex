@@ -48,6 +48,56 @@ defmodule NexusWeb.NexusComponents do
   end
 
   @doc """
+  Standardized main container for page content.
+  Provides a maximum width (7xl), center alignment, responsive padding, and vertical rhythm.
+
+  ## Examples
+
+      <.page_container>
+        <.page_header title="Dashboard" />
+        ... content ...
+      </.page_container>
+  """
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def page_container(assigns) do
+    ~H"""
+    <div class={[
+      "max-w-7xl mx-auto w-full flex flex-col gap-8 pb-12",
+      @class
+    ]}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  @doc """
+  Standardized page header used at the top of an app shell page.
+  Renders a large serif italic title, a subtitle, and optional header actions.
+  """
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  attr :class, :string, default: nil
+  slot :actions
+
+  def page_header(assigns) do
+    ~H"""
+    <div class={["flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0", @class]}>
+      <div>
+        <h1 class="text-3xl font-serif italic font-bold text-white tracking-tight">
+          {@title}
+        </h1>
+        <p :if={@subtitle} class="text-slate-500 text-sm mt-1">{@subtitle}</p>
+      </div>
+      <div :if={@actions != []} class="flex items-center gap-3 shrink-0">
+        {render_slot(@actions)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Authenticated app shell — sidebar + topbar + content area.
   Used as the layout wrapper for all post-login pages.
 
@@ -403,15 +453,19 @@ defmodule NexusWeb.NexusComponents do
   attr :class, :any, default: nil
   attr :title, :string, default: nil
   attr :subtitle, :string, default: nil
+  attr :rest, :global
   slot :inner_block, required: true
   slot :header_actions
 
   def dark_card(assigns) do
     ~H"""
-    <div class={[
-      "bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)]",
-      @class
-    ]}>
+    <div
+      class={[
+        "bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)]",
+        @class
+      ]}
+      {@rest}
+    >
       <div :if={@title} class="flex items-center justify-between px-6 pt-5 pb-0">
         <div>
           <h3 class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">

@@ -283,7 +283,8 @@ defmodule NexusWeb.ERP.InvoiceLive do
       }
     </style>
 
-    <div class="p-6 md:p-8 w-full relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <.page_container class="px-4 md:px-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization" />
 
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
@@ -313,8 +314,8 @@ defmodule NexusWeb.ERP.InvoiceLive do
     <!-- High-Density Data Table Card -->
         <NexusWeb.NexusComponents.data_grid
           id="invoices-table"
-          title="Accounts Payable"
-          subtitle="Real-time ERP ledger synchronization. Manage, filter, and audit inbound invoices."
+          title="Inbound Invoices"
+          subtitle="Manage, filter, and audit inbound invoices."
           params={@datagrid_params}
           total={@total_count}
           rows={@streams.invoices}
@@ -536,7 +537,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.modal>
-    </div>
+    </.page_container>
     """
   end
 
