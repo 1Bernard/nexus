@@ -101,9 +101,10 @@ defmodule Nexus.MixProject do
       {:instructor, "~> 0.1.0"},
       {:exla, "~> 0.10.0"},
 
-      # --- Testing & BDD ---
+      # Testing & BDD ---
       # Gherkin BDD implementation
       {:cabbage, "~> 0.4.0"},
+      {:floki, ">= 0.30.0", only: :test},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false}

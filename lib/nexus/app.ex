@@ -3,6 +3,7 @@ defmodule Nexus.App do
   The Commanded application for Nexus.
   """
   use Commanded.Application, otp_app: :nexus
+  require Logger
 
   router(Nexus.Router)
 end

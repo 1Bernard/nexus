@@ -10,30 +10,53 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       Phoenix.PubSub.subscribe(Nexus.PubSub, "reconciliations:#{org_id}")
       Phoenix.PubSub.subscribe(Nexus.PubSub, "erp_invoices:#{org_id}")
       Phoenix.PubSub.subscribe(Nexus.PubSub, "erp_statements:#{org_id}")
+      send(self(), :load_stats)
     end
 
-    {:ok,
-     socket
-     |> assign(:selected_invoice_id, nil)
-     |> assign(:selected_line_id, nil)
-     |> assign(:invoice_search, "")
-     |> assign(:line_search, "")
-     |> assign(:variance_reason, nil)
-     |> assign(:filter_date_from, "")
-     |> assign(:filter_date_to, "")
-     |> assign(:filter_type, "all")
-     |> load_data()}
+    socket =
+      socket
+      |> assign(:selected_invoice_id, nil)
+      |> assign(:selected_line_id, nil)
+      |> assign(:invoice_search, "")
+      |> assign(:line_search, "")
+      |> assign(:variance_reason, nil)
+      |> assign(:filter_date_from, "")
+      |> assign(:filter_date_to, "")
+      |> assign(:filter_type, "all")
+      # Setup datagrid state
+      |> assign(datagrid_params: %{})
+      |> assign(limit: 25)
+      |> assign(cursor_before: nil)
+      |> assign(cursor_after: nil)
+      |> assign(search: nil)
+      # Stats placeholder
+      |> assign(:auto_matched_count, 0)
+      |> assign(:auto_match_rate, 0)
+      |> load_unmatched()
+      |> load_reconciliations_page()
+
+    {:ok, socket}
   end
 
   @impl true
-  def handle_params(params, _uri, socket) do
-    type = params["type"] || "all"
+  def handle_params(params, uri, socket) do
+    type = params["type"] || socket.assigns.filter_type
 
-    {:noreply,
-     socket
-     |> assign(:page_title, "Match Engine")
-     |> assign(:filter_type, type)
-     |> load_data()}
+    socket =
+      socket
+      |> assign(:page_title, "Match Engine")
+      |> assign(current_path: URI.parse(uri).path)
+      |> assign(datagrid_params: params)
+      |> assign(search: params["search"])
+      |> assign(filter_date_from: params["date_from"] || socket.assigns.filter_date_from)
+      |> assign(filter_date_to: params["date_to"] || socket.assigns.filter_date_to)
+      |> assign(filter_type: type)
+      |> assign(limit: String.to_integer(params["limit"] || "25"))
+      |> assign(cursor_after: params["cursor_after"])
+      |> assign(cursor_before: params["cursor_before"])
+      |> load_reconciliations_page()
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -363,245 +386,257 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         </div>
       </.modal>
 
-      <.dark_card class="p-0 flex flex-col">
-        <div class="p-6 border-b border-white/5 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <span class="hero-list-bullet w-4 h-4 text-emerald-400"></span>
-            </div>
-            <h2 class="text-xs font-bold text-slate-300 uppercase tracking-[0.2em]">
-              Matched Ledger (Audit Trail)
-            </h2>
-          </div>
-          <div class="flex items-center gap-4">
-            <form
-              phx-change="filter_ledger"
-              class="flex items-center gap-3 mr-2 border-r border-white/5 pr-4"
+      <NexusWeb.NexusComponents.data_grid
+        id="reconciliations-table"
+        title="Matched Ledger (Audit Trail)"
+        subtitle="Historical log of all reconciliations"
+        params={%{}}
+        total={length(@reconciliations)}
+        rows={@reconciliations}
+        row_item={fn r -> r end}
+        row_click={nil}
+      >
+        <:filters>
+          <form phx-change="filter_ledger" class="flex items-center gap-2 m-0 bg-slate-900/40 border border-slate-800 rounded-xl p-1">
+            <input
+              type="date"
+              name="date_from"
+              value={@filter_date_from}
+              class="bg-transparent border-none focus:ring-0 text-xs text-slate-300 w-[110px] py-1 cursor-pointer"
+            />
+            <span class="text-slate-500 text-xs font-bold px-1">→</span>
+            <input
+              type="date"
+              name="date_to"
+              value={@filter_date_to}
+              class="bg-transparent border-none focus:ring-0 text-xs text-slate-300 w-[110px] py-1 cursor-pointer"
+            />
+            <div class="h-4 w-px bg-slate-700/50 mx-1"></div>
+            <select
+              name="type"
+              class="bg-transparent border-none focus:ring-0 text-xs text-slate-300 py-1 pr-6 cursor-pointer font-medium uppercase tracking-wider appearance-none"
             >
-              <input
-                type="date"
-                name="date_from"
-                value={@filter_date_from}
-                class="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-slate-300 w-[120px]"
-              />
-              <span class="text-slate-500 text-xs">-</span>
-              <input
-                type="date"
-                name="date_to"
-                value={@filter_date_to}
-                class="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-slate-300 w-[120px]"
-              />
-              <select
-                name="type"
-                class="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-slate-300"
-              >
-                <option value="all" selected={@filter_type == "all"}>All Types</option>
-                <option value="auto" selected={@filter_type == "auto"}>Auto</option>
-                <option value="manual" selected={@filter_type == "manual"}>Manual</option>
-                <option value="pending" selected={@filter_type == "pending"}>Pending</option>
-                <option value="rejected" selected={@filter_type == "rejected"}>Rejected</option>
-              </select>
-            </form>
-            <div class="flex items-center gap-1.5 text-[9px] text-slate-500 uppercase tracking-widest font-bold border-r border-white/5 pr-4 mr-2">
-              <span class="hero-check-badge w-3.5 h-3.5 text-emerald-500"></span> Verified
-            </div>
-            <button
-              phx-click="export_csv"
-              class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
-            >
-              <span class="hero-arrow-down-tray w-3.5 h-3.5"></span> Export CSV
-            </button>
-          </div>
-        </div>
+              <option value="all" selected={@filter_type == "all"}>All Types</option>
+              <option value="auto" selected={@filter_type == "auto"}>Auto</option>
+              <option value="manual" selected={@filter_type == "manual"}>Manual</option>
+              <option value="pending" selected={@filter_type == "pending"}>Pending</option>
+              <option value="rejected" selected={@filter_type == "rejected"}>Rejected</option>
+            </select>
+          </form>
+        </:filters>
 
-        <div class="overflow-x-auto scroll-soft">
-          <table class="w-full text-left border-collapse table-fixed min-w-[900px]">
-            <thead>
-              <tr class="border-b border-white/5 bg-white/[0.01]">
-                <th class="p-4 w-12"></th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-32">
-                  Match Type
-                </th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  References (SAP / Bank)
-                </th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
+        <:primary_actions>
+          <div class="flex items-center gap-2 text-[9px] text-slate-500 uppercase tracking-widest font-bold border-r border-white/5 pr-4 mr-2">
+            <span class="hero-check-badge w-3.5 h-3.5 text-emerald-500"></span> Verified
+          </div>
+          <NexusWeb.NexusComponents.nx_button
+            variant="outline"
+            size="sm"
+            icon="hero-arrow-down-tray"
+            phx-click="export_csv"
+          >
+            Export
+          </NexusWeb.NexusComponents.nx_button>
+        </:primary_actions>
+
+        <:col :let={_recon} label="" class="w-12 text-center">
+          <span class="hero-lock-closed w-3.5 h-3.5 text-slate-700"></span>
+        </:col>
+
+        <:col :let={recon} label="Match Type" class="w-32">
+          <% is_manual = String.contains?(recon.reconciliation_id, "MANUAL") or Enum.at(String.split(recon.reconciliation_id, "-"), 0) |> String.length() > 30 %>
+          <div class="flex items-start gap-2">
+            <%= if is_manual do %>
+              <div class="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0" title="Manual Match">
+                <span class="hero-user w-3.5 h-3.5 text-amber-500"></span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Manual</span>
+                <%= if recon.actor_email do %>
+                  <span class="text-[9px] text-slate-500 font-medium truncate max-w-[100px]" title={recon.actor_email}>
+                    {recon.actor_email}
+                  </span>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center" title="Auto Match">
+                <span class="hero-bolt w-3.5 h-3.5 text-indigo-400"></span>
+              </div>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Auto</span>
+            <% end %>
+          </div>
+        </:col>
+
+        <:col :let={recon} label="References (SAP / Bank)">
+          <div class="flex flex-col gap-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-mono text-indigo-400">SAP:</span>
+              <span class="text-xs font-bold text-slate-300">{recon.invoice_id}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-mono text-amber-400">BNK:</span>
+              <span class="text-[11px] text-slate-500 font-medium truncate max-w-[150px]">
+                {recon.statement_line_id}
+              </span>
+            </div>
+          </div>
+        </:col>
+
+        <:col :let={recon} label="Matched" class="text-right">
+          <span class="text-xs font-mono font-bold text-white">
+            {recon.amount} {recon.currency}
+          </span>
+        </:col>
+
+        <:col :let={recon} label="Variance" class="text-right">
+          <%= if not Decimal.equal?(recon.variance || Decimal.new(0), Decimal.new(0)) do %>
+            <div class="flex flex-col items-end">
+              <span class="text-[10px] font-mono font-bold text-rose-400">
+                {recon.variance} {recon.currency}
+              </span>
+              <span class="text-[8px] text-slate-600 uppercase font-black">
+                {recon.variance_reason || "Reconciled Diff"}
+              </span>
+            </div>
+          <% else %>
+            <span class="text-[10px] font-mono text-slate-700">None</span>
+          <% end %>
+        </:col>
+
+        <:col :let={recon} label="Timestamp">
+          <div class="flex flex-col items-start gap-1">
+            <span class="text-[10px] text-slate-300 font-bold">
+              {Calendar.strftime(recon.matched_at, "%d %b %Y")}
+            </span>
+            <span class="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+              {Calendar.strftime(recon.matched_at, "%H:%M:%S UTC")}
+            </span>
+          </div>
+        </:col>
+
+        <:action :let={recon}>
+          <%= cond do %>
+            <% recon.status == :matched -> %>
+              <div class="flex flex-col items-end gap-2">
+                <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/20">
                   Matched
-                </th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
-                  Variance
-                </th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Timestamp
-                </th>
-                <th class="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/[0.03]">
-              <%= for recon <- @reconciliations do %>
-                <tr class="group hover:bg-white/[0.02] transition-colors relative">
-                  <td class="p-4 text-center">
-                    <span class="hero-lock-closed w-3.5 h-3.5 text-slate-700"></span>
-                  </td>
-                  <td class="p-4">
-                    <% is_manual =
-                      String.contains?(recon.reconciliation_id, "MANUAL") or
-                        Enum.at(String.split(recon.reconciliation_id, "-"), 0) |> String.length() > 30 %>
-                    <div class="flex items-start gap-2">
-                      <%= if is_manual do %>
-                        <div
-                          class="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0"
-                          title="Manual Match"
-                        >
-                          <span class="hero-user w-3.5 h-3.5 text-amber-500"></span>
-                        </div>
-                        <div class="flex flex-col">
-                          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            Manual
-                          </span>
-                          <%= if recon.actor_email do %>
-                            <span
-                              class="text-[9px] text-slate-500 font-medium truncate max-w-[100px]"
-                              title={recon.actor_email}
-                            >
-                              {recon.actor_email}
-                            </span>
-                          <% end %>
-                        </div>
-                      <% else %>
-                        <div
-                          class="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center"
-                          title="Auto Match"
-                        >
-                          <span class="hero-bolt w-3.5 h-3.5 text-indigo-400"></span>
-                        </div>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                          Auto
-                        </span>
-                      <% end %>
-                    </div>
-                  </td>
-                  <td class="p-4">
-                    <div class="flex flex-col gap-0.5">
-                      <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-mono text-indigo-400">SAP:</span>
-                        <span class="text-xs font-bold text-slate-300">#{recon.invoice_id}</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-mono text-amber-400">BNK:</span>
-                        <span class="text-[11px] text-slate-500 font-medium truncate max-w-[150px]">
-                          #{recon.statement_line_id}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="p-4 text-right">
-                    <span class="text-xs font-mono font-bold text-white">
-                      {recon.amount} {recon.currency}
-                    </span>
-                  </td>
-                  <td class="p-4 text-right">
-                    <%= if not Decimal.equal?(recon.variance || Decimal.new(0), Decimal.new(0)) do %>
-                      <div class="flex flex-col items-end">
-                        <span class="text-[10px] font-mono font-bold text-rose-400">
-                          {recon.variance} {recon.currency}
-                        </span>
-                        <span class="text-[8px] text-slate-600 uppercase font-black">
-                          {recon.variance_reason || "Reconciled Diff"}
-                        </span>
-                      </div>
-                    <% else %>
-                      <span class="text-[10px] font-mono text-slate-700">None</span>
-                    <% end %>
-                  </td>
-                  <td class="p-4">
-                    <div class="flex flex-col items-start gap-1">
-                      <span class="text-[10px] text-slate-300 font-bold">
-                        {Calendar.strftime(recon.matched_at, "%d %b %Y")}
-                      </span>
-                      <span class="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
-                        {Calendar.strftime(recon.matched_at, "%H:%M:%S UTC")}
-                      </span>
-                    </div>
-                  </td>
-                  <td class="p-4 text-right">
-                    <%= cond do %>
-                      <% recon.status == :matched -> %>
-                        <div class="flex flex-col items-end gap-2">
-                          <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/20">
-                            Matched
-                          </span>
-                          <button
-                            phx-click="reverse_match"
-                            phx-value-id={recon.reconciliation_id}
-                            class="text-[9px] font-bold text-slate-500 hover:text-rose-400 transition-colors uppercase tracking-widest"
-                          >
-                            Reverse Match
-                          </button>
-                        </div>
-                      <% recon.status == :pending -> %>
-                        <div class="flex flex-col items-end gap-2">
-                          <span class="text-[9px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-widest border border-amber-500/20 animate-pulse">
-                            Pending Approval
-                          </span>
-                          <div class="flex items-center gap-2">
-                            <button
-                              phx-click="approve_match"
-                              phx-value-id={recon.reconciliation_id}
-                              class="px-2 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded transition-colors uppercase tracking-wider"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              phx-click="reject_match"
-                              phx-value-id={recon.reconciliation_id}
-                              class="px-2 py-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded transition-colors uppercase tracking-wider"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      <% recon.status == :reversed -> %>
-                        <span class="text-[10px] font-bold text-rose-500/70 border border-rose-500/20 px-2 py-0.5 rounded uppercase tracking-wider bg-rose-500/5">
-                          Reversed
-                        </span>
-                      <% recon.status == :rejected -> %>
-                        <span class="text-[10px] font-bold text-slate-500 border border-slate-500/20 px-2 py-0.5 rounded uppercase tracking-wider bg-slate-500/5">
-                          Rejected
-                        </span>
-                      <% true -> %>
-                        <span class="text-[10px] font-bold text-slate-500 border border-slate-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
-                          {recon.status}
-                        </span>
-                    <% end %>
-                  </td>
-                </tr>
-              <% end %>
-              <%= if Enum.empty?(@reconciliations) do %>
-                <tr>
-                  <td colspan="6" class="p-20 text-center opacity-20">
-                    <div class="flex flex-col items-center">
-                      <span class="hero-archive-box w-12 h-12 mb-4"></span>
-                      <p class="text-xs uppercase tracking-[0.2em] font-bold italic">
-                        Secured Audit Ledger Empty
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      </.dark_card>
+                </span>
+                <button
+                  phx-click="reverse_match"
+                  phx-value-id={recon.reconciliation_id}
+                  class="text-[9px] font-bold text-slate-500 hover:text-rose-400 transition-colors uppercase tracking-widest"
+                >
+                  Reverse Match
+                </button>
+              </div>
+            <% recon.status == :pending -> %>
+              <div class="flex flex-col items-end gap-2">
+                <span class="text-[9px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-widest border border-amber-500/20 animate-pulse">
+                  Pending Approval
+                </span>
+                <div class="flex items-center gap-2">
+                  <button
+                    phx-click="approve_match"
+                    phx-value-id={recon.reconciliation_id}
+                    class="px-2 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded transition-colors uppercase tracking-wider"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    phx-click="reject_match"
+                    phx-value-id={recon.reconciliation_id}
+                    class="px-2 py-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded transition-colors uppercase tracking-wider"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            <% recon.status == :reversed -> %>
+              <span class="text-[10px] font-bold text-rose-500/70 border border-rose-500/20 px-2 py-0.5 rounded uppercase tracking-wider bg-rose-500/5">
+                Reversed
+              </span>
+            <% recon.status == :rejected -> %>
+              <span class="text-[10px] font-bold text-slate-500 border border-slate-500/20 px-2 py-0.5 rounded uppercase tracking-wider bg-slate-500/5">
+                Rejected
+              </span>
+            <% true -> %>
+              <span class="text-[10px] font-bold text-slate-500 border border-slate-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
+                {recon.status}
+              </span>
+          <% end %>
+        </:action>
+      </NexusWeb.NexusComponents.data_grid>
     </div>
     """
   end
 
   @impl true
+  def handle_info(:load_stats, socket) do
+    org_id = socket.assigns.current_user.org_id
+    stats = Treasury.get_reconciliation_stats(org_id)
+
+    {:noreply,
+     socket
+     |> assign(:auto_matched_count, stats.auto_matched_count)
+     |> assign(:auto_match_rate, stats.match_rate)}
+  end
+
+  @impl true
   def handle_info(_msg, socket) do
-    {:noreply, load_data(socket)}
+    {:noreply, socket |> load_unmatched() |> load_reconciliations_page()}
+  end
+
+  @impl true
+  def handle_event("search", %{"search" => search}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("search", search)
+      |> Map.drop(["cursor_before", "cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/reconciliation?#{params}")}
+  end
+
+  @impl true
+  def handle_event("change_limit", %{"limit" => limit}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("limit", limit)
+      |> Map.drop(["cursor_before", "cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/reconciliation?#{params}")}
+  end
+
+  @impl true
+  def handle_event("change_page", %{"direction" => "next"}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("cursor_after", socket.assigns.next_cursor)
+      |> Map.drop(["cursor_before"])
+
+    {:noreply, push_patch(socket, to: ~p"/reconciliation?#{params}")}
+  end
+
+  @impl true
+  def handle_event("change_page", %{"direction" => "prev"}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("cursor_before", socket.assigns.prev_cursor)
+      |> Map.drop(["cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/reconciliation?#{params}")}
+  end
+
+  def handle_event("filter_ledger", params, socket) do
+    new_params =
+      socket.assigns.datagrid_params
+      |> Map.merge(%{
+        "date_from" => params["date_from"],
+        "date_to" => params["date_to"],
+        "type" => params["type"]
+      })
+      |> Map.drop(["cursor_before", "cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/reconciliation?#{new_params}")}
   end
 
   @impl true
@@ -620,12 +655,12 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
 
   @impl true
   def handle_event("search_invoices", %{"value" => query}, socket) do
-    {:noreply, socket |> assign(:invoice_search, query) |> load_data()}
+    {:noreply, socket |> assign(:invoice_search, query) |> load_unmatched()}
   end
 
   @impl true
   def handle_event("search_lines", %{"value" => query}, socket) do
-    {:noreply, socket |> assign(:line_search, query) |> load_data()}
+    {:noreply, socket |> assign(:line_search, query) |> load_unmatched()}
   end
 
   @impl true
@@ -684,7 +719,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         {:noreply,
          socket
          |> put_flash(:info, "Match successfully reversed.")
-         |> load_data()}
+         |> load_unmatched()
+         |> load_reconciliations_page()}
 
       _ ->
         {:noreply, put_flash(socket, :error, "Failed to reverse match.")}
@@ -700,7 +736,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         {:noreply,
          socket
          |> put_flash(:info, "Match approved successfully.")
-         |> load_data()}
+         |> load_unmatched()
+         |> load_reconciliations_page()}
 
       _ ->
         {:noreply, put_flash(socket, :error, "Failed to approve match.")}
@@ -716,14 +753,15 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         {:noreply,
          socket
          |> put_flash(:info, "Match rejected.")
-         |> load_data()}
+         |> load_unmatched()
+         |> load_reconciliations_page()}
 
       _ ->
         {:noreply, put_flash(socket, :error, "Failed to reject match.")}
     end
   end
 
-  defp load_data(socket) do
+  defp load_unmatched(socket) do
     org_id = socket.assigns.current_user.org_id
 
     invoices =
@@ -734,59 +772,135 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       Treasury.list_unmatched_statement_lines(org_id)
       |> filter_items(socket.assigns.line_search, [:ref, :narrative, :amount])
 
-    all_reconciliations = Treasury.list_reconciliations(org_id)
-
-    filtered_reconciliations =
-      all_reconciliations
-      |> filter_by_date(socket.assigns.filter_date_from, socket.assigns.filter_date_to)
-      |> filter_by_type(socket.assigns.filter_type)
-
-    auto_matched_count =
-      Enum.count(
-        all_reconciliations,
-        &(&1.status == :matched and &1.actor_email == "system@nexus.ai")
-      )
-
-    total_matched = Enum.count(all_reconciliations, &(&1.status == :matched))
-
-    match_rate =
-      if total_matched > 0, do: round(auto_matched_count / total_matched * 100), else: 0
-
     socket
     |> assign(:unmatched_invoices, invoices)
     |> assign(:unmatched_lines, lines)
-    |> assign(:reconciliations, filtered_reconciliations)
-    |> assign(:auto_matched_count, auto_matched_count)
-    |> assign(:auto_match_rate, match_rate)
   end
 
-  defp filter_by_date(reconciliations, "", ""), do: reconciliations
+  defp load_reconciliations_page(socket) do
+    %{
+      current_user: user,
+      limit: limit,
+      cursor_before: cursor_before,
+      cursor_after: cursor_after,
+      filter_date_from: date_from,
+      filter_date_to: date_to,
+      filter_type: type,
+      search: search
+    } = socket.assigns
 
-  defp filter_by_date(reconciliations, from, to) do
-    Enum.filter(reconciliations, fn r ->
-      date_str = Calendar.strftime(r.matched_at, "%Y-%m-%d")
-      passes_from = if from == "", do: true, else: date_str >= from
-      passes_to = if to == "", do: true, else: date_str <= to
-      passes_from and passes_to
-    end)
-  end
+    import Ecto.Query
 
-  defp filter_by_type(reconciliations, "all"), do: reconciliations
+    base_query =
+      from(r in Nexus.Treasury.Projections.Reconciliation,
+        where: r.org_id == ^user.org_id
+      )
 
-  defp filter_by_type(reconciliations, type) do
-    Enum.filter(reconciliations, fn r ->
-      is_manual =
-        String.contains?(r.reconciliation_id, "MANUAL") or
-          String.split(r.reconciliation_id, "-") |> Enum.at(0) |> String.length() > 30
+    query =
+      if search && String.trim(search) != "" do
+        search_term = "%#{search}%"
 
-      case type do
-        "manual" -> is_manual
-        "auto" -> not is_manual
-        "pending" -> r.status == :pending
-        "rejected" -> r.status == :rejected
-        _ -> true
+        where(
+          base_query,
+          [r],
+          ilike(r.invoice_id, ^search_term) or ilike(r.statement_line_id, ^search_term)
+        )
+      else
+        base_query
       end
-    end)
+
+    query =
+      if date_from && date_from != "" do
+        # rudimentary YYYY-MM-DD check
+        if String.length(date_from) == 10 do
+          where(query, [r], fragment("date(?)", r.matched_at) >= ^date_from)
+        else
+          query
+        end
+      else
+        query
+      end
+
+    query =
+      if date_to && date_to != "" do
+        if String.length(date_to) == 10 do
+          where(query, [r], fragment("date(?)", r.matched_at) <= ^date_to)
+        else
+          query
+        end
+      else
+        query
+      end
+
+    query =
+      case type do
+        "auto" -> where(query, [r], r.actor_email == "system@nexus.ai")
+        "manual" -> where(query, [r], r.actor_email != "system@nexus.ai")
+        "pending" -> where(query, [r], r.status == :pending)
+        "rejected" -> where(query, [r], r.status == :rejected)
+        _ -> query
+      end
+
+    {reconciliations, prev_cursor, next_cursor} =
+      fetch_keyset_page(query, limit, cursor_before, cursor_after)
+
+    socket
+    |> assign(:prev_cursor, prev_cursor)
+    |> assign(:next_cursor, next_cursor)
+    # Using list instead of stream for existing UI hookup
+    |> assign(:reconciliations, reconciliations)
+  end
+
+  defp fetch_keyset_page(query, limit, cursor_before, cursor_after) do
+    import Ecto.Query
+
+    cond do
+      cursor_before ->
+        records =
+          query
+          |> where([r], r.reconciliation_id > ^cursor_before)
+          |> order_by([r], asc: r.reconciliation_id)
+          |> limit(^(limit + 1))
+          |> Nexus.Repo.all()
+          |> Enum.reverse()
+
+        if length(records) > limit do
+          {tl(records), hd(records).reconciliation_id, List.last(records).reconciliation_id}
+        else
+          {records, nil, List.last(records) && List.last(records).reconciliation_id}
+        end
+
+      cursor_after ->
+        records =
+          query
+          |> where([r], r.reconciliation_id < ^cursor_after)
+          |> order_by([r], desc: r.reconciliation_id)
+          |> limit(^(limit + 1))
+          |> Nexus.Repo.all()
+
+        if length(records) > limit do
+          has_more_records = Enum.take(records, limit)
+
+          {has_more_records, hd(has_more_records).reconciliation_id,
+           List.last(records).reconciliation_id}
+        else
+          {records, hd(records) && hd(records).reconciliation_id, nil}
+        end
+
+      true ->
+        records =
+          query
+          |> order_by([r], desc: r.reconciliation_id)
+          |> limit(^(limit + 1))
+          |> Nexus.Repo.all()
+
+        if length(records) > limit do
+          has_more_records = Enum.take(records, limit)
+          {has_more_records, nil, List.last(records).reconciliation_id}
+        else
+          {records, nil, nil}
+        end
+    end
   end
 
   defp filter_items(items, "", _fields), do: items

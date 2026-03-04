@@ -15,28 +15,42 @@ defmodule NexusWeb.ERP.InvoiceLive do
       send(self(), :load_stats)
     end
 
-    # Load initial page instantly
-    invoices = load_invoices(org_id, nil, 10)
+    socket =
+      socket
+      |> assign(page_title: "ERP Talk Back - Nexus")
+      |> assign(org_id: org_id)
+      |> assign(show_manual_modal: false)
+      # Initialize with placeholders
+      |> assign(total_volume: 0.0)
+      |> assign(pending_count: 0)
+      |> assign(total_count: 0)
+      |> assign(selected_invoice: nil)
+      # Setup datagrid state
+      |> assign(datagrid_params: %{})
+      |> assign(search: nil)
+      |> assign(status_filter: "All Statuses")
+      |> assign(limit: 10)
+      |> assign(cursor_before: nil)
+      |> assign(cursor_after: nil)
+      |> load_invoices_page()
 
-    {:ok,
-     socket
-     |> assign(page_title: "ERP Talk Back - Nexus")
-     |> assign(org_id: org_id)
-     |> assign(show_manual_modal: false)
-     # Initialize with placeholders
-     |> assign(total_volume: 0.0)
-     |> assign(pending_count: 0)
-     |> assign(total_count: 0)
-     |> assign(has_more: length(invoices) == 10)
-     |> assign(showing: length(invoices))
-     |> assign(last_cursor: List.last(invoices) && List.last(invoices).created_at)
-     |> assign(selected_invoice: nil)
-     |> stream(:invoices, invoices)}
+    {:ok, socket}
   end
 
   @impl true
-  def handle_params(_params, uri, socket) do
-    {:noreply, assign(socket, current_path: URI.parse(uri).path)}
+  def handle_params(params, uri, socket) do
+    socket =
+      socket
+      |> assign(current_path: URI.parse(uri).path)
+      |> assign(datagrid_params: params)
+      |> assign(search: params["search"])
+      |> assign(status_filter: params["status_filter"] || "All Statuses")
+      |> assign(limit: String.to_integer(params["limit"] || "10"))
+      |> assign(cursor_after: params["cursor_after"])
+      |> assign(cursor_before: params["cursor_before"])
+      |> load_invoices_page()
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -71,22 +85,49 @@ defmodule NexusWeb.ERP.InvoiceLive do
   end
 
   @impl true
-  def handle_event("load-more", _, socket) do
-    new_invoices = load_invoices(socket.assigns.org_id, socket.assigns.last_cursor, 10)
+  def handle_event("search", %{"search" => search}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("search", search)
+      |> Map.drop(["cursor_before", "cursor_after"])
 
-    socket =
-      socket
-      |> assign(has_more: length(new_invoices) == 10)
-      |> assign(showing: socket.assigns.showing + length(new_invoices))
-      |> assign(last_cursor: List.last(new_invoices) && List.last(new_invoices).created_at)
+    {:noreply, push_patch(socket, to: ~p"/invoices?#{params}")}
+  end
 
-    # Append the new cursored data to the stream
-    socket =
-      Enum.reduce(new_invoices, socket, fn invoice, acc ->
-        stream_insert(acc, :invoices, invoice)
-      end)
+  def handle_event("filter-status", %{"status" => status}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("status_filter", status)
+      |> Map.drop(["cursor_before", "cursor_after"])
 
-    {:noreply, socket}
+    {:noreply, push_patch(socket, to: ~p"/invoices?#{params}")}
+  end
+
+  def handle_event("change_limit", %{"limit" => limit}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("limit", limit)
+      |> Map.drop(["cursor_before", "cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/invoices?#{params}")}
+  end
+
+  def handle_event("change_page", %{"direction" => "next"}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("cursor_after", socket.assigns.next_cursor)
+      |> Map.drop(["cursor_before"])
+
+    {:noreply, push_patch(socket, to: ~p"/invoices?#{params}")}
+  end
+
+  def handle_event("change_page", %{"direction" => "prev"}, socket) do
+    params =
+      socket.assigns.datagrid_params
+      |> Map.put("cursor_before", socket.assigns.prev_cursor)
+      |> Map.drop(["cursor_after"])
+
+    {:noreply, push_patch(socket, to: ~p"/invoices?#{params}")}
   end
 
   @impl true
@@ -101,20 +142,9 @@ defmodule NexusWeb.ERP.InvoiceLive do
   end
 
   @impl true
-  def handle_info({:invoice_ingested, invoice_id}, socket) do
-    if invoice = Repo.get(Invoice, invoice_id) do
-      socket =
-        socket
-        |> assign(showing: socket.assigns.showing + 1)
-        |> assign(total_count: socket.assigns.total_count + 1)
-        |> assign(total_volume: socket.assigns.total_volume + parse_amount(invoice.amount))
-        |> assign(pending_count: socket.assigns.pending_count + 1)
-        |> stream_insert(:invoices, invoice, at: 0)
-
-      {:noreply, socket}
-    else
-      {:noreply, socket}
-    end
+  def handle_info({:invoice_ingested, _invoice_id}, socket) do
+    # Trigger a soft reload of the page
+    {:noreply, load_invoices_page(socket)}
   end
 
   defp parse_amount(amount_str) do
@@ -124,20 +154,96 @@ defmodule NexusWeb.ERP.InvoiceLive do
     end
   end
 
-  defp load_invoices(org_id, nil, limit) do
-    Invoice
-    |> where([i], i.org_id == ^org_id)
-    |> order_by([i], desc: i.created_at)
-    |> limit(^limit)
-    |> Repo.all()
+  defp load_invoices_page(socket) do
+    %{
+      org_id: org_id,
+      search: search,
+      status_filter: status_filter,
+      limit: limit,
+      cursor_before: cursor_before,
+      cursor_after: cursor_after
+    } = socket.assigns
+
+    base_query =
+      Invoice
+      |> where([i], i.org_id == ^org_id)
+
+    query =
+      if search && String.trim(search) != "" do
+        search_term = "%#{search}%"
+
+        where(
+          base_query,
+          [i],
+          ilike(i.entity_id, ^search_term) or ilike(i.sap_document_number, ^search_term)
+        )
+      else
+        base_query
+      end
+
+    query =
+      case status_filter do
+        "Synced" -> where(query, [i], i.status == "ingested")
+        "Pending" -> where(query, [i], i.status != "ingested")
+        _ -> query
+      end
+
+    {invoices, prev_cursor, next_cursor} =
+      fetch_keyset_page(query, limit, cursor_before, cursor_after)
+
+    socket
+    |> assign(:prev_cursor, prev_cursor)
+    |> assign(:next_cursor, next_cursor)
+    |> stream(:invoices, invoices, reset: true)
   end
 
-  defp load_invoices(org_id, cursor, limit) do
-    Invoice
-    |> where([i], i.org_id == ^org_id and i.created_at < ^cursor)
-    |> order_by([i], desc: i.created_at)
-    |> limit(^limit)
-    |> Repo.all()
+  defp fetch_keyset_page(query, limit, cursor_before, cursor_after) do
+    cond do
+      cursor_before ->
+        records =
+          query
+          |> where([i], i.id > ^cursor_before)
+          |> order_by([i], asc: i.id)
+          |> limit(^(limit + 1))
+          |> Repo.all()
+          |> Enum.reverse()
+
+        if length(records) > limit do
+          {tl(records), hd(records).id, List.last(records).id}
+        else
+          {records, nil, List.last(records) && List.last(records).id}
+        end
+
+      cursor_after ->
+        records =
+          query
+          |> where([i], i.id < ^cursor_after)
+          |> order_by([i], desc: i.id)
+          |> limit(^(limit + 1))
+          |> Repo.all()
+
+        if length(records) > limit do
+          # taking limit items, discarding the extra one, but using it to know if we have more
+          has_more_records = Enum.take(records, limit)
+          {has_more_records, hd(has_more_records).id, List.last(records).id}
+        else
+          {records, hd(records) && hd(records).id, nil}
+        end
+
+      true ->
+        records =
+          query
+          |> order_by([i], desc: i.id)
+          |> limit(^(limit + 1))
+          |> Repo.all()
+
+        if length(records) > limit do
+          has_more_records = Enum.take(records, limit)
+          {has_more_records, nil, List.last(records).id}
+        else
+          {records, nil, nil}
+        end
+    end
   end
 
   defp get_total_count(org_id) do
@@ -178,7 +284,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
     </style>
 
     <div class="p-6 md:p-8 w-full relative animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -203,65 +309,54 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-shield-check"
         />
       </div>
-      
-    <!-- High-Density Data Table Card -->
-      <NexusWeb.NexusComponents.dark_card
-        title="Accounts Payable"
-        subtitle="Real-time ERP ledger synchronization. Manage, filter, and audit inbound invoices."
-      >
-        <:header_actions>
-          <div class="flex flex-col sm:flex-row items-center gap-3">
-            <NexusWeb.NexusComponents.nx_button
-              variant="outline"
-              size="sm"
-              icon="hero-arrow-down-tray"
-              phx-click="export-csv"
-            >
-              Export
-            </NexusWeb.NexusComponents.nx_button>
-            <NexusWeb.NexusComponents.nx_button
-              variant="primary"
-              size="sm"
-              icon="hero-plus"
-              phx-click="toggle-manual-modal"
-            >
-              New Entry
-            </NexusWeb.NexusComponents.nx_button>
-          </div>
-        </:header_actions>
-        
-    <!-- Filters Block -->
-        <div class="px-6 py-4 border-b border-[var(--nx-border)] flex flex-col md:flex-row gap-4 bg-[var(--nx-surface)]/50">
-          <div class="relative flex-1">
-            <span class="hero-magnifying-glass w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2">
-            </span>
-            <input
-              type="text"
-              placeholder="Search by Vendor, Subsidiary, or Ref..."
-              class="w-full bg-slate-900/40 border border-[var(--nx-border)] text-slate-200 text-sm rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 pl-9 py-2 transition-colors placeholder:text-slate-600 focus:outline-none"
-            />
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="relative">
-              <select class="bg-slate-900/40 border border-[var(--nx-border)] text-slate-300 text-xs font-medium uppercase tracking-wider rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 py-2.5 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none">
-                <option>All Statuses</option>
-                <option>Synced</option>
-                <option>Pending</option>
-              </select>
-              <span class="hero-chevron-down w-3 h-3 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              </span>
-            </div>
-          </div>
-        </div>
 
-        <NexusWeb.NexusComponents.data_table
+    <!-- High-Density Data Table Card -->
+        <NexusWeb.NexusComponents.data_grid
           id="invoices-table"
+          title="Accounts Payable"
+          subtitle="Real-time ERP ledger synchronization. Manage, filter, and audit inbound invoices."
+          params={@datagrid_params}
+          total={@total_count}
           rows={@streams.invoices}
           row_item={fn {_, inv} -> inv end}
           row_click={fn {_, inv} -> JS.push("select_invoice", value: %{id: inv.id}) end}
         >
-          <:col :let={_invoice} label="Status">
-            <NexusWeb.NexusComponents.badge variant="success" label="Synced" />
+          <:primary_actions>
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <NexusWeb.NexusComponents.nx_button
+                variant="outline"
+                size="sm"
+                icon="hero-arrow-down-tray"
+                phx-click="export-csv"
+              >
+                Export
+              </NexusWeb.NexusComponents.nx_button>
+              <NexusWeb.NexusComponents.nx_button
+                variant="primary"
+                size="sm"
+                icon="hero-plus"
+                phx-click="toggle-manual-modal"
+              >
+                New Entry
+              </NexusWeb.NexusComponents.nx_button>
+            </div>
+          </:primary_actions>
+          <:filters>
+            <div class="relative">
+              <form phx-change="filter-status" class="m-0">
+                <select name="status" class="bg-slate-900/40 border border-[var(--nx-border)] text-slate-300 text-xs font-medium uppercase tracking-wider rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition-colors hover:border-slate-500">
+                  <%= for option <- ["All Statuses", "Synced", "Pending"] do %>
+                    <option value={option} selected={@status_filter == option}>{option}</option>
+                  <% end %>
+                </select>
+              </form>
+              <span class="hero-chevron-down w-3 h-3 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              </span>
+            </div>
+          </:filters>
+
+          <:col :let={invoice} label="Status">
+            <NexusWeb.NexusComponents.badge variant={if invoice.status == "ingested", do: "success", else: "warning"} label={if invoice.status == "ingested", do: "Synced", else: "Pending"} />
           </:col>
 
           <:col :let={invoice} label="Vendor / Ref">
@@ -302,7 +397,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
                   JS.toggle(to: "#action-menu-#{invoice.id}", in: "fade-in", out: "fade-out")
                 }
                 phx-click-away={JS.hide(to: "#action-menu-#{invoice.id}", transition: "fade-out")}
-                class="text-slate-500 hover:text-indigo-400 p-1 rounded transition-colors group-hover:bg-slate-800"
+                class="text-slate-500 hover:text-indigo-400 p-1 rounded transition-colors group-hover:bg-slate-800 border border-transparent group-hover:border-slate-700/50"
               >
                 <span class="hero-ellipsis-horizontal w-5 h-5"></span>
               </button>
@@ -343,24 +438,8 @@ defmodule NexusWeb.ERP.InvoiceLive do
               </div>
             </div>
           </:action>
-        </NexusWeb.NexusComponents.data_table>
+        </NexusWeb.NexusComponents.data_grid>
 
-        <%= if @total_count == 0 do %>
-          <NexusWeb.NexusComponents.empty_state
-            icon="hero-inbox-arrow-down"
-            title="No invoices found"
-            message="Invoices will appear here automatically once your SAP instance pushes data via the webhook."
-          />
-        <% end %>
-
-        <NexusWeb.NexusComponents.pagination
-          showing={@showing}
-          total={@total_count}
-          has_more={@has_more}
-          on_load_more="load-more"
-        />
-      </NexusWeb.NexusComponents.dark_card>
-      
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.modal
         id="manual-entry-modal"
@@ -382,7 +461,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.modal>
-      
+
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.modal
         :if={@selected_invoice}

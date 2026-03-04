@@ -133,7 +133,7 @@ defmodule NexusWeb.NexusComponents do
       %{path: "/admin/users", label: "Manage Users", icon: "hero-users"},
       %{path: "/activity", label: "Activity & Audit", icon: "hero-shield-check"},
       %{path: "/admin/analysis", label: "AI Sentinel", icon: "hero-cpu-chip"},
-      %{path: "/backoffice", label: "Backoffice", icon: "hero-cpu-chip"}
+      %{path: "/backoffice", label: "Backoffice", icon: "hero-server-stack"}
     ]
 
     assigns =
@@ -463,6 +463,196 @@ defmodule NexusWeb.NexusComponents do
         </div>
         <div :if={@icon} class="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center">
           <span class={[@icon, "w-5 h-5 text-slate-400"]}></span>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Elite DataGrid component with unified search, filters, pagination, and actions.
+
+  ## Attributes
+  - `id`: Unique identifier for the DOM element.
+  - `title`: Grid title.
+  - `subtitle`: Grid subtitle.
+  - `rows`: The enumerable or `Phoenix.LiveView.LiveStream` data.
+  - `total`: Total count of items matching the query.
+  - `params`: State map containing `search`, `limit`, etc.
+
+  ## Events
+  Expects the parent LiveView to handle these events:
+  - `search` (on value change)
+  - `filter_role` or `apply_filter` (custom filters)
+  - `change_page` (navigate via next/prev)
+  - `change_limit` (items per page)
+  """
+  attr :id, :string, required: true
+  attr :title, :string, default: nil
+  attr :subtitle, :string, default: nil
+  attr :rows, :any, required: true
+  attr :total, :integer, default: 0
+  attr :params, :map, default: %{}
+  attr :class, :any, default: nil
+
+  attr :row_id, :any, default: nil
+  attr :row_click, :any, default: nil
+  attr :row_item, :any, default: &Function.identity/1
+
+  slot :action, doc: "Row-level actions (right aligned)"
+  slot :primary_actions, doc: "Header-level actions (e.g. Generate Invite)"
+  slot :filters, doc: "Header-level filters (e.g. Role toggles)"
+
+  slot :col, required: true do
+    attr :label, :string
+    attr :class, :string
+  end
+
+  def data_grid(assigns) do
+    assigns =
+      with %{rows: %Phoenix.LiveView.LiveStream{}} <- assigns do
+        assign(assigns, row_id: assigns.row_id || fn {id, _item} -> id end)
+      end
+
+    ~H"""
+    <div class={["bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col w-full h-full", @class]}>
+      <%!-- Level 1: Context Header (Title & Primary Actions) --%>
+      <div class="p-5 md:px-7 flex flex-row justify-between items-center gap-4 shrink-0 transition-all">
+        <div :if={@title || @subtitle} class="flex-1 min-w-0">
+          <h2 class="text-xl font-bold tracking-tight text-slate-100 truncate">{@title}</h2>
+          <p :if={@subtitle} class="text-xs text-slate-400 mt-1 truncate">{@subtitle}</p>
+        </div>
+
+        <div :if={@primary_actions != []} class="flex items-center gap-3 shrink-0 pointer-events-auto">
+          {render_slot(@primary_actions)}
+        </div>
+      </div>
+
+      <%!-- Level 2: Utility Bar (Search & Filters) --%>
+      <div
+        :if={@filters != [] || @params["search"] || Map.has_key?(@params, :search)}
+        class="px-5 md:px-7 py-3 border-t border-[var(--nx-border)] bg-slate-900/20 flex flex-col sm:flex-row items-center gap-6 shrink-0 transition-all font-sans"
+      >
+        <%!-- Search Bar (Left in Utility Bar) --%>
+        <div class="relative w-full sm:max-w-xs group transition-all">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <span class="hero-magnifying-glass w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></span>
+          </div>
+          <form phx-change="search" phx-submit="search" class="m-0">
+            <input
+              type="text"
+              name="search"
+              value={@params["search"] || Map.get(@params, :search)}
+              placeholder="Search..."
+              class="block w-full pl-10 pr-3 py-2 border border-slate-700/50 rounded-xl bg-slate-950/50 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all focus:bg-slate-950 shadow-inner"
+              phx-debounce="300"
+            />
+          </form>
+        </div>
+
+        <%!-- Filter Tray (Right in Utility Bar) --%>
+        <div :if={@filters != []} class="flex flex-wrap items-center gap-3 pointer-events-auto w-full sm:w-auto">
+          <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold whitespace-nowrap">Filter:</span>
+          {render_slot(@filters)}
+        </div>
+      </div>
+
+
+      <%!-- Table Area (Scrollable) --%>
+      <div class="overflow-x-auto flex-1 h-full min-h-[300px] relative">
+        <table class="min-w-full divide-y divide-white/[0.04] text-left">
+          <thead class="bg-slate-900/40 sticky top-0 z-10 backdrop-blur-md">
+            <tr>
+              <th
+                :for={col <- @col}
+                scope="col"
+                class={[
+                  "px-5 md:px-7 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap select-none",
+                  col[:class]
+                ]}
+              >
+                {col[:label]}
+              </th>
+              <th :if={@action != []} scope="col" class="relative px-5 md:px-7 py-4 w-10">
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"} class="divide-y divide-white/[0.02] bg-transparent">
+            <tr
+              :for={row <- @rows}
+              id={@row_id && @row_id.(row)}
+              class={[
+                "hover:bg-slate-800/40 transition-all duration-200 group relative",
+                @row_click && "cursor-pointer"
+              ]}
+              phx-click={@row_click && @row_click.(row)}
+            >
+              <td :for={col <- @col} class={["px-5 md:px-7 py-5 whitespace-nowrap text-sm text-slate-300", col[:class]]}>
+                {render_slot(col, @row_item.(row))}
+              </td>
+              <td :if={@action != []} class="px-5 md:px-7 py-5 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex justify-end gap-2 items-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200">
+                  {render_slot(@action, @row_item.(row))}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <%!-- Empty State overlay --%>
+        <div :if={@total == 0} class="absolute inset-0 top-[20%] flex flex-col items-center justify-start pointer-events-none z-0">
+           <div class="text-center p-8 mt-12">
+             <div class="w-16 h-16 rounded-2xl bg-slate-800/80 flex items-center justify-center mx-auto mb-5 border border-slate-700/50 shadow-lg">
+               <span class="hero-magnifying-glass w-8 h-8 text-slate-500"></span>
+             </div>
+             <h3 class="text-sm font-bold text-slate-300">No matching records</h3>
+             <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">We couldn't find any data matching your current filters or search terms.</p>
+           </div>
+        </div>
+      </div>
+
+      <%!-- Footer Pagination Area --%>
+      <div class="px-5 md:px-7 py-4 border-t border-white/[0.04] bg-slate-900/40 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 transition-all font-sans">
+        <div class="flex items-center gap-5 text-xs">
+          <% limit = @params["limit"] || Map.get(@params, :limit, 25) %>
+          <div class="flex items-center gap-2.5">
+            <span class="text-slate-500 font-medium">Rows per page:</span>
+            <form phx-change="change_limit" class="m-0 inline">
+              <select name="limit" class="bg-slate-950 border border-slate-700/80 rounded-md py-1.5 pl-3 pr-7 text-slate-300 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer hover:border-slate-600 transition-colors shadow-inner">
+                <%= for opt <- [10, 25, 50, 100] do %>
+                  <option value={opt} selected={to_string(limit) == to_string(opt)}>{opt}</option>
+                <% end %>
+              </select>
+            </form>
+          </div>
+
+          <div class="text-slate-500 pl-5 border-l border-white/[0.06] hidden sm:block">
+            Showing <span class="text-slate-200 font-bold">{min(limit, @total)}</span> of <span class="text-slate-200 font-bold">{@total}</span> results
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <% prev_cursor = @params["cursor_before"] || Map.get(@params, :cursor_before) %>
+          <% next_cursor = @params["cursor_after"] || Map.get(@params, :cursor_after) %>
+
+          <button
+            class="px-3.5 py-1.5 bg-slate-950 border border-slate-700/80 rounded-md hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-slate-950 disabled:hover:text-slate-400 disabled:cursor-not-allowed text-slate-400 text-xs font-bold leading-tight flex items-center gap-1 group shadow-sm hover:shadow"
+            phx-click="change_page"
+            phx-value-direction="prev"
+            disabled={is_nil(prev_cursor)}
+          >
+            <span class="hero-chevron-left w-3 h-3 group-hover:-translate-x-0.5 transition-transform"></span> Prev
+          </button>
+
+          <button
+            class="px-3.5 py-1.5 bg-slate-950 border border-slate-700/80 rounded-md hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-slate-950 disabled:hover:text-slate-400 disabled:cursor-not-allowed text-slate-400 text-xs font-bold leading-tight flex items-center gap-1 group shadow-sm hover:shadow"
+            phx-click="change_page"
+            phx-value-direction="next"
+            disabled={is_nil(next_cursor)}
+          >
+            Next <span class="hero-chevron-right w-3 h-3 group-hover:translate-x-0.5 transition-transform"></span>
+          </button>
         </div>
       </div>
     </div>

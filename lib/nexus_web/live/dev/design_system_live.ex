@@ -63,6 +63,14 @@ defmodule NexusWeb.Dev.DesignSystemLive do
     {:noreply, assign(socket, :show_profile, !socket.assigns.show_profile)}
   end
 
+  def handle_event("change_limit", %{"limit" => _limit}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("change_page", %{"direction" => _dir}, socket) do
+    {:noreply, socket}
+  end
+
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
   @impl true
@@ -158,60 +166,87 @@ defmodule NexusWeb.Dev.DesignSystemLive do
           </div>
         </.section>
 
-        <%!-- ═══ DATA TABLE ═══ --%>
-        <.section title="Data Table" subtitle="data_table — sortable dark table with actions">
-          <.dark_card>
-            <div class="p-2">
-              <.data_table
-                id="demo-invoices"
-                rows={[
-                  %{
-                    id: "INV-3847",
-                    vendor: "SAP AG",
-                    amount: "€14,200.00",
-                    status: "Matched",
-                    status_variant: "success"
-                  },
-                  %{
-                    id: "INV-3846",
-                    vendor: "Oracle Corp",
-                    amount: "€8,750.00",
-                    status: "Waiting",
-                    status_variant: "warning"
-                  },
-                  %{
-                    id: "INV-3845",
-                    vendor: "Bloomberg LP",
-                    amount: "€32,100.00",
-                    status: "Error",
-                    status_variant: "danger"
-                  },
-                  %{
-                    id: "INV-3844",
-                    vendor: "Reuters",
-                    amount: "€5,430.00",
-                    status: "Received",
-                    status_variant: "info"
-                  }
-                ]}
-              >
-                <:col :let={row} label="Invoice ID">
-                  <span class="font-mono text-slate-300">{row.id}</span>
-                </:col>
-                <:col :let={row} label="Vendor">{row.vendor}</:col>
-                <:col :let={row} label="Amount">
-                  <span class="font-mono">{row.amount}</span>
-                </:col>
-                <:col :let={row} label="Status">
-                  <.badge variant={row.status_variant} label={row.status} />
-                </:col>
-                <:action :let={_row}>
-                  <.nx_button size="sm" variant="ghost">View</.nx_button>
-                </:action>
-              </.data_table>
-              <.pagination showing={4} total={1247} has_more={true} />
-            </div>
-          </.dark_card>
+        <%!-- ═══ DATA GRID (ELITE UI) ═══ --%>
+        <.section title="DataGrid (Elite UI)" subtitle="data_grid — comprehensive data table with unified search, limits, filters, and cursor pagination built-in">
+          <div class="h-[600px] w-full mt-4">
+            <.data_grid
+              id="demo-invoices-grid"
+              title="Recent Invoices"
+              subtitle="Manage and track your latest submitted invoices."
+              params={%{"search" => @search_value, "limit" => 25, "cursor_before" => nil, "cursor_after" => "mock_cursor_123"}}
+              total={1247}
+              rows={[
+                %{
+                  id: "INV-3847",
+                  vendor: "SAP AG",
+                  amount: "€14,200.00",
+                  status: "Matched",
+                  status_variant: "success",
+                  date: "2023-10-25"
+                },
+                %{
+                  id: "INV-3846",
+                  vendor: "Oracle Corp",
+                  amount: "€8,750.00",
+                  status: "Waiting",
+                  status_variant: "warning",
+                  date: "2023-10-24"
+                },
+                %{
+                  id: "INV-3845",
+                  vendor: "Bloomberg LP",
+                  amount: "€32,100.00",
+                  status: "Error",
+                  status_variant: "danger",
+                  date: "2023-10-24"
+                },
+                %{
+                  id: "INV-3844",
+                  vendor: "Reuters",
+                  amount: "€5,430.00",
+                  status: "Received",
+                  status_variant: "info",
+                  date: "2023-10-23"
+                }
+              ]}
+            >
+              <:primary_actions>
+                <.nx_button icon="hero-plus">New Invoice</.nx_button>
+              </:primary_actions>
+
+              <:filters>
+                <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-700/50 min-w-max">
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all bg-slate-800 text-white shadow-sm">All</button>
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">Unpaid</button>
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">Matched</button>
+                </div>
+              </:filters>
+
+              <:col :let={row} label="Invoice ID">
+                <span class="font-mono font-medium text-slate-200">{row.id}</span>
+                <div class="text-[11px] text-slate-500 mt-0.5">{row.date}</div>
+              </:col>
+              <:col :let={row} label="Vendor">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center border border-slate-700/50">
+                    <span class="text-xs font-bold text-slate-400">{String.first(row.vendor)}</span>
+                  </div>
+                  <span class="font-medium text-slate-200">{row.vendor}</span>
+                </div>
+              </:col>
+              <:col :let={row} label="Amount">
+                <span class="font-mono font-medium text-slate-200">{row.amount}</span>
+              </:col>
+              <:col :let={row} label="Status">
+                <.badge variant={row.status_variant} label={row.status} />
+              </:col>
+              <:action :let={_row}>
+                <button class="w-8 h-8 rounded-lg bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/50 hover:border-slate-600 flex items-center justify-center transition-all">
+                  <span class="hero-ellipsis-horizontal w-5 h-5"></span>
+                </button>
+              </:action>
+            </.data_grid>
+          </div>
         </.section>
 
         <%!-- ═══ LOADING DATA TABLE ═══ --%>

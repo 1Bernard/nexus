@@ -1,208 +1,168 @@
 defmodule NexusWeb.Organization.InvitesLive do
   use NexusWeb, :live_view
-  import NexusWeb.Identity.BiometricComponents
 
-  alias Nexus.App
-  alias Nexus.Identity.AuthChallengeStore
-  alias Nexus.Identity.WebAuthn
-  alias Nexus.Organization.Projections.Invitation
+  alias NexusWeb.NexusComponents
 
+  @impl true
   def mount(%{"token" => token}, _session, socket) do
-    case Nexus.Repo.get_by(Invitation, invitation_token: token, status: "pending") do
-      nil ->
+    # Verify the token. A secure token holds the org_id, role, and invited_by context.
+    case Phoenix.Token.verify(NexusWeb.Endpoint, "user_invitation", token, max_age: 86400) do
+      {:ok, %{org_id: org_id, role: role, invited_by: _invited_by}} ->
         {:ok,
          socket
-         |> put_flash(:error, "Invalid or expired invitation.")
-         |> redirect(to: "/")}
+         |> assign(:page_title, "Accept Invitation")
+         |> assign(:token, token)
+         |> assign(:org_id, org_id)
+         |> assign(:role, role)
+         |> assign(:valid_token, true)
+         |> assign(:form, to_form(%{"display_name" => "", "email" => ""}))}
 
-      invitation ->
-        req_host =
-          if connected?(socket),
-            do: get_connect_info(socket, :uri).host,
-            else: socket.endpoint.host()
-
+      {:error, _reason} ->
         {:ok,
-         assign(socket,
-           invitation: invitation,
-           step: :welcome,
-           active_index: 0,
-           status: "idle",
-           progress: 0,
-           verification_id: "INV-#{String.slice(token, 0, 8)}",
-           user_id: nil,
-           challenge: nil,
-           error_message: nil,
-           host: req_host,
-           action_type: "register",
-           consent_checked: false,
-           screening: %{fuzzy: :scanning, ofac: :scanning, pep: :scanning}
-         )}
+         socket
+         |> assign(:page_title, "Invalid Invitation")
+         |> assign(:valid_token, false)}
     end
   end
 
-  # Reuse BiometricLive logic for event handling
-  def handle_event("toggle_consent", _params, socket) do
-    {:noreply, assign(socket, consent_checked: !socket.assigns.consent_checked)}
-  end
-
-  def handle_event("next_step", %{"step" => step}, socket) do
-    new_step = String.to_existing_atom(step)
-
-    if new_step == :biometric && !socket.assigns.consent_checked do
-      {:noreply, socket}
-    else
-      socket = process_step_transition(socket, new_step)
-      {:noreply, assign(socket, step: new_step, active_index: step_index(new_step))}
-    end
-  end
-
-  def handle_event("biometric_start", _params, socket) do
-    {:noreply, assign(socket, status: "scanning", progress: 0)}
-  end
-
-  def handle_event(
-        "biometric_complete",
-        %{"attestation_object" => att, "client_data_json" => client},
-        socket
-      ) do
-    invitation = socket.assigns.invitation
-
-    command = %Nexus.Identity.Commands.RegisterUser{
-      user_id: socket.assigns.user_id,
-      # Use Org ID from invitation
-      org_id: invitation.org_id,
-      display_name: "Invited User",
-      # Use Email from invitation
-      email: invitation.email,
-      # Use Role from invitation
-      role: invitation.role,
-      attestation_object: decode_base64_url!(att),
-      client_data_json: decode_base64_url!(client)
-    }
-
-    case App.dispatch(command) do
-      :ok ->
-        # Redeem the invitation
-        redeem_cmd = %Nexus.Organization.Commands.RedeemInvitation{
-          org_id: invitation.org_id,
-          invitation_token: invitation.invitation_token,
-          redeemed_by_user_id: socket.assigns.user_id
-        }
-
-        # We fire and forget or check success for the redeem command
-        App.dispatch(redeem_cmd)
-
-        Process.send_after(self(), :advance_screening_1, 800)
-        {:noreply, assign(socket, step: :verifying, status: "success")}
-
-      {:error, reason} ->
-        {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
-    end
-  end
-
-  # Screening progress logic (copied for now, refactor later if needed)
-  def handle_info(:advance_screening_1, socket) do
-    screening = put_in(socket.assigns.screening, [:fuzzy], :passed)
-    Process.send_after(self(), :advance_screening_2, 1200)
-    {:noreply, assign(socket, screening: screening)}
-  end
-
-  def handle_info(:advance_screening_2, socket) do
-    screening = put_in(socket.assigns.screening, [:ofac], :clear)
-    Process.send_after(self(), :advance_screening_3, 1000)
-    {:noreply, assign(socket, screening: screening)}
-  end
-
-  def handle_info(:advance_screening_3, socket) do
-    screening = put_in(socket.assigns.screening, [:pep], :low_risk)
-    Process.send_after(self(), :go_to_dashboard, 1500)
-    {:noreply, assign(socket, screening: screening)}
-  end
-
-  def handle_info(:go_to_dashboard, socket) do
-    token = Phoenix.Token.sign(socket.endpoint, "user auth", socket.assigns.user_id)
-    {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
-  end
-
-  # Helper logic
-  defp process_step_transition(socket, :biometric) do
-    new_user_id = Uniq.UUID.uuid7()
-    challenge = generate_registration_challenge(socket.assigns.host, new_user_id)
-
-    socket
-    |> assign(user_id: new_user_id)
-    |> assign(challenge: challenge, status: "idle", progress: 0)
-  end
-
-  defp process_step_transition(socket, _), do: socket
-
-  defp step_index(:welcome), do: 0
-  defp step_index(:consent), do: 1
-  defp step_index(:biometric), do: 2
-  defp step_index(:verifying), do: 3
-  defp step_index(:success), do: 3
-
-  defp generate_registration_challenge(host, user_id) do
-    origin =
-      if host in ["localhost", "127.0.0.1"], do: "http://#{host}:4000", else: "https://#{host}"
-
-    challenge = WebAuthn.new_registration_challenge(rp_id: host, origin: origin)
-    AuthChallengeStore.store_challenge(user_id, challenge)
-    Base.url_encode64(challenge.bytes, padding: false)
-  end
-
-  defp decode_base64_url!(string), do: Base.url_decode64!(string, padding: false)
-
+  @impl true
   def render(assigns) do
-    # Same UI as BiometricLive but with invitation context
     ~H"""
-    <.dark_page class="flex items-center justify-center p-3 overflow-hidden no-select">
-      <div class="w-full max-w-md bg-[#14181F] border border-white/[0.06] rounded-[2.2rem] shadow-2xl flex flex-col relative min-h-[680px] backdrop-blur-sm overflow-hidden">
-        <div class="pt-7 px-7 pb-3 flex justify-between items-center">
-          <.step_indicators active_index={@active_index} />
-          <div class="bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
-            <span class="text-indigo-400 font-mono text-[10px] uppercase tracking-tighter">
-              Invitation Active
-            </span>
-          </div>
+    <div class="min-h-screen bg-[#020617] flex items-center justify-center p-4 selection:bg-indigo-500/30">
+      <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[40%] -left-[20%] w-[70%] h-[70%] rounded-full bg-indigo-900/10 blur-[120px]"></div>
+        <div class="absolute -bottom-[40%] -right-[20%] w-[70%] h-[70%] rounded-full bg-slate-800/20 blur-[120px]"></div>
+      </div>
+
+      <div class="relative w-full max-w-md">
+        <div class="text-center mb-10">
+          <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400 tracking-tight mb-2">
+            NEXUS
+          </h1>
+          <p class="text-slate-500 text-sm font-medium tracking-wide uppercase">Corporate Treasury Platform</p>
         </div>
 
-        <div id="contentArea" class="flex-1 px-7 pb-7 overflow-y-auto scroll-soft">
-          <%= if @step == :welcome do %>
-            <div class="flex flex-col items-center text-center mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div class="w-20 h-20 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8 shadow-2xl shadow-indigo-500/10">
-                <span class="hero-envelope-open w-10 h-10 text-indigo-400"></span>
+        <NexusComponents.dark_card>
+          <%= if @valid_token do %>
+            <div class="text-center mb-8">
+              <div class="mx-auto w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center mb-4 text-indigo-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
               </div>
-              <h2 class="text-white font-bold text-3xl mb-4 tracking-tight">Organization Invite</h2>
-              <p class="text-slate-400 text-sm leading-relaxed max-w-[280px] mb-8">
-                You've been invited to join
-                <span class="text-indigo-400 font-bold">{@invitation.org_id}</span>
-                as <span class="text-white underline decoration-indigo-500/50"><%= @invitation.role %></span>.
+              <h2 class="text-2xl font-bold text-slate-100 mb-2">Accept Invitation</h2>
+              <p class="text-slate-400 text-sm">
+                You've been invited to join the organization as a
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider ml-1">
+                  {@role}
+                </span>
               </p>
-              <button
-                phx-click="next_step"
-                phx-value-step="consent"
-                class="w-full bg-white text-[#0B0E14] font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all duration-300 shadow-xl shadow-white/5 active:scale-[0.98]"
-              >
-                Accept & Secure
-              </button>
             </div>
+
+            <.form for={@form} phx-submit="register" class="space-y-6">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Full Name</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    name={@form[:display_name].name}
+                    value={@form[:display_name].value}
+                    required
+                    class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
+                    placeholder="Jane Doe"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Email Address</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="email"
+                    name={@form[:email].name}
+                    value={@form[:email].value}
+                    required
+                    class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
+                    placeholder="jane@example.com"
+                  />
+                </div>
+              </div>
+
+              <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex gap-3 items-start">
+                 <div class="mt-0.5 text-indigo-400">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                     <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                   </svg>
+                 </div>
+                 <div class="text-xs text-indigo-200/80 leading-relaxed">
+                   Next, you will register your device biometrics (Face ID or Touch ID) to enable secure, passwordless authentication for your account.
+                 </div>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-500/20 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-900 transition-all"
+              >
+                Continue to Biometrics
+              </button>
+            </.form>
           <% else %>
-            <.step_content
-              step={@step}
-              status={@status}
-              progress={@progress}
-              v_id={@verification_id}
-              error={@error_message}
-              challenge={@challenge}
-              action_type={@action_type}
-              consent_checked={@consent_checked}
-              screening={@screening}
-            />
+            <div class="text-center py-8">
+              <div class="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center mb-6 text-rose-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 class="text-xl font-bold text-slate-100 mb-2">Invalid or Expired Link</h2>
+              <p class="text-slate-400 text-sm mb-8">
+                This invitation link is no longer valid. It may have expired or already been used. Please contact your organization administrator for a new link.
+              </p>
+              <.link
+                href="/auth/login"
+                class="inline-flex justify-center py-2 px-4 border border-slate-700/50 rounded-lg shadow-sm text-sm font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-900 transition-all"
+              >
+                Return to Login
+              </.link>
+            </div>
           <% end %>
-        </div>
+        </NexusComponents.dark_card>
+
+        <p class="mt-8 text-center text-xs text-slate-600 font-medium">
+          &copy; {Date.utc_today().year} Nexus Security. All rights reserved.
+        </p>
       </div>
-    </.dark_page>
+    </div>
     """
+  end
+
+  @impl true
+  def handle_event("register", %{"display_name" => name, "email" => email}, socket) do
+    if socket.assigns.valid_token do
+      # We encode the registration intent securely for the next step (Biometric Registration)
+      # This hands off the decoded org_id and role reliably to `/auth/gate`
+      registration_token =
+        Phoenix.Token.sign(NexusWeb.Endpoint, "biometric_registration", %{
+          org_id: socket.assigns.org_id,
+          role: socket.assigns.role,
+          email: email,
+          display_name: name
+        })
+
+      {:noreply,
+       push_navigate(socket, to: "/auth/gate?intent=register&token=#{registration_token}")}
+    else
+      {:noreply, socket}
+    end
   end
 end

@@ -17,6 +17,7 @@ defmodule NexusWeb.Router do
   scope "/", NexusWeb do
     pipe_through :browser
     get "/auth/login", Identity.SessionController, :create
+    get "/auth/dev_login", Identity.SessionController, :dev_login
     delete "/auth/logout", Identity.SessionController, :delete
 
     live_session :public,
@@ -34,11 +35,16 @@ defmodule NexusWeb.Router do
       live "/statements", ERP.StatementLive
       live "/reconciliation", Treasury.ReconciliationLive, :index
       live "/forecast", Treasury.ForecastLive, :index
+      live "/intelligence", Tenant.AnalysisLive
       live "/admin/analysis", Admin.AnalysisLive
     end
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
       live "/backoffice", System.BackofficeLive
+    end
+
+    live_session :org_admin, on_mount: [{NexusWeb.UserAuth, :require_org_admin}] do
+      live "/admin/users", Admin.UserLive.Index
     end
   end
 

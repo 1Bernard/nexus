@@ -16,6 +16,7 @@ defmodule NexusWeb.Tenant.ActivityLive do
       |> assign(:page_subtitle, "Comprehensive audit trail of ERP and system events")
       |> assign(:current_path, "/activity")
       |> assign(:activities, activities)
+      |> assign(:datagrid_params, %{})
 
     {:ok, socket}
   end
@@ -85,36 +86,43 @@ defmodule NexusWeb.Tenant.ActivityLive do
         </.dark_card>
       </div>
 
-      <%!-- Main Audit Stream --%>
-      <.dark_card class="p-6 relative overflow-hidden">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
-            Immutable Audit Stream
-          </h2>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-md px-3 py-1.5 cursor-pointer hover:bg-slate-800/50 transition-colors">
-              <span class="hero-funnel w-3.5 h-3.5 text-slate-400"></span>
-              <p class="text-[11px] font-medium text-slate-300">All Subsystems</p>
-              <span class="hero-chevron-down w-3 h-3 text-slate-500 ml-1"></span>
-            </div>
-            <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-md px-3 py-1.5 cursor-pointer hover:bg-slate-800/50 transition-colors">
-              <span class="hero-calendar w-3.5 h-3.5 text-slate-400"></span>
-              <p class="text-[11px] font-medium text-slate-300">Last 7 Days</p>
-              <span class="hero-chevron-down w-3 h-3 text-slate-500 ml-1"></span>
-            </div>
-            <button class="flex items-center gap-1.5 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800/40 hover:bg-slate-700/50 px-3 py-1.5 rounded-md transition-colors border border-slate-700/50 group">
-              <span class="hero-arrow-down-tray w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition-colors">
-              </span>
-              CSV Export
-            </button>
+      <.data_grid
+        id="activity-audit-grid"
+        title="Immutable Audit Stream"
+        subtitle="Security-first logs of all system interactions"
+        rows={@activities}
+        params={@datagrid_params || %{}}
+        total={1245601}
+      >
+        <:primary_actions>
+          <.nx_button
+            variant="outline"
+            size="sm"
+            icon="hero-arrow-down-tray"
+            phx-click="export_csv"
+          >
+            CSV Export
+          </.nx_button>
+        </:primary_actions>
+
+        <:filters>
+          <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-md px-3 py-1.5 cursor-pointer hover:bg-slate-800/50 transition-colors">
+            <span class="hero-funnel w-3.5 h-3.5 text-slate-400"></span>
+            <p class="text-[11px] font-medium text-slate-300">All Subsystems</p>
+            <span class="hero-chevron-down w-3 h-3 text-slate-500 ml-1"></span>
           </div>
-        </div>
+          <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-700/50 rounded-md px-3 py-1.5 cursor-pointer hover:bg-slate-800/50 transition-colors">
+            <span class="hero-calendar w-3.5 h-3.5 text-slate-400"></span>
+            <p class="text-[11px] font-medium text-slate-300">Last 7 Days</p>
+            <span class="hero-chevron-down w-3 h-3 text-slate-500 ml-1"></span>
+          </div>
+        </:filters>
 
-        <div class="space-y-6 relative ml-1">
-          <%!-- Vertical Timeline Line --%>
-          <div class="absolute left-[11px] top-2 bottom-2 w-px bg-white/5"></div>
+        <:col :let={item} label="Event Timeline">
+          <div class="relative pl-2 group">
+            <%!-- Vertical Timeline Highlight --%>
+            <div class="absolute -left-5 top-0 bottom-0 w-px bg-white/5 group-hover:bg-indigo-500/20 transition-colors"></div>
 
-          <div :for={item <- @activities} class="group">
             <.activity_item
               icon={item.icon}
               color={item.color}
@@ -123,23 +131,8 @@ defmodule NexusWeb.Tenant.ActivityLive do
               time_ago={item.time}
             />
           </div>
-
-          <div :if={Enum.empty?(@activities)}>
-            <.empty_state
-              title="No activity found"
-              message="Historical events will appear here as they occur in the system."
-            />
-          </div>
-        </div>
-
-        <div
-          :if={length(@activities) >= 20}
-          class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between"
-        >
-          <p class="text-[11px] text-slate-500">Showing 20 of 1,245,601 records</p>
-          <.pagination showing={length(@activities)} total={100} has_more={true} />
-        </div>
-      </.dark_card>
+        </:col>
+      </.data_grid>
     </div>
     """
   end

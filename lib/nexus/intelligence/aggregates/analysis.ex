@@ -3,6 +3,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
   Aggregate handling intelligence analysis (anomaly detection & sentiment).
   Delegates inference to supervised Bumblebee/Nx services.
   """
+  require Logger
 
   defstruct [:id]
 
@@ -11,9 +12,17 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
 
   # For anomaly detection, we only emit an event if it's an anomaly (score > 0.8)
   def execute(%__MODULE__{} = _state, %AnalyzeInvoice{} = cmd) do
+    Logger.debug("[AI Sentinel] Executing AnalyzeInvoice for #{cmd.invoice_id}")
+
+    Logger.debug(
+      "[AI Sentinel] Analyzing vendor: #{cmd.vendor_name}, amount: #{inspect(cmd.amount)}"
+    )
+
     # Delegate to the ML service
     case Nexus.Intelligence.Services.AnomalyDetector.analyze(cmd) do
-      {:ok, %{is_anomaly: true, score: score, reason: reason}} ->
+      {:ok, %{is_anomaly: true, score: score, reason: reason} = result} ->
+        Logger.debug("[AI Sentinel] Anomaly detected: #{inspect(result)}")
+
         %AnomalyDetected{
           analysis_id: cmd.analysis_id,
           org_id: cmd.org_id,
@@ -24,14 +33,19 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
         }
 
       {:ok, %{is_anomaly: false}} ->
+        Logger.debug("[AI Sentinel] No anomaly detected for #{cmd.invoice_id}")
         # No anomaly, no state change
         []
     end
   end
 
   def execute(%__MODULE__{} = _state, %AnalyzeSentiment{} = cmd) do
+    Logger.debug("[AI Sentinel] Executing AnalyzeSentiment for #{cmd.analysis_id}")
+
     case Nexus.Intelligence.Services.SentimentAnalyzer.analyze(cmd.text) do
-      {:ok, %{sentiment: sentiment, confidence: confidence}} ->
+      {:ok, %{sentiment: sentiment, confidence: confidence} = result} ->
+        Logger.debug("[AI Sentinel] Sentiment analyzed: #{inspect(result)}")
+
         %SentimentScored{
           analysis_id: cmd.analysis_id,
           org_id: cmd.org_id,
@@ -40,6 +54,10 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
           confidence: confidence,
           scored_at: DateTime.utc_now()
         }
+
+      other ->
+        Logger.error("[AI Sentinel] Sentiment analysis unexpected result: #{inspect(other)}")
+        []
     end
   end
 

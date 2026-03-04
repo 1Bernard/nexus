@@ -113,20 +113,23 @@ defmodule NexusWeb.Treasury.ForecastLive do
         />
 
         <div class="flex gap-3">
-          <button
+          <.nx_button
             phx-click="download_csv"
-            class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 rounded-xl font-bold text-xs transition-all flex items-center gap-2 border border-slate-700/50 backdrop-blur-sm"
+            variant="outline"
+            size="sm"
+            icon="hero-arrow-down-tray"
           >
-            <span class="hero-arrow-down-tray w-4 h-4 text-indigo-400"></span> Export CSV
-          </button>
-          <button
+            Export CSV
+          </.nx_button>
+          <.nx_button
             phx-click="generate_forecast"
             disabled={@loading}
-            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs transition-all flex items-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(79,70,229,0.3)]"
+            variant="primary"
+            size="sm"
+            icon="hero-sparkles"
           >
-            <span class="hero-sparkles w-4 h-4"></span>
             {if @loading, do: "ANALYZING...", else: "REGENERATE FORECAST"}
-          </button>
+          </.nx_button>
         </div>
       </div>
 
@@ -183,7 +186,7 @@ defmodule NexusWeb.Treasury.ForecastLive do
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-3">
-          <.dark_card class="p-6 relative overflow-hidden backdrop-blur-md bg-slate-900/40">
+          <.dark_card class="p-6 relative overflow-hidden group">
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-6">
                 <h3 class="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">
@@ -194,8 +197,8 @@ defmodule NexusWeb.Treasury.ForecastLive do
                     <div class="w-2.5 h-0.5 bg-slate-500 rounded-full"></div>
                     Historical
                   </div>
-                  <div class="flex items-center gap-1.5 text-indigo-400">
-                    <div class="w-2.5 h-0.5 border-t border-dashed border-indigo-400"></div>
+                  <div class="flex items-center gap-1.5 text-emerald-400">
+                    <div class="w-2.5 h-0.5 border-t border-dashed border-emerald-400"></div>
                     Predicted (95% CI)
                   </div>
                 </div>
@@ -246,49 +249,49 @@ defmodule NexusWeb.Treasury.ForecastLive do
 
         <%= if @forecast do %>
           <div class="lg:col-span-3">
-            <.dark_card
+            <.data_grid
+              id="forecast-ledger"
               title="Liquidity Ledger"
               subtitle="Detailed Daily Projections"
-              class="overflow-hidden"
+              rows={@forecast.data_points}
+              total={length(@forecast.data_points)}
             >
-              <.data_table id="forecast-ledger" rows={@forecast.data_points}>
-                <:col :let={p} label="Date" class="font-mono text-slate-400">{p["date"]}</:col>
-                <:col :let={p} label="Projected Amount">
-                  <% val =
-                    case Float.parse(to_string(p["predicted_amount"])),
-                      do: (
-                        {v, _} -> v
-                        :error -> 0.0
-                      ) %>
-                  <span class={[
-                    "font-mono font-bold",
-                    if(val >= 0, do: "text-emerald-400", else: "text-rose-400")
-                  ]}>
-                    €{:erlang.float_to_binary(val * 1.0, decimals: 2)}
-                  </span>
-                </:col>
-                <:col :let={p} label="Risk Profile">
-                  <% val =
-                    case Float.parse(to_string(p["predicted_amount"])),
-                      do: (
-                        {v, _} -> v
-                        :error -> 0.0
-                      ) %>
-                  <.badge
-                    variant={if val >= 0, do: "info", else: "danger"}
-                    label={if val >= 0, do: "STABLE", else: "SHORTFALL"}
-                  />
-                </:col>
-                <:col :let={p} label="CI Range" class="font-mono text-xs text-slate-500">
-                  <% val =
-                    case Float.parse(to_string(p["predicted_amount"])),
-                      do: (
-                        {v, _} -> v
-                        :error -> 0.0
-                      ) %> €{(val * 0.92) |> Float.round(2)} – €{(val * 1.08) |> Float.round(2)}
-                </:col>
-              </.data_table>
-            </.dark_card>
+              <:col :let={p} label="Date" class="font-mono text-slate-400">{p["date"]}</:col>
+              <:col :let={p} label="Projected Amount">
+                <% val =
+                  case Float.parse(to_string(p["predicted_amount"])),
+                    do: (
+                      {v, _} -> v
+                      :error -> 0.0
+                    ) %>
+                <span class={[
+                  "font-mono font-bold",
+                  if(val >= 0, do: "text-emerald-400", else: "text-rose-400")
+                ]}>
+                  €{:erlang.float_to_binary(val * 1.0, decimals: 2)}
+                </span>
+              </:col>
+              <:col :let={p} label="Risk Profile">
+                <% val =
+                  case Float.parse(to_string(p["predicted_amount"])),
+                    do: (
+                      {v, _} -> v
+                      :error -> 0.0
+                    ) %>
+                <.badge
+                  variant={if val >= 0, do: "info", else: "danger"}
+                  label={if val >= 0, do: "STABLE", else: "SHORTFALL"}
+                />
+              </:col>
+              <:col :let={p} label="CI Range" class="font-mono text-xs text-slate-500">
+                <% val =
+                  case Float.parse(to_string(p["predicted_amount"])),
+                    do: (
+                      {v, _} -> v
+                      :error -> 0.0
+                    ) %> €{(val * 0.92) |> Float.round(2)} – €{(val * 1.08) |> Float.round(2)}
+              </:col>
+            </.data_grid>
           </div>
         <% end %>
       </div>

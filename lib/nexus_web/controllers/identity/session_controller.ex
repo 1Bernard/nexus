@@ -20,6 +20,30 @@ defmodule NexusWeb.Identity.SessionController do
     end
   end
 
+  def dev_login(conn, _params) do
+    import Ecto.Query
+
+    admin =
+      Nexus.Repo.one(
+        from u in Nexus.Identity.Projections.User, where: u.role == "admin", limit: 1
+      )
+
+    if admin do
+      conn
+      |> put_session(:user_id, admin.id)
+      |> put_session(
+        :live_socket_id,
+        "users_sessions:#{Base.url_encode64(:crypto.strong_rand_bytes(32))}"
+      )
+      |> configure_session(renew: true)
+      |> redirect(to: "/admin/users")
+    else
+      conn
+      |> put_flash(:error, "No admin user found in database.")
+      |> redirect(to: "/")
+    end
+  end
+
   def delete(conn, _params) do
     conn
     |> configure_session(drop: true)

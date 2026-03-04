@@ -6,8 +6,16 @@ defmodule Nexus.Identity.Aggregates.User do
   defstruct [:id, :org_id, :email, :display_name, :role, :status, :cose_key, :credential_id]
 
   alias Nexus.Identity.AuthChallengeStore
-  alias Nexus.Identity.Commands.{RegisterUser, RegisterSystemAdmin, VerifyBiometric, VerifyStepUp}
-  alias Nexus.Identity.Events.{BiometricVerified, UserRegistered, StepUpVerified}
+
+  alias Nexus.Identity.Commands.{
+    RegisterUser,
+    RegisterSystemAdmin,
+    VerifyBiometric,
+    VerifyStepUp,
+    ChangeUserRole
+  }
+
+  alias Nexus.Identity.Events.{BiometricVerified, UserRegistered, StepUpVerified, UserRoleChanged}
   alias Nexus.Identity.WebAuthn
 
   # --- Command Handlers ---
@@ -146,6 +154,19 @@ defmodule Nexus.Identity.Aggregates.User do
     end
   end
 
+  def execute(%__MODULE__{id: id}, %ChangeUserRole{} = cmd) when not is_nil(id) do
+    %UserRoleChanged{
+      user_id: cmd.user_id,
+      role: cmd.role,
+      actor_id: cmd.actor_id,
+      changed_at: DateTime.utc_now()
+    }
+  end
+
+  def execute(%__MODULE__{id: nil}, %ChangeUserRole{}) do
+    {:error, :unregistered_user}
+  end
+
   def execute(state, cmd) do
     {:error, {:unexpected_command, state, cmd}}
   end
@@ -223,5 +244,9 @@ defmodule Nexus.Identity.Aggregates.User do
   def apply(%__MODULE__{} = state, %StepUpVerified{}) do
     # Step-up verified, no state change for now
     state
+  end
+
+  def apply(%__MODULE__{} = state, %UserRoleChanged{} = ev) do
+    %__MODULE__{state | role: ev.role}
   end
 end

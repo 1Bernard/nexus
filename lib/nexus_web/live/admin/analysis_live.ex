@@ -47,7 +47,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
     socket =
       socket
       |> assign(:page_title, "AI Sentinel")
-      |> assign(:page_subtitle, "Intelligence Layer")
+      |> assign(:page_subtitle, "Operations Intelligence Hub")
       |> assign(:anomalies, anomalies)
       |> assign(:sentiments, sentiments)
       |> assign(:active_tab, "overview")

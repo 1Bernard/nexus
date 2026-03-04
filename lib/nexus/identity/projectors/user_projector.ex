@@ -50,6 +50,15 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     end
   end)
 
+  project(%Nexus.Identity.Events.UserRoleChanged{} = ev, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.update_all(
+      :update_role,
+      User |> where(id: ^ev.user_id),
+      set: [role: ev.role, updated_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+    )
+  end)
+
   defp safe_decode64(binary) when is_binary(binary) do
     case Base.decode64(binary) do
       {:ok, decoded} -> decoded

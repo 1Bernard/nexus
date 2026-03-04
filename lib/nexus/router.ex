@@ -24,6 +24,11 @@ defmodule Nexus.Router do
     identity: :user_id
   )
 
+  dispatch(Nexus.Identity.Commands.ChangeUserRole,
+    to: Nexus.Identity.Aggregates.User,
+    identity: :user_id
+  )
+
   # --- Organization Domain ---
   dispatch(Nexus.Organization.Commands.ProvisionTenant,
     to: Nexus.Organization.Aggregates.Tenant,

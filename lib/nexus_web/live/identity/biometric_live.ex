@@ -36,8 +36,15 @@ defmodule NexusWeb.Identity.BiometricLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    action_type = params["type"] || socket.assigns[:action_type] || "login"
-    {:noreply, assign(socket, action_type: action_type)}
+    action_type = params["intent"] || params["type"] || socket.assigns[:action_type] || "login"
+    registration_token = params["token"]
+
+    socket =
+      socket
+      |> assign(action_type: action_type)
+      |> assign(registration_token: registration_token)
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -71,25 +78,52 @@ defmodule NexusWeb.Identity.BiometricLive do
         %{"attestation_object" => att, "client_data_json" => client},
         socket
       ) do
-    # This is for Registration. We use a unique email to avoid conflicts
-    # in the read-model (UserProjector) during continuous demo testing.
-    command = %Nexus.Identity.Commands.RegisterUser{
-      user_id: socket.assigns.user_id,
-      org_id: Nexus.Schema.generate_uuidv7(),
-      display_name: "Bernard Ansah",
-      email: "bernard+#{Base.encode16(:crypto.strong_rand_bytes(4), case: :lower)}@example.com",
-      role: "admin",
-      attestation_object: decode_base64_url!(att),
-      client_data_json: decode_base64_url!(client)
-    }
+    # When processing a registration, we expect a registration token holding to context
+    case Phoenix.Token.verify(
+           socket.endpoint,
+           "biometric_registration",
+           socket.assigns.registration_token || "", max_age: 1800) do
+      {:ok, %{org_id: org_id, role: role, email: email, display_name: name}} ->
+        command = %Nexus.Identity.Commands.RegisterUser{
+          user_id: socket.assigns.user_id,
+          org_id: org_id,
+          display_name: name,
+          email: email,
+          role: role,
+          attestation_object: decode_base64_url!(att),
+          client_data_json: decode_base64_url!(client)
+        }
 
-    case App.dispatch(command) do
-      :ok ->
-        Process.send_after(self(), :advance_screening_1, 800)
-        {:noreply, assign(socket, step: :verifying, status: "success")}
+        case App.dispatch(command) do
+          :ok ->
+            Process.send_after(self(), :advance_screening_1, 800)
+            {:noreply, assign(socket, step: :verifying, status: "success")}
 
-      {:error, reason} ->
-        {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+          {:error, reason} ->
+            {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+        end
+
+      {:error, _reason} ->
+        # Fallback for dev mode without token (e.g. hitting /auth/gate?type=register directly)
+        command = %Nexus.Identity.Commands.RegisterUser{
+          user_id: socket.assigns.user_id,
+          org_id: Nexus.Schema.generate_uuidv7(),
+          display_name: "Bernard Ansah",
+          email:
+            "bernard+#{Base.encode16(:crypto.strong_rand_bytes(4), case: :lower)}@example.com",
+          role: "admin",
+          attestation_object: decode_base64_url!(att),
+          client_data_json: decode_base64_url!(client)
+        }
+
+        case App.dispatch(command) do
+          :ok ->
+            Process.send_after(self(), :advance_screening_1, 800)
+            {:noreply, assign(socket, step: :verifying, status: "success")}
+
+          {:error, reason} ->
+            {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+        end
     end
   end
 
@@ -272,7 +306,7 @@ defmodule NexusWeb.Identity.BiometricLive do
       <!-- Museum Archive Background Elements -->
       <.editorial_grid />
       <div class="absolute inset-0 volumetric-nebula opacity-[0.15] pointer-events-none"></div>
-      
+
     <!-- Subtle Ledger Streams in Background -->
       <div class="fixed left-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block">
         <.ledger_stream />

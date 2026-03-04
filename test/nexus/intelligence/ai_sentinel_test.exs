@@ -3,7 +3,6 @@ defmodule Nexus.Intelligence.AISentinelTest do
   use Nexus.DataCase
 
   @moduletag :feature
-  @moduletag :no_sandbox
 
   alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment}
   alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored}
@@ -46,9 +45,17 @@ defmodule Nexus.Intelligence.AISentinelTest do
   end
 
   defthen ~r/^emit an "AnomalyDetected" event$/, _vars, state do
-    # Fetch events for the analysis stream to verify
+    # 1. Verify Event Store
     {:ok, events} = Nexus.EventStore.read_stream_forward(state.analysis_id)
     assert Enum.any?(events, fn e -> e.data.__struct__ == AnomalyDetected end)
+
+    # 2. Verify Read Model (Wait for projector)
+    Process.sleep(500)
+    analysis = Repo.get(Nexus.Intelligence.Projections.Analysis, state.analysis_id)
+    assert analysis != nil
+    assert analysis.type == "anomaly"
+    assert analysis.invoice_id == state.invoice_id
+
     {:ok, state}
   end
 
@@ -77,8 +84,17 @@ defmodule Nexus.Intelligence.AISentinelTest do
   end
 
   defthen ~r/^emit a "SentimentScored" event$/, _vars, state do
+    # 1. Verify Event Store
     {:ok, events} = Nexus.EventStore.read_stream_forward(state.analysis_id)
     assert Enum.any?(events, fn e -> e.data.__struct__ == SentimentScored end)
+
+    # 2. Verify Read Model (Wait for projector)
+    Process.sleep(500)
+    analysis = Repo.get(Nexus.Intelligence.Projections.Analysis, state.analysis_id)
+    assert analysis != nil
+    assert analysis.type == "sentiment"
+    assert analysis.source_id == state.source_id
+
     {:ok, state}
   end
 end

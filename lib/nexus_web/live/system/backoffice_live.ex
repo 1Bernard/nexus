@@ -4,9 +4,6 @@ defmodule NexusWeb.System.BackofficeLive do
   import NexusWeb.NexusComponents
   alias Nexus.Organization.Commands.ProvisionTenant
 
-  on_mount {NexusWeb.UserAuth, :mount_current_user}
-  on_mount {NexusWeb.UserAuth, :require_system_admin}
-
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Nexus.PubSub, "tenants")
 
@@ -20,6 +17,7 @@ defmodule NexusWeb.System.BackofficeLive do
       |> assign(:form, to_form(%{"name" => "", "admin_email" => ""}))
       |> assign(:show_provision_modal, false)
       |> assign(:tenants, tenants)
+      |> assign(:params, %{})
 
     {:ok, socket}
   end
@@ -42,44 +40,33 @@ defmodule NexusWeb.System.BackofficeLive do
         <.stat_card label="System Health" value="Nominal" icon="hero-heart" />
       </div>
 
-      <.dark_card title="Tenant Directory">
-        <:header_actions>
+      <.data_grid
+        id="tenants-grid"
+        title="Tenant Directory"
+        subtitle="Manage platform partitions and organizational contexts"
+        rows={@tenants}
+        total={Enum.count(@tenants)}
+      >
+        <:primary_actions>
           <.nx_button phx-click="toggle_provision_modal" size="sm" icon="hero-plus">
             Provision Tenant
           </.nx_button>
-        </:header_actions>
+        </:primary_actions>
 
-        <.data_table id="tenants-table" rows={@tenants}>
-          <:col :let={tenant} label="Tenant Name">{tenant.name}</:col>
-          <:col :let={tenant} label="Org ID" class="font-mono text-xs">
-            {String.slice(tenant.org_id, 0, 8)}...
-          </:col>
-          <:col :let={tenant} label="Status">
-            <.badge variant="success" label={tenant.status} />
-          </:col>
-          <:col :let={tenant} label="Admin Email" class="text-slate-400">
-            {tenant.initial_admin_email || "N/A"}
-          </:col>
-          <:action :let={_tenant}>
-            <.nx_button variant="ghost" size="sm">Manage</.nx_button>
-          </:action>
-        </.data_table>
-
-        <%= if Enum.empty?(@tenants) do %>
-          <.empty_state
-            icon="hero-building-office-2"
-            title="No tenants found"
-            message="Provision your first organization to begin partitioning data."
-          />
-        <% end %>
-
-        <.pagination
-          showing={Enum.count(@tenants)}
-          total={Enum.count(@tenants)}
-          has_more={false}
-          on_load_more=""
-        />
-      </.dark_card>
+        <:col :let={tenant} label="Tenant Name">{tenant.name}</:col>
+        <:col :let={tenant} label="Org ID" class="font-mono text-xs">
+          {String.slice(tenant.org_id, 0, 8)}...
+        </:col>
+        <:col :let={tenant} label="Status">
+          <.badge variant="success" label={tenant.status} />
+        </:col>
+        <:col :let={tenant} label="Admin Email" class="text-slate-400">
+          {tenant.initial_admin_email || "N/A"}
+        </:col>
+        <:action :let={_tenant}>
+          <.nx_button variant="ghost" size="sm">Manage</.nx_button>
+        </:action>
+      </.data_grid>
 
       <.modal id="provision-modal" show={@show_provision_modal} on_close="toggle_provision_modal">
         <h2 class="text-2xl font-bold text-white mb-2">New Tenant</h2>

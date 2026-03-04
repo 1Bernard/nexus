@@ -38,14 +38,23 @@ defmodule NexusWeb.UserAuth do
         user ->
           socket =
             socket
-            |> Phoenix.Component.assign(:current_user_id, user_id)
-            |> Phoenix.Component.assign(:current_user, user)
-            |> Phoenix.Component.assign(:session_id, String.slice(String.upcase(user_id), 0, 8))
-            |> Phoenix.LiveView.attach_hook(:set_current_path, :handle_params, fn _params,
-                                                                                  url,
-                                                                                  socket ->
-              {:cont, Phoenix.Component.assign(socket, :current_path, URI.parse(url).path)}
+            |> Phoenix.Component.assign_new(:current_user_id, fn -> user_id end)
+            |> Phoenix.Component.assign_new(:current_user, fn -> user end)
+            |> Phoenix.Component.assign_new(:session_id, fn ->
+              String.slice(String.upcase(user_id), 0, 8)
             end)
+
+          # Avoid double-attaching the hook if it's already there (e.g. redundant on_mount)
+          socket =
+            if socket.assigns[:current_path] do
+              socket
+            else
+              Phoenix.LiveView.attach_hook(socket, :set_current_path, :handle_params, fn _params,
+                                                                                         url,
+                                                                                         socket ->
+                {:cont, Phoenix.Component.assign(socket, :current_path, URI.parse(url).path)}
+              end)
+            end
 
           {:cont, socket}
       end
@@ -71,6 +80,11 @@ defmodule NexusWeb.UserAuth do
     end
   end
 
+  # LiveView on_mount to protect Organizational Admin routes
+  def on_mount(:require_org_admin, params, session, socket) do
+    on_mount(:mount_current_user, params, session, socket)
+  end
+
   # LiveView on_mount to redirect away from login
   def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
     if user_id = session["user_id"] do
@@ -92,6 +106,23 @@ defmodule NexusWeb.UserAuth do
        socket
        |> Phoenix.Component.assign(:current_user_id, nil)
        |> Phoenix.Component.assign(:current_user, nil)}
+    end
+  end
+
+  @doc """
+  Industry-standard RBAC Check.
+  Determines if a user has permission to perform an action on a resource.
+  """
+  def can?(nil, _action, _resource), do: false
+
+  def can?(user, action, resource) do
+    case {user.role, action, resource} do
+      {"admin", _, _} -> true
+      {"trader", action, _} when action in [:view, :create, :edit, :trade] -> true
+      {"trader", :admin, _} -> false
+      {"viewer", :view, _} -> true
+      {"viewer", _, _} -> false
+      _ -> false
     end
   end
 end

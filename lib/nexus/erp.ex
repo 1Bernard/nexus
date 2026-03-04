@@ -4,6 +4,7 @@ defmodule Nexus.ERP do
   """
   import Ecto.Query
   alias Nexus.Repo
+  alias Nexus.Treasury.Projections.PolicyAuditLog
   alias Nexus.ERP.Queries.InvoiceQuery
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 
@@ -54,23 +55,48 @@ defmodule Nexus.ERP do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
 
-    InvoiceQuery.base()
-    |> InvoiceQuery.for_org(org_id)
-    |> InvoiceQuery.newest_first()
-    |> InvoiceQuery.limit_results(limit)
-    |> offset(^offset)
-    |> Repo.all()
-    |> Enum.map(fn invoice ->
-      %{
-        id: invoice.id,
-        icon: activity_icon(invoice.status),
-        color: activity_color(invoice.status),
-        title: activity_title(invoice),
-        subtitle: "SAP: #{invoice.sap_document_number}",
-        # In a real app we'd use invoice.created_at
-        time: format_time(invoice.created_at)
-      }
-    end)
+    # Fetch Invoices
+    invoices =
+      InvoiceQuery.base()
+      |> InvoiceQuery.for_org(org_id)
+      |> InvoiceQuery.newest_first()
+      |> Repo.all()
+      |> Enum.map(fn inv ->
+        %{
+          id: inv.id,
+          icon: activity_icon(inv.status),
+          color: activity_color(inv.status),
+          title: activity_title(inv),
+          subtitle: "SAP: #{inv.sap_document_number}",
+          created_at: inv.created_at,
+          time: format_time(inv.created_at)
+        }
+      end)
+
+    # Fetch Policy Audits
+    audits =
+      from(p in PolicyAuditLog,
+        where: p.org_id == ^org_id,
+        order_by: [desc: p.changed_at]
+      )
+      |> Repo.all()
+      |> Enum.map(fn log ->
+        %{
+          id: log.id,
+          icon: "hero-shield-check",
+          color: "emerald",
+          title: "Policy: Mode changed to #{log.mode}",
+          subtitle: "Actor: #{log.actor_email}",
+          created_at: log.changed_at,
+          time: format_time(log.changed_at)
+        }
+      end)
+
+    # Merge and Sort
+    (invoices ++ audits)
+    |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
+    |> Enum.drop(offset)
+    |> Enum.take(limit)
   end
 
   @doc """

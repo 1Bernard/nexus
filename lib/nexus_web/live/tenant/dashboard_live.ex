@@ -375,7 +375,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
             Risk Overview (Exposure Map)
           </h2>
           <div class="overflow-x-auto scroll-soft -mx-4 px-4 md:mx-0 md:px-0">
-            <div class="matrix-container mb-4 min-w-[700px]">
+            <div class="matrix-container mb-4 min-w-[700px] pt-12">
               <%!-- Headers --%>
               <div class="col-span-1"></div>
               <%= for curr <- @exposure_heatmap.currencies do %>

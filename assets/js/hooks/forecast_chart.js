@@ -91,7 +91,7 @@ const ForecastChart = {
           const p = validParams.find(x => x.seriesName === 'Predicted') || validParams[0];
           
           const isHistorical = p.seriesName === 'Historical';
-          const color = isHistorical ? 'text-slate-400' : 'text-indigo-400';
+          const color = isHistorical ? 'text-slate-400' : 'text-emerald-400';
           const val = getVal(p);
           
           let html = `<div class="p-1">
@@ -178,7 +178,7 @@ const ForecastChart = {
           stack: 'confidence-band',
           symbol: 'none',
           areaStyle: {
-            color: 'rgba(99, 102, 241, 0.1)'
+            color: 'rgba(16, 185, 129, 0.1)'
           }
         },
         {
@@ -188,8 +188,8 @@ const ForecastChart = {
           smooth: true,
           symbol: 'circle',
           symbolSize: 6,
-          itemStyle: { color: '#6366f1' },
-          lineStyle: { width: 3, color: '#6366f1', type: 'dashed' }, // Dashed for projections
+          itemStyle: { color: '#10b981' },
+          lineStyle: { width: 3, color: '#10b981', type: 'dashed' }, // Dashed for projections
           markLine: {
             silent: true,
             symbol: 'none',

@@ -16,6 +16,7 @@ defmodule Nexus.Application do
       Nexus.Repo,
       {DNSCluster, query: Application.get_env(:nexus, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Nexus.PubSub},
+      NexusWeb.Presence,
       {Finch, name: Nexus.Finch},
 
       # 2. Domain Supervisors (The "Monolith" Segregation)
@@ -29,6 +30,8 @@ defmodule Nexus.Application do
 
       # 3. Commanded Application (Command Dispatcher)
       Nexus.App,
+      # --- Intelligence Domain ---
+      Nexus.Intelligence.Projectors.AnalysisProjector,
 
       # 4. Web Transport
       NexusWeb.Endpoint
