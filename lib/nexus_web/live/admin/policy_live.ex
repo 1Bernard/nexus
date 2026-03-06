@@ -106,7 +106,8 @@ defmodule NexusWeb.Admin.PolicyLive do
                 <!-- Strict Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
-                    <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"></div>
+                    <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]">
+                    </div>
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       Strict Limit
                     </label>
@@ -128,11 +129,12 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Multi-SIG enforced above this baseline.
                   </p>
                 </div>
-
-                <!-- Standard Mode -->
+                
+    <!-- Standard Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
-                    <div class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
+                    <div class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+                    </div>
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       Standard Limit
                     </label>
@@ -154,11 +156,12 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Step-up auth / hardware key required.
                   </p>
                 </div>
-
-                <!-- Relaxed Mode -->
+                
+    <!-- Relaxed Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
-                    <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]"></div>
+                    <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]">
+                    </div>
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       Relaxed Limit
                     </label>
@@ -195,15 +198,14 @@ defmodule NexusWeb.Admin.PolicyLive do
                   type="submit"
                   class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-3 rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center gap-2"
                 >
-                  <span class="hero-shield-check w-4 h-4"></span>
-                  Persist Policy Thresholds
+                  <span class="hero-shield-check w-4 h-4"></span> Persist Policy Thresholds
                 </button>
               </div>
             </form>
           </.dark_card>
         </div>
-
-        <!-- Audit/History Side (1/3) -->
+        
+    <!-- Audit/History Side (1/3) -->
         <div class="h-full">
           <.dark_card class="p-6 h-full border-white/5 flex flex-col min-h-[500px]">
             <.audit_panel audits={@audits} />

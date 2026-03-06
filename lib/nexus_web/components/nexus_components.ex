@@ -92,10 +92,13 @@ defmodule NexusWeb.NexusComponents do
         ]}>
           {@title}
         </h1>
-        <p :if={@subtitle} class={[
-          "text-sm mt-1 uppercase tracking-widest font-bold",
-          if(@is_backoffice, do: "text-rose-400/70", else: "text-slate-500")
-        ]}>
+        <p
+          :if={@subtitle}
+          class={[
+            "text-sm mt-1 uppercase tracking-widest font-bold",
+            if(@is_backoffice, do: "text-rose-400/70", else: "text-slate-500")
+          ]}
+        >
           {@subtitle}
         </p>
       </div>
@@ -137,7 +140,7 @@ defmodule NexusWeb.NexusComponents do
       phx-hook="NavInteractions"
       class="min-h-screen bg-[var(--nx-bg)] text-slate-100 font-sans selection:bg-indigo-500/40 flex transition-[width] duration-300 [&.sidebar-collapsed]:[--nx-sidebar-w:88px]"
     >
-    <%!-- Mobile Overlay --%>
+      <%!-- Mobile Overlay --%>
       <div
         id="sidebar-overlay"
         class="fixed inset-0 bg-[#0B0E14]/80 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden"
@@ -153,7 +156,11 @@ defmodule NexusWeb.NexusComponents do
           <span class="hero-exclamation-triangle w-4 h-4"></span>
           <span>Impersonating Session: {@current_user.email} (READ ONLY)</span>
           <span class="mx-2 opacity-30">|</span>
-          <.link href="/backoffice/impersonate/end" method="delete" class="px-2 py-0.5 bg-rose-950/40 hover:bg-rose-950/80 rounded transition-colors border border-rose-500/30">
+          <.link
+            href="/backoffice/impersonate/end"
+            method="delete"
+            class="px-2 py-0.5 bg-rose-950/40 hover:bg-rose-950/80 rounded transition-colors border border-rose-500/30"
+          >
             End Impersonation
           </.link>
         </div>
@@ -601,7 +608,10 @@ defmodule NexusWeb.NexusComponents do
       end
 
     ~H"""
-    <div class={["bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col w-full h-full", @class]}>
+    <div class={[
+      "bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col w-full h-full",
+      @class
+    ]}>
       <%!-- Level 1: Context Header (Title & Primary Actions) --%>
       <div class="p-5 md:px-7 flex flex-row justify-between items-center gap-4 shrink-0 transition-all">
         <div :if={@title || @subtitle} class="flex-1 min-w-0">
@@ -622,7 +632,8 @@ defmodule NexusWeb.NexusComponents do
         <%!-- Search Bar (Left in Utility Bar) --%>
         <div class="relative w-full sm:max-w-xs group transition-all">
           <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <span class="hero-magnifying-glass w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></span>
+            <span class="hero-magnifying-glass w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+            </span>
           </div>
           <form phx-change="search" phx-submit="search" class="m-0">
             <input
@@ -637,12 +648,16 @@ defmodule NexusWeb.NexusComponents do
         </div>
 
         <%!-- Filter Tray (Right in Utility Bar) --%>
-        <div :if={@filters != []} class="flex flex-wrap items-center gap-3 pointer-events-auto w-full sm:w-auto">
-          <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold whitespace-nowrap">Filter:</span>
+        <div
+          :if={@filters != []}
+          class="flex flex-wrap items-center gap-3 pointer-events-auto w-full sm:w-auto"
+        >
+          <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold whitespace-nowrap">
+            Filter:
+          </span>
           {render_slot(@filters)}
         </div>
       </div>
-
 
       <%!-- Table Area (Scrollable) --%>
       <div class="overflow-x-auto flex-1 h-full min-h-[300px] relative">
@@ -664,7 +679,11 @@ defmodule NexusWeb.NexusComponents do
               </th>
             </tr>
           </thead>
-          <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"} class="divide-y divide-white/[0.02] bg-transparent">
+          <tbody
+            id={@id}
+            phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}
+            class="divide-y divide-white/[0.02] bg-transparent"
+          >
             <tr
               :for={row <- @rows}
               id={@row_id && @row_id.(row)}
@@ -674,10 +693,16 @@ defmodule NexusWeb.NexusComponents do
               ]}
               phx-click={@row_click && @row_click.(row)}
             >
-              <td :for={col <- @col} class={["px-5 md:px-7 py-5 whitespace-nowrap text-sm text-slate-300", col[:class]]}>
+              <td
+                :for={col <- @col}
+                class={["px-5 md:px-7 py-5 whitespace-nowrap text-sm text-slate-300", col[:class]]}
+              >
                 {render_slot(col, @row_item.(row))}
               </td>
-              <td :if={@action != []} class="px-5 md:px-7 py-5 whitespace-nowrap text-right text-sm font-medium">
+              <td
+                :if={@action != []}
+                class="px-5 md:px-7 py-5 whitespace-nowrap text-right text-sm font-medium"
+              >
                 <div class="flex justify-end gap-2 items-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200">
                   {render_slot(@action, @row_item.(row))}
                 </div>
@@ -687,14 +712,19 @@ defmodule NexusWeb.NexusComponents do
         </table>
 
         <%!-- Empty State overlay --%>
-        <div :if={@total == 0} class="absolute inset-0 top-[20%] flex flex-col items-center justify-start pointer-events-none z-0">
-           <div class="text-center p-8 mt-12">
-             <div class="w-16 h-16 rounded-2xl bg-slate-800/80 flex items-center justify-center mx-auto mb-5 border border-slate-700/50 shadow-lg">
-               <span class="hero-magnifying-glass w-8 h-8 text-slate-500"></span>
-             </div>
-             <h3 class="text-sm font-bold text-slate-300">No matching records</h3>
-             <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">We couldn't find any data matching your current filters or search terms.</p>
-           </div>
+        <div
+          :if={@total == 0}
+          class="absolute inset-0 top-[20%] flex flex-col items-center justify-start pointer-events-none z-0"
+        >
+          <div class="text-center p-8 mt-12">
+            <div class="w-16 h-16 rounded-2xl bg-slate-800/80 flex items-center justify-center mx-auto mb-5 border border-slate-700/50 shadow-lg">
+              <span class="hero-magnifying-glass w-8 h-8 text-slate-500"></span>
+            </div>
+            <h3 class="text-sm font-bold text-slate-300">No matching records</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              We couldn't find any data matching your current filters or search terms.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -705,7 +735,10 @@ defmodule NexusWeb.NexusComponents do
           <div class="flex items-center gap-2.5">
             <span class="text-slate-500 font-medium">Rows per page:</span>
             <form phx-change="change_limit" class="m-0 inline">
-              <select name="limit" class="bg-slate-950 border border-slate-700/80 rounded-md py-1.5 pl-3 pr-7 text-slate-300 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer hover:border-slate-600 transition-colors shadow-inner">
+              <select
+                name="limit"
+                class="bg-slate-950 border border-slate-700/80 rounded-md py-1.5 pl-3 pr-7 text-slate-300 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer hover:border-slate-600 transition-colors shadow-inner"
+              >
                 <%= for opt <- [10, 25, 50, 100] do %>
                   <option value={opt} selected={to_string(limit) == to_string(opt)}>{opt}</option>
                 <% end %>
@@ -714,7 +747,9 @@ defmodule NexusWeb.NexusComponents do
           </div>
 
           <div class="text-slate-500 pl-5 border-l border-white/[0.06] hidden sm:block">
-            Showing <span class="text-slate-200 font-bold">{min(limit, @total)}</span> of <span class="text-slate-200 font-bold">{@total}</span> results
+            Showing <span class="text-slate-200 font-bold">{min(limit, @total)}</span>
+            of <span class="text-slate-200 font-bold">{@total}</span>
+            results
           </div>
         </div>
 
@@ -728,7 +763,9 @@ defmodule NexusWeb.NexusComponents do
             phx-value-direction="prev"
             disabled={is_nil(prev_cursor)}
           >
-            <span class="hero-chevron-left w-3 h-3 group-hover:-translate-x-0.5 transition-transform"></span> Prev
+            <span class="hero-chevron-left w-3 h-3 group-hover:-translate-x-0.5 transition-transform">
+            </span>
+            Prev
           </button>
 
           <button
@@ -737,7 +774,9 @@ defmodule NexusWeb.NexusComponents do
             phx-value-direction="next"
             disabled={is_nil(next_cursor)}
           >
-            Next <span class="hero-chevron-right w-3 h-3 group-hover:translate-x-0.5 transition-transform"></span>
+            Next
+            <span class="hero-chevron-right w-3 h-3 group-hover:translate-x-0.5 transition-transform">
+            </span>
           </button>
         </div>
       </div>
@@ -1553,7 +1592,12 @@ defmodule NexusWeb.NexusComponents do
             <div class="flex items-start justify-between">
               <div>
                 <h2 :if={@title} class="text-xl font-bold text-white tracking-tight">{@title}</h2>
-                <p :if={@subtitle} class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">{@subtitle}</p>
+                <p
+                  :if={@subtitle}
+                  class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold"
+                >
+                  {@subtitle}
+                </p>
               </div>
               <button
                 type="button"

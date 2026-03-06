@@ -391,7 +391,10 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         row_click={nil}
       >
         <:filters>
-          <form phx-change="filter_ledger" class="flex items-center gap-2 m-0 bg-slate-900/40 border border-slate-800 rounded-xl p-1">
+          <form
+            phx-change="filter_ledger"
+            class="flex items-center gap-2 m-0 bg-slate-900/40 border border-slate-800 rounded-xl p-1"
+          >
             <input
               type="date"
               name="date_from"
@@ -438,22 +441,35 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         </:col>
 
         <:col :let={recon} label="Match Type" class="w-32">
-          <% is_manual = String.contains?(recon.reconciliation_id, "MANUAL") or Enum.at(String.split(recon.reconciliation_id, "-"), 0) |> String.length() > 30 %>
+          <% is_manual =
+            String.contains?(recon.reconciliation_id, "MANUAL") or
+              Enum.at(String.split(recon.reconciliation_id, "-"), 0) |> String.length() > 30 %>
           <div class="flex items-start gap-2">
             <%= if is_manual do %>
-              <div class="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0" title="Manual Match">
+              <div
+                class="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0"
+                title="Manual Match"
+              >
                 <span class="hero-user w-3.5 h-3.5 text-amber-500"></span>
               </div>
               <div class="flex flex-col">
-                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Manual</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  Manual
+                </span>
                 <%= if recon.actor_email do %>
-                  <span class="text-[9px] text-slate-500 font-medium truncate max-w-[100px]" title={recon.actor_email}>
+                  <span
+                    class="text-[9px] text-slate-500 font-medium truncate max-w-[100px]"
+                    title={recon.actor_email}
+                  >
                     {recon.actor_email}
                   </span>
                 <% end %>
               </div>
             <% else %>
-              <div class="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center" title="Auto Match">
+              <div
+                class="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center"
+                title="Auto Match"
+              >
                 <span class="hero-bolt w-3.5 h-3.5 text-indigo-400"></span>
               </div>
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Auto</span>

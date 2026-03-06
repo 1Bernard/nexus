@@ -81,7 +81,10 @@ defmodule NexusWeb.Admin.AnalysisLive do
     ~H"""
     <.page_container class="px-4 md:px-6">
       <!-- Live Stream Header -->
-      <.page_header title="AI Sentinel" subtitle="Real-time intelligence • 12ms latency • 142 ev/s">
+      <.page_header
+        title="AI Sentinel"
+        subtitle="Real-time intelligence • 12ms latency • 142 ev/s"
+      >
         <:actions>
           <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
             <span class="relative flex h-2 w-2">
@@ -95,8 +98,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </div>
         </:actions>
       </.page_header>
-
-      <!-- Top KPIs -->
+      
+    <!-- Top KPIs -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full">
         <.dark_card class="p-6 flex flex-col justify-between">
           <div class="flex items-start justify-between">
@@ -105,7 +108,9 @@ defmodule NexusWeb.Admin.AnalysisLive do
                 Active Anomalies
               </h3>
               <div class="flex items-baseline gap-2">
-                <span class="text-3xl font-black text-slate-100 tracking-tight"><%= length(@anomalies) %></span>
+                <span class="text-3xl font-black text-slate-100 tracking-tight">
+                  {length(@anomalies)}
+                </span>
               </div>
             </div>
             <div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
@@ -124,7 +129,9 @@ defmodule NexusWeb.Admin.AnalysisLive do
                 Comms Evaluated
               </h3>
               <div class="flex items-baseline gap-2">
-                <span class="text-3xl font-black text-slate-100 tracking-tight"><%= length(@sentiments) %></span>
+                <span class="text-3xl font-black text-slate-100 tracking-tight">
+                  {length(@sentiments)}
+                </span>
               </div>
             </div>
             <div class="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
@@ -159,8 +166,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </div>
         </.dark_card>
       </div>
-
-      <!-- Navigation Tabs -->
+      
+    <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-2 w-full">
         <.tab_button
           active={@active_tab == "overview"}
@@ -220,7 +227,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
                         <div>
                           <h4 class="text-sm font-bold text-slate-200">{anomaly.invoice_id}</h4>
                           <p class="text-[11px] font-medium text-slate-400 mt-0.5">
-                            Org: <span class="text-slate-300 font-mono">{@org_names[anomaly.org_id]}</span>
+                            Org:
+                            <span class="text-slate-300 font-mono">{@org_names[anomaly.org_id]}</span>
                           </p>
                         </div>
                       </div>
@@ -239,8 +247,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       </span>
                       {anomaly.reason}
                     </div>
-
-                    <!-- Actions -->
+                    
+    <!-- Actions -->
                     <div class="flex items-center gap-3 pt-4 border-t border-white/5 mt-auto">
                       <button
                         phx-click="investigate_anomaly"
@@ -269,8 +277,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
             </div>
           </.dark_card>
         <% end %>
-
-        <!-- Sentiments List -->
+        
+    <!-- Sentiments List -->
         <%= if @active_tab in ["overview", "sentiment"] do %>
           <.dark_card class="p-6 relative overflow-hidden h-fit">
             <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
@@ -313,9 +321,12 @@ defmodule NexusWeb.Admin.AnalysisLive do
                           />
                         </div>
                         <div>
-                          <h4 class="text-sm font-bold text-slate-200">Source: {sent.source_id || "Unknown"}</h4>
+                          <h4 class="text-sm font-bold text-slate-200">
+                            Source: {sent.source_id || "Unknown"}
+                          </h4>
                           <p class="text-[11px] text-slate-400 mt-0.5">
-                            Org: <span class="text-slate-300 font-mono">{@org_names[sent.org_id]}</span>
+                            Org:
+                            <span class="text-slate-300 font-mono">{@org_names[sent.org_id]}</span>
                           </p>
                           <p class="text-[10px] text-slate-500 mt-1.5 uppercase font-medium tracking-wider">
                             {Calendar.strftime(sent.scored_at, "%b %d, %H:%M UTC")}
@@ -329,8 +340,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       }>
                           {sent.sentiment}
                         </p>
-
-                        <!-- Confidence Bar -->
+                        
+    <!-- Confidence Bar -->
                         <div class="w-24 mt-2">
                           <div class="flex items-center justify-between text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
                             <span>Conf</span>

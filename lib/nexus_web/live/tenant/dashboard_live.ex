@@ -81,7 +81,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
         host={@host}
       />
 
-      <.page_header title="Institutional Dashboard" subtitle="Real-time treasury & exposure intelligence">
+      <.page_header
+        title="Institutional Dashboard"
+        subtitle="Real-time treasury & exposure intelligence"
+      >
         <:actions>
           <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl mr-2">
             <button
@@ -558,8 +561,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
                       </div>
                       <%= if log.mode != "CONFIG" do %>
                         <span class="text-slate-500 font-mono">
-                          <% m_val = Decimal.div(log.threshold, 1_000_000) %>
-                          Threshold: €<%= if Decimal.gte?(log.threshold, 1_000_000) do %><%= Decimal.round(m_val, 1) %>M<% else %><%= Decimal.div(log.threshold, 1_000) |> Decimal.round(0) %>K<% end %>
+                          <% m_val = Decimal.div(log.threshold, 1_000_000) %> Threshold: €<%= if Decimal.gte?(log.threshold, 1_000_000) do %>
+                            {Decimal.round(m_val, 1)}M
+                          <% else %>
+                            {Decimal.div(log.threshold, 1_000) |> Decimal.round(0)}K
+                          <% end %>
                         </span>
                       <% end %>
                     </div>

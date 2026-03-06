@@ -154,163 +154,163 @@ defmodule NexusWeb.ERP.StatementLive do
         title="Document Gateway"
         subtitle="Upload MT940 SWIFT or CSV bank statements to begin reconciliation."
       />
-        <%!-- Upload zone --%>
-        <.dark_card
-          class="p-10 flex flex-col items-center gap-4 transition-colors hover:border-indigo-500/30 hover:bg-white/[0.03]"
-          phx-drop-target={@uploads.statement.ref}
-        >
-          <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 ring-1 ring-indigo-500/20 flex items-center justify-center">
-            <span class="hero-document-arrow-up w-7 h-7 text-indigo-400"></span>
-          </div>
-          <div class="text-center">
-            <p class="text-white font-medium">Drag &amp; drop your statement</p>
-            <p class="text-slate-400 text-sm mt-1">
-              Supports <span class="font-mono text-indigo-300">MT940</span>
-              (.sta, .txt) and <span class="font-mono text-cyan-300">CSV</span>
-              — max 5 MB
-            </p>
+      <%!-- Upload zone --%>
+      <.dark_card
+        class="p-10 flex flex-col items-center gap-4 transition-colors hover:border-indigo-500/30 hover:bg-white/[0.03]"
+        phx-drop-target={@uploads.statement.ref}
+      >
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 ring-1 ring-indigo-500/20 flex items-center justify-center">
+          <span class="hero-document-arrow-up w-7 h-7 text-indigo-400"></span>
+        </div>
+        <div class="text-center">
+          <p class="text-white font-medium">Drag &amp; drop your statement</p>
+          <p class="text-slate-400 text-sm mt-1">
+            Supports <span class="font-mono text-indigo-300">MT940</span>
+            (.sta, .txt) and <span class="font-mono text-cyan-300">CSV</span>
+            — max 5 MB
+          </p>
+        </div>
+
+        <form id="upload-form" phx-submit="upload" phx-change="validate">
+          <.live_file_input upload={@uploads.statement} class="sr-only" />
+          <div class="flex justify-center mt-2">
+            <label
+              for={@uploads.statement.ref}
+              class="cursor-pointer px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
+            >
+              Browse Files
+            </label>
           </div>
 
-          <form id="upload-form" phx-submit="upload" phx-change="validate">
-            <.live_file_input upload={@uploads.statement} class="sr-only" />
-            <div class="flex justify-center mt-2">
-              <label
-                for={@uploads.statement.ref}
-                class="cursor-pointer px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-colors"
-              >
-                Browse Files
-              </label>
-            </div>
-
-            <%!-- Upload queue --%>
-            <%= for entry <- @uploads.statement.entries do %>
-              <div class="flex items-center gap-3 mt-4 px-4 py-3 rounded-xl bg-white/[0.04] w-72">
-                <span class="hero-document text-slate-400 w-5 h-5 flex-shrink-0"></span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm text-white truncate">{entry.client_name}</p>
-                  <div class="mt-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      class="h-full bg-indigo-500 rounded-full transition-all"
-                      style={"width: #{entry.progress}%"}
-                    />
-                  </div>
+          <%!-- Upload queue --%>
+          <%= for entry <- @uploads.statement.entries do %>
+            <div class="flex items-center gap-3 mt-4 px-4 py-3 rounded-xl bg-white/[0.04] w-72">
+              <span class="hero-document text-slate-400 w-5 h-5 flex-shrink-0"></span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-white truncate">{entry.client_name}</p>
+                <div class="mt-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-indigo-500 rounded-full transition-all"
+                    style={"width: #{entry.progress}%"}
+                  />
                 </div>
-                <button
-                  type="button"
-                  phx-click="cancel_upload"
-                  phx-value-ref={entry.ref}
-                  class="text-slate-500 hover:text-rose-400 transition-colors"
-                >
-                  <span class="hero-x-mark w-4 h-4"></span>
-                </button>
               </div>
-
-              <%= for err <- upload_errors(@uploads.statement, entry) do %>
-                <p class="text-rose-400 text-xs mt-1 text-center">{upload_error_to_string(err)}</p>
-              <% end %>
-            <% end %>
-
-            <%= if length(@uploads.statement.entries) > 0 do %>
-              <div class="flex justify-center">
-                <button
-                  type="submit"
-                  class="mt-4 px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors"
-                >
-                  Upload Statement
-                </button>
-              </div>
-            <% end %>
-          </form>
-
-          <%!-- Feedback --%>
-          <%= if @upload_error do %>
-            <p class="text-rose-400 text-xs font-mono mt-2">{@upload_error}</p>
-          <% end %>
-          <%= if @upload_status == :success do %>
-            <p class="text-emerald-400 text-xs font-mono mt-2">✓ Statement uploaded and parsed</p>
-          <% end %>
-        </.dark_card>
-
-        <%!-- Statement list --%>
-        <.dark_card>
-          <div class="px-5 py-3.5 border-b border-white/[0.06] flex flex-col md:flex-row md:items-center gap-3 justify-between">
-            <div class="flex items-center gap-3">
-              <span class="hero-rectangle-stack w-4 h-4 text-slate-500"></span>
-              <h2 class="text-sm font-semibold text-white">Uploaded Statements</h2>
-              <span class="text-xs text-slate-500">{length(@statements)} total</span>
+              <button
+                type="button"
+                phx-click="cancel_upload"
+                phx-value-ref={entry.ref}
+                class="text-slate-500 hover:text-rose-400 transition-colors"
+              >
+                <span class="hero-x-mark w-4 h-4"></span>
+              </button>
             </div>
-            <div class="flex items-center gap-3">
-              <div class="relative group">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 hero-magnifying-glass w-3.5 h-3.5 text-slate-500 group-focus-within:text-indigo-400">
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search statements..."
-                  phx-keyup="search"
-                  phx-debounce="200"
-                  class="bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all w-48"
-                  value={@search_query}
-                />
-              </div>
+
+            <%= for err <- upload_errors(@uploads.statement, entry) do %>
+              <p class="text-rose-400 text-xs mt-1 text-center">{upload_error_to_string(err)}</p>
+            <% end %>
+          <% end %>
+
+          <%= if length(@uploads.statement.entries) > 0 do %>
+            <div class="flex justify-center">
+              <button
+                type="submit"
+                class="mt-4 px-6 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors"
+              >
+                Upload Statement
+              </button>
+            </div>
+          <% end %>
+        </form>
+
+        <%!-- Feedback --%>
+        <%= if @upload_error do %>
+          <p class="text-rose-400 text-xs font-mono mt-2">{@upload_error}</p>
+        <% end %>
+        <%= if @upload_status == :success do %>
+          <p class="text-emerald-400 text-xs font-mono mt-2">✓ Statement uploaded and parsed</p>
+        <% end %>
+      </.dark_card>
+
+      <%!-- Statement list --%>
+      <.dark_card>
+        <div class="px-5 py-3.5 border-b border-white/[0.06] flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div class="flex items-center gap-3">
+            <span class="hero-rectangle-stack w-4 h-4 text-slate-500"></span>
+            <h2 class="text-sm font-semibold text-white">Uploaded Statements</h2>
+            <span class="text-xs text-slate-500">{length(@statements)} total</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="relative group">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 hero-magnifying-glass w-3.5 h-3.5 text-slate-500 group-focus-within:text-indigo-400">
+              </span>
               <input
-                type="date"
-                phx-change="filter_date"
-                class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                value={@date_filter}
+                type="text"
+                placeholder="Search statements..."
+                phx-keyup="search"
+                phx-debounce="200"
+                class="bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all w-48"
+                value={@search_query}
               />
             </div>
+            <input
+              type="date"
+              phx-change="filter_date"
+              class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+              value={@date_filter}
+            />
           </div>
+        </div>
 
-          <%= if Enum.empty?(@statements) do %>
-            <.statements_empty />
-          <% else %>
-            <div class="flex flex-col gap-1.5 p-3">
-              <%= for statement <- @statements do %>
-                <div>
-                  <div class="flex items-center gap-1">
-                    <button
-                      class="flex-1 text-left"
-                      phx-click="expand_statement"
-                      phx-value-id={statement.id}
-                    >
-                      <.statement_row statement={statement} />
-                    </button>
-                    <.nx_button
-                      phx-click="download_original"
-                      phx-value-id={statement.id}
-                      title="Download Original"
-                      variant="outline"
-                      size="sm"
-                      icon="hero-arrow-down-tray"
-                      class="ml-2"
-                    >
-                    </.nx_button>
-                  </div>
-
-                  <%!-- Expanded lines --%>
-                  <%= if @expanded_statement_id == statement.id do %>
-                    <div class="mt-1 mx-2 rounded-xl bg-white/[0.02] border border-white/[0.05] overflow-hidden">
-                      <div class="px-4 py-2.5 border-b border-white/[0.06]">
-                        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                          Parsed Transactions
-                        </p>
-                      </div>
-                      <%= if Enum.empty?(@expanded_lines) do %>
-                        <p class="text-slate-600 text-xs py-6 text-center">No lines found</p>
-                      <% else %>
-                        <div class="divide-y divide-white/[0.04]">
-                          <%= for line <- @expanded_lines do %>
-                            <.statement_line_row line={line} />
-                          <% end %>
-                        </div>
-                      <% end %>
-                    </div>
-                  <% end %>
+        <%= if Enum.empty?(@statements) do %>
+          <.statements_empty />
+        <% else %>
+          <div class="flex flex-col gap-1.5 p-3">
+            <%= for statement <- @statements do %>
+              <div>
+                <div class="flex items-center gap-1">
+                  <button
+                    class="flex-1 text-left"
+                    phx-click="expand_statement"
+                    phx-value-id={statement.id}
+                  >
+                    <.statement_row statement={statement} />
+                  </button>
+                  <.nx_button
+                    phx-click="download_original"
+                    phx-value-id={statement.id}
+                    title="Download Original"
+                    variant="outline"
+                    size="sm"
+                    icon="hero-arrow-down-tray"
+                    class="ml-2"
+                  >
+                  </.nx_button>
                 </div>
-              <% end %>
-            </div>
-          <% end %>
-        </.dark_card>
+
+                <%!-- Expanded lines --%>
+                <%= if @expanded_statement_id == statement.id do %>
+                  <div class="mt-1 mx-2 rounded-xl bg-white/[0.02] border border-white/[0.05] overflow-hidden">
+                    <div class="px-4 py-2.5 border-b border-white/[0.06]">
+                      <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                        Parsed Transactions
+                      </p>
+                    </div>
+                    <%= if Enum.empty?(@expanded_lines) do %>
+                      <p class="text-slate-600 text-xs py-6 text-center">No lines found</p>
+                    <% else %>
+                      <div class="divide-y divide-white/[0.04]">
+                        <%= for line <- @expanded_lines do %>
+                          <.statement_line_row line={line} />
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </.dark_card>
     </.page_container>
     """
   end

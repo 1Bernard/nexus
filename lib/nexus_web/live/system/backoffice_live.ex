@@ -56,7 +56,11 @@ defmodule NexusWeb.System.BackofficeLive do
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in pb-12">
-      <.page_header title="PLATFORM BACKOFFICE" subtitle="System Administrator Zone" is_backoffice={true} />
+      <.page_header
+        title="PLATFORM BACKOFFICE"
+        subtitle="System Administrator Zone"
+        is_backoffice={true}
+      />
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
         <.stat_card
@@ -67,8 +71,8 @@ defmodule NexusWeb.System.BackofficeLive do
         <.stat_card label="Event Store Lag" value={"#{@health.event_store_lag}ms"} icon="hero-clock" />
         <.stat_card label="System Health" value={@health.system_health} icon="hero-heart" />
       </div>
-
-      <!-- Navigation Tabs -->
+      
+    <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-6 w-full mt-4">
         <.tab_button
           active={@active_tab == "tenants"}
@@ -234,10 +238,14 @@ defmodule NexusWeb.System.BackofficeLive do
                     </div>
                     <div>
                       <p class="text-sm font-bold text-slate-100">User Impersonation</p>
-                      <p class="text-[10px] text-slate-500">Access support session as first tenant user</p>
+                      <p class="text-[10px] text-slate-500">
+                        Access support session as first tenant user
+                      </p>
                     </div>
                   </div>
-                  <.nx_button variant="outline" size="sm" type="button" phx-click="impersonate_tenant">Access Session</.nx_button>
+                  <.nx_button variant="outline" size="sm" type="button" phx-click="impersonate_tenant">
+                    Access Session
+                  </.nx_button>
                 </div>
               </div>
 
@@ -249,7 +257,9 @@ defmodule NexusWeb.System.BackofficeLive do
                     </div>
                     <div>
                       <p class="text-sm font-bold text-rose-500">Suspend Tenant</p>
-                      <p class="text-[10px] text-rose-400/60">Immediately revoke all access (Destructive)</p>
+                      <p class="text-[10px] text-rose-400/60">
+                        Immediately revoke all access (Destructive)
+                      </p>
                     </div>
                   </div>
                   <button
@@ -272,7 +282,10 @@ defmodule NexusWeb.System.BackofficeLive do
             </h3>
 
             <div class="space-y-8">
-              <div :for={{category, features} <- Nexus.Organization.Entitlement.grouped_by_category()} class="space-y-4">
+              <div
+                :for={{category, features} <- Nexus.Organization.Entitlement.grouped_by_category()}
+                class="space-y-4"
+              >
                 <h4 class="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
                   <span class="w-1 h-1 rounded-full bg-slate-700"></span>
                   {category}
@@ -286,7 +299,10 @@ defmodule NexusWeb.System.BackofficeLive do
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-0.5">
                         <p class="text-xs font-bold text-slate-300">{feature.name}</p>
-                        <span :if={feature.tier == :premium} class="px-1.5 py-0.5 text-[8px] font-black uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full">
+                        <span
+                          :if={feature.tier == :premium}
+                          class="px-1.5 py-0.5 text-[8px] font-black uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full"
+                        >
                           Premium
                         </span>
                       </div>
@@ -301,13 +317,17 @@ defmodule NexusWeb.System.BackofficeLive do
                       phx-value-enabled={if is_enabled, do: "false", else: "true"}
                       class={[
                         "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
-                        if(is_enabled, do: "bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.3)]", else: "bg-slate-800")
+                        if(is_enabled,
+                          do: "bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.3)]",
+                          else: "bg-slate-800"
+                        )
                       ]}
                     >
                       <span class={[
                         "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white transition duration-200",
                         if(is_enabled, do: "translate-x-4", else: "translate-x-0")
-                      ]}></span>
+                      ]}>
+                      </span>
                     </button>
                   </div>
                 </div>

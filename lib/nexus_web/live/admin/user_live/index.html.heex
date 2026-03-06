@@ -3,12 +3,7 @@
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <div class="md:col-span-3">
-      <.data_grid
-        id="users-grid"
-        rows={@users}
-        total={@total_count}
-        params={@datagrid_params}
-      >
+      <.data_grid id="users-grid" rows={@users} total={@total_count} params={@datagrid_params}>
         <:primary_actions>
           <.nx_button
             phx-click="generate-invite"
@@ -19,19 +14,39 @@
             Invite User
           </.nx_button>
         </:primary_actions>
-        
+
         <:filters>
           <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-700/50 min-w-max">
-            <button phx-click="filter-role" phx-value-role="all" class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "all", do: "bg-slate-800 text-white shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}>All</button>
-            <button phx-click="filter-role" phx-value-role="admin" class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "admin", do: "bg-emerald-500/20 text-emerald-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}>Admins</button>
-            <button phx-click="filter-role" phx-value-role="trader" class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "trader", do: "bg-indigo-500/20 text-indigo-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}>Traders</button>
+            <button
+              phx-click="filter-role"
+              phx-value-role="all"
+              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "all", do: "bg-slate-800 text-white shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+            >
+              All
+            </button>
+            <button
+              phx-click="filter-role"
+              phx-value-role="admin"
+              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "admin", do: "bg-emerald-500/20 text-emerald-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+            >
+              Admins
+            </button>
+            <button
+              phx-click="filter-role"
+              phx-value-role="trader"
+              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "trader", do: "bg-indigo-500/20 text-indigo-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+            >
+              Traders
+            </button>
           </div>
         </:filters>
 
         <:col :let={user} label="User">
           <div class="flex items-center">
             <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center border border-slate-700/50 shadow-inner">
-              <span class="text-slate-400 font-bold text-sm leading-none">{String.slice(user.display_name, 0, 2) |> String.upcase()}</span>
+              <span class="text-slate-400 font-bold text-sm leading-none">
+                {String.slice(user.display_name, 0, 2) |> String.upcase()}
+              </span>
             </div>
             <div class="ml-4">
               <div class="text-sm font-bold text-slate-200">{user.display_name}</div>
@@ -39,23 +54,26 @@
             </div>
           </div>
         </:col>
-        
+
         <:col :let={user} label="Role">
-          <.badge 
-            variant={case user.role do
-              "admin" -> "success"
-              "trader" -> "info"
-              "viewer" -> "neutral"
-              _ -> "danger"
-            end} 
-            label={String.capitalize(user.role)} 
+          <.badge
+            variant={
+              case user.role do
+                "admin" -> "success"
+                "trader" -> "info"
+                "viewer" -> "neutral"
+                _ -> "danger"
+              end
+            }
+            label={String.capitalize(user.role)}
           />
         </:col>
-        
+
         <:col :let={user} label="Status">
           <div class="flex items-center">
             <%= if Enum.any?(@active_users, fn u -> u.id == user.id end) do %>
-              <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></div>
+              <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse">
+              </div>
               <span class="text-xs font-bold text-emerald-400">Active Now</span>
             <% else %>
               <div class="h-1.5 w-1.5 rounded-full bg-slate-700 mr-2"></div>
@@ -63,14 +81,14 @@
             <% end %>
           </div>
         </:col>
-        
+
         <:col :let={user} label="ID" class="font-mono text-slate-500 text-xs">
           {String.slice(user.id, 0, 8)}...
         </:col>
 
         <:action :let={user}>
-          <button 
-            phx-click="edit-user" 
+          <button
+            phx-click="edit-user"
             phx-value-id={user.id}
             class="w-8 h-8 rounded-lg bg-slate-800/50 hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-400 border border-slate-700/50 hover:border-indigo-500/30 flex items-center justify-center transition-all"
           >
@@ -121,183 +139,192 @@
   </div>
 </.page_container>
 
-  <.modal 
-    :if={@show_invite_modal} 
-    id="invite-modal" 
-    show={@show_invite_modal} 
-    on_close="close-invite-modal"
-  >
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-        <span class="hero-user-plus w-6 h-6"></span>
-      </div>
-      <div>
-        <h3 class="text-xl font-bold text-slate-100 italic font-serif">Generate Invitation</h3>
-        <p class="text-xs text-slate-500">Create a secure entry point for a new team member</p>
-      </div>
+<.modal
+  :if={@show_invite_modal}
+  id="invite-modal"
+  show={@show_invite_modal}
+  on_close="close-invite-modal"
+>
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+      <span class="hero-user-plus w-6 h-6"></span>
     </div>
-
-    <%= if is_nil(@generated_invite_url) do %>
-      <form phx-submit="confirm-generate-invite" class="space-y-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <.nx_input 
-            name="display_name" 
-            label="Display Name" 
-            placeholder="e.g. Sarah Connor" 
-            required 
-          />
-          <.nx_input 
-            name="email" 
-            type="email" 
-            label="Email Address" 
-            placeholder="sarah@nexus.io" 
-            required 
-          />
-        </div>
-
-        <div>
-          <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
-            Assigned Role
-          </label>
-          <div class="grid grid-cols-3 gap-3">
-            <%= for role <- ["admin", "trader", "viewer"] do %>
-              <label class={"cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center gap-2 transition-all hover:border-slate-700 #{if @invite_role == role, do: "bg-indigo-500/10 border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.1)]", else: "bg-slate-950/40 text-slate-500"}"}>
-                <input
-                  type="radio"
-                  name="role"
-                  value={role}
-                  class="hidden"
-                  checked={@invite_role == role}
-                  phx-click="set-invite-role"
-                  phx-value-role={role}
-                />
-                <span class={[
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                  if(@invite_role == role, do: "border-indigo-500", else: "border-slate-800")
-                ]}>
-                  <div :if={@invite_role == role} class="w-2 h-2 bg-indigo-400 rounded-full shadow-[0_0_8px_rgba(129,140,248,0.8)]"></div>
-                </span>
-                <span class="text-[10px] font-black uppercase tracking-widest">{role}</span>
-              </label>
-            <% end %>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-          <.nx_button variant="ghost" type="button" phx-click="close-invite-modal">Cancel</.nx_button>
-          <.nx_button variant="primary" type="submit">Generate Link</.nx_button>
-        </div>
-      </form>
-    <% else %>
-      <div class="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-        <div class="p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl relative overflow-hidden group">
-          <div class="absolute top-0 right-0 p-3">
-             <span class="flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-          </div>
-          <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3">Single-Use Secure Link</p>
-          <div class="flex items-center gap-3">
-            <input
-              type="text"
-              readonly
-              value={@generated_invite_url}
-              class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2.5 px-4 text-xs font-mono text-slate-300 focus:outline-none shadow-inner"
-              id="invite-link-input"
-            />
-            <button 
-              onclick={"navigator.clipboard.writeText('#{@generated_invite_url}')"}
-              class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 active:scale-95"
-              title="Copy to Clipboard"
-            >
-              <span class="hero-clipboard-document w-4 h-4"></span>
-            </button>
-          </div>
-        </div>
-        
-        <div class="flex justify-center flex-col items-center gap-2">
-          <p class="text-[10px] text-slate-500 text-center italic">
-            This link will expire in 24 hours. Once used, it cannot be reused.
-          </p>
-          <.nx_button variant="ghost" class="mt-4" phx-click="close-invite-modal">Done</.nx_button>
-        </div>
-      </div>
-    <% end %>
-  </.modal>
-
-  <.modal
-    :if={@editing_user}
-    id="edit-user-modal"
-    show={true}
-    on_close="close-edit-modal"
-  >
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-        <span class="hero-pencil-square w-6 h-6"></span>
-      </div>
-      <div>
-        <h3 class="text-xl font-bold text-slate-100 italic font-serif">Modify Permissions</h3>
-        <p class="text-xs text-slate-500">Update {@editing_user.display_name}'s access level</p>
-      </div>
+    <div>
+      <h3 class="text-xl font-bold text-slate-100 italic font-serif">Generate Invitation</h3>
+      <p class="text-xs text-slate-500">Create a secure entry point for a new team member</p>
     </div>
+  </div>
 
-    <form phx-submit="update-user-role" class="space-y-6">
-      <input type="hidden" name="user_id" value={@editing_user.id} />
-      
+  <%= if is_nil(@generated_invite_url) do %>
+    <form phx-submit="confirm-generate-invite" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <.nx_input
+          name="display_name"
+          label="Display Name"
+          placeholder="e.g. Sarah Connor"
+          required
+        />
+        <.nx_input
+          name="email"
+          type="email"
+          label="Email Address"
+          placeholder="sarah@nexus.io"
+          required
+        />
+      </div>
+
       <div>
-        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">
-          Select New Role
+        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+          Assigned Role
         </label>
-        <div class="space-y-3">
+        <div class="grid grid-cols-3 gap-3">
           <%= for role <- ["admin", "trader", "viewer"] do %>
-            <label class={"flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group #{if @editing_role == role, do: "bg-indigo-500/10 border-indigo-500/40", else: "bg-slate-950/40 border-slate-800/50 hover:bg-slate-900/40"}"}>
-              <div class="flex items-center gap-4">
-                <div class={[
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                  if(@editing_role == role, do: "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20", else: "bg-slate-900 text-slate-500 group-hover:text-slate-300")
-                ]}>
-                  <span class={case role do
-                    "admin" -> "hero-shield-check"
-                    "trader" -> "hero-presentation-chart-line"
-                    "viewer" -> "hero-eye"
-                  end <> " w-5 h-5"}></span>
-                </div>
-                <div>
-                  <p class="text-sm font-bold text-slate-200 uppercase tracking-wide">{String.capitalize(role)}</p>
-                  <p class="text-[10px] text-slate-500">
-                    {case role do
-                      "admin" -> "Full system access & team management"
-                      "trader" -> "Execution-only, limited settings"
-                      "viewer" -> "Read-only access to dashboards"
-                    end}
-                  </p>
-                </div>
-              </div>
-              <input 
-                type="radio" 
-                name="role" 
-                value={role} 
-                checked={@editing_role == role} 
-                phx-click="set-editing-role"
+            <label class={"cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center gap-2 transition-all hover:border-slate-700 #{if @invite_role == role, do: "bg-indigo-500/10 border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.1)]", else: "bg-slate-950/40 text-slate-500"}"}>
+              <input
+                type="radio"
+                name="role"
+                value={role}
+                class="hidden"
+                checked={@invite_role == role}
+                phx-click="set-invite-role"
                 phx-value-role={role}
-                class="hidden" 
               />
-              <div class={[
+              <span class={[
                 "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                if(@editing_role == role, do: "border-indigo-500", else: "border-slate-800")
+                if(@invite_role == role, do: "border-indigo-500", else: "border-slate-800")
               ]}>
-                <div :if={@editing_role == role} class="w-2 h-2 bg-indigo-400 rounded-full"></div>
-              </div>
+                <div
+                  :if={@invite_role == role}
+                  class="w-2 h-2 bg-indigo-400 rounded-full shadow-[0_0_8px_rgba(129,140,248,0.8)]"
+                >
+                </div>
+              </span>
+              <span class="text-[10px] font-black uppercase tracking-widest">{role}</span>
             </label>
           <% end %>
         </div>
       </div>
 
       <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-        <.nx_button variant="ghost" type="button" phx-click="close-edit-modal">Cancel</.nx_button>
-        <.nx_button variant="primary" type="submit">Update Role</.nx_button>
+        <.nx_button variant="ghost" type="button" phx-click="close-invite-modal">
+          Cancel
+        </.nx_button>
+        <.nx_button variant="primary" type="submit">Generate Link</.nx_button>
       </div>
     </form>
-  </.modal>
+  <% else %>
+    <div class="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+      <div class="p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-3">
+          <span class="flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
+            </span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+        </div>
+        <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3">
+          Single-Use Secure Link
+        </p>
+        <div class="flex items-center gap-3">
+          <input
+            type="text"
+            readonly
+            value={@generated_invite_url}
+            class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2.5 px-4 text-xs font-mono text-slate-300 focus:outline-none shadow-inner"
+            id="invite-link-input"
+          />
+          <button
+            onclick={"navigator.clipboard.writeText('#{@generated_invite_url}')"}
+            class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 active:scale-95"
+            title="Copy to Clipboard"
+          >
+            <span class="hero-clipboard-document w-4 h-4"></span>
+          </button>
+        </div>
+      </div>
 
+      <div class="flex justify-center flex-col items-center gap-2">
+        <p class="text-[10px] text-slate-500 text-center italic">
+          This link will expire in 24 hours. Once used, it cannot be reused.
+        </p>
+        <.nx_button variant="ghost" class="mt-4" phx-click="close-invite-modal">Done</.nx_button>
+      </div>
+    </div>
+  <% end %>
+</.modal>
+
+<.modal :if={@editing_user} id="edit-user-modal" show={true} on_close="close-edit-modal">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+      <span class="hero-pencil-square w-6 h-6"></span>
+    </div>
+    <div>
+      <h3 class="text-xl font-bold text-slate-100 italic font-serif">Modify Permissions</h3>
+      <p class="text-xs text-slate-500">Update {@editing_user.display_name}'s access level</p>
+    </div>
+  </div>
+
+  <form phx-submit="update-user-role" class="space-y-6">
+    <input type="hidden" name="user_id" value={@editing_user.id} />
+
+    <div>
+      <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">
+        Select New Role
+      </label>
+      <div class="space-y-3">
+        <%= for role <- ["admin", "trader", "viewer"] do %>
+          <label class={"flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group #{if @editing_role == role, do: "bg-indigo-500/10 border-indigo-500/40", else: "bg-slate-950/40 border-slate-800/50 hover:bg-slate-900/40"}"}>
+            <div class="flex items-center gap-4">
+              <div class={[
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                if(@editing_role == role,
+                  do: "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20",
+                  else: "bg-slate-900 text-slate-500 group-hover:text-slate-300"
+                )
+              ]}>
+                <span class={case role do
+                    "admin" -> "hero-shield-check"
+                    "trader" -> "hero-presentation-chart-line"
+                    "viewer" -> "hero-eye"
+                  end <> " w-5 h-5"}>
+                </span>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-200 uppercase tracking-wide">
+                  {String.capitalize(role)}
+                </p>
+                <p class="text-[10px] text-slate-500">
+                  {case role do
+                    "admin" -> "Full system access & team management"
+                    "trader" -> "Execution-only, limited settings"
+                    "viewer" -> "Read-only access to dashboards"
+                  end}
+                </p>
+              </div>
+            </div>
+            <input
+              type="radio"
+              name="role"
+              value={role}
+              checked={@editing_role == role}
+              phx-click="set-editing-role"
+              phx-value-role={role}
+              class="hidden"
+            />
+            <div class={[
+              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+              if(@editing_role == role, do: "border-indigo-500", else: "border-slate-800")
+            ]}>
+              <div :if={@editing_role == role} class="w-2 h-2 bg-indigo-400 rounded-full"></div>
+            </div>
+          </label>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
+      <.nx_button variant="ghost" type="button" phx-click="close-edit-modal">Cancel</.nx_button>
+      <.nx_button variant="primary" type="submit">Update Role</.nx_button>
+    </div>
+  </form>
+</.modal>

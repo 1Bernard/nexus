@@ -30,8 +30,10 @@ defmodule NexusWeb.Organization.InvitesLive do
     ~H"""
     <div class="min-h-screen bg-[#020617] flex items-center justify-center p-4 selection:bg-indigo-500/30">
       <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[40%] -left-[20%] w-[70%] h-[70%] rounded-full bg-indigo-900/10 blur-[120px]"></div>
-        <div class="absolute -bottom-[40%] -right-[20%] w-[70%] h-[70%] rounded-full bg-slate-800/20 blur-[120px]"></div>
+        <div class="absolute -top-[40%] -left-[20%] w-[70%] h-[70%] rounded-full bg-indigo-900/10 blur-[120px]">
+        </div>
+        <div class="absolute -bottom-[40%] -right-[20%] w-[70%] h-[70%] rounded-full bg-slate-800/20 blur-[120px]">
+        </div>
       </div>
 
       <div class="relative w-full max-w-md">
@@ -39,15 +41,28 @@ defmodule NexusWeb.Organization.InvitesLive do
           <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400 tracking-tight mb-2">
             NEXUS
           </h1>
-          <p class="text-slate-500 text-sm font-medium tracking-wide uppercase">Corporate Treasury Platform</p>
+          <p class="text-slate-500 text-sm font-medium tracking-wide uppercase">
+            Corporate Treasury Platform
+          </p>
         </div>
 
         <NexusComponents.dark_card>
           <%= if @valid_token do %>
             <div class="text-center mb-8">
               <div class="mx-auto w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center mb-4 text-indigo-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
                 </svg>
               </div>
               <h2 class="text-2xl font-bold text-slate-100 mb-2">Accept Invitation</h2>
@@ -61,11 +76,22 @@ defmodule NexusWeb.Organization.InvitesLive do
 
             <.form for={@form} phx-submit="register" class="space-y-6">
               <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Full Name</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Full Name
+                </label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
                   </div>
                   <input
@@ -80,10 +106,17 @@ defmodule NexusWeb.Organization.InvitesLive do
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Email Address</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Email Address
+                </label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                       <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                     </svg>
@@ -100,14 +133,23 @@ defmodule NexusWeb.Organization.InvitesLive do
               </div>
 
               <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex gap-3 items-start">
-                 <div class="mt-0.5 text-indigo-400">
-                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                     <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                   </svg>
-                 </div>
-                 <div class="text-xs text-indigo-200/80 leading-relaxed">
-                   Next, you will register your device biometrics (Face ID or Touch ID) to enable secure, passwordless authentication for your account.
-                 </div>
+                <div class="mt-0.5 text-indigo-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div class="text-xs text-indigo-200/80 leading-relaxed">
+                  Next, you will register your device biometrics (Face ID or Touch ID) to enable secure, passwordless authentication for your account.
+                </div>
               </div>
 
               <button
@@ -120,8 +162,19 @@ defmodule NexusWeb.Organization.InvitesLive do
           <% else %>
             <div class="text-center py-8">
               <div class="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center mb-6 text-rose-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
               </div>
               <h2 class="text-xl font-bold text-slate-100 mb-2">Invalid or Expired Link</h2>

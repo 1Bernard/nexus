@@ -113,12 +113,7 @@ defmodule NexusWeb.Treasury.ForecastLive do
             variant="solid"
           />
 
-          <.nx_button
-            phx-click="download_csv"
-            variant="outline"
-            size="sm"
-            icon="hero-arrow-down-tray"
-          >
+          <.nx_button phx-click="download_csv" variant="outline" size="sm" icon="hero-arrow-down-tray">
             Export CSV
           </.nx_button>
           <.nx_button

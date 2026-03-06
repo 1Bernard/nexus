@@ -17,23 +17,30 @@ defmodule NexusWeb.Admin.PolicyComponents do
     ~H"""
     <div class="space-y-4">
       <div class="flex items-center justify-between px-1">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risk Exposure Bands</span>
-        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Total Ops Cap: €{format_large_val(@modes["relaxed"])}</span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+          Risk Exposure Bands
+        </span>
+        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+          Total Ops Cap: €{format_large_val(@modes["relaxed"])}
+        </span>
       </div>
 
       <div class="h-4 w-full bg-slate-900/80 rounded-full overflow-hidden border border-white/5 flex p-0.5">
         <div
           class="h-full bg-rose-500/80 rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(244,63,94,0.3)]"
           style={"width: #{@strict_p}%"}
-        ></div>
+        >
+        </div>
         <div
           class="h-full bg-amber-500/60 rounded-full -ml-1 transition-all duration-700 delay-100 ease-out"
           style={"width: #{max(0, @standard_p - @strict_p)}%"}
-        ></div>
+        >
+        </div>
         <div
           class="h-full bg-indigo-500/40 rounded-full -ml-1 transition-all duration-700 delay-200 ease-out"
           style={"width: #{max(0, 100 - @standard_p)}%"}
-        ></div>
+        >
+        </div>
       </div>
 
       <div class="grid grid-cols-3 gap-2 px-1">
@@ -66,11 +73,12 @@ defmodule NexusWeb.Admin.PolicyComponents do
       <div class="flex-1 space-y-4 overflow-y-auto pr-2 scrollbar-hide">
         <%= for log <- @audits do %>
           <div class="relative pl-4 border-l border-white/5 group">
-            <div class="absolute -left-[3px] top-1 w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-indigo-500 transition-colors"></div>
+            <div class="absolute -left-[3px] top-1 w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-indigo-500 transition-colors">
+            </div>
             <div class="flex flex-col gap-1">
               <div class="flex items-center justify-between">
                 <span class="text-[10px] font-bold text-slate-200 uppercase tracking-wider">
-                  <%= if log.mode == "CONFIG", do: "Policy Configuration", else: "Policy Update" %>
+                  {if log.mode == "CONFIG", do: "Policy Configuration", else: "Policy Update"}
                 </span>
                 <span class="text-[9px] font-mono text-slate-500">
                   {format_dt(log.changed_at)}
@@ -80,13 +88,13 @@ defmodule NexusWeb.Admin.PolicyComponents do
                 <%= if log.mode == "CONFIG" do %>
                   Thresholds updated by {log.actor_email}
                 <% else %>
-                  Mode changed to <span class="text-indigo-400 font-bold uppercase">{log.mode}</span> by {log.actor_email}
+                  Mode changed to <span class="text-indigo-400 font-bold uppercase">{log.mode}</span>
+                  by {log.actor_email}
                 <% end %>
               </p>
             </div>
           </div>
         <% end %>
-
 
         <%= if Enum.empty?(@audits) do %>
           <div class="flex flex-col items-center justify-center py-10 opacity-30">

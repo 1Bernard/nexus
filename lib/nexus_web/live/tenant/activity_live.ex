@@ -26,7 +26,10 @@ defmodule NexusWeb.Tenant.ActivityLive do
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 sm:px-6 lg:px-8">
-      <.page_header title="Activity History" subtitle="Comprehensive audit trail of ERP and system events" />
+      <.page_header
+        title="Activity History"
+        subtitle="Comprehensive audit trail of ERP and system events"
+      />
 
       <%!-- Elite KPI Header --%>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -95,15 +98,10 @@ defmodule NexusWeb.Tenant.ActivityLive do
         subtitle="Security-first logs of all system interactions"
         rows={@activities}
         params={@datagrid_params || %{}}
-        total={1245601}
+        total={1_245_601}
       >
         <:primary_actions>
-          <.nx_button
-            variant="outline"
-            size="sm"
-            icon="hero-arrow-down-tray"
-            phx-click="export_csv"
-          >
+          <.nx_button variant="outline" size="sm" icon="hero-arrow-down-tray" phx-click="export_csv">
             CSV Export
           </.nx_button>
         </:primary_actions>
@@ -124,7 +122,8 @@ defmodule NexusWeb.Tenant.ActivityLive do
         <:col :let={item} label="Event Timeline">
           <div class="relative pl-2 group">
             <%!-- Vertical Timeline Highlight --%>
-            <div class="absolute -left-5 top-0 bottom-0 w-px bg-white/5 group-hover:bg-indigo-500/20 transition-colors"></div>
+            <div class="absolute -left-5 top-0 bottom-0 w-px bg-white/5 group-hover:bg-indigo-500/20 transition-colors">
+            </div>
 
             <.activity_item
               icon={item.icon}

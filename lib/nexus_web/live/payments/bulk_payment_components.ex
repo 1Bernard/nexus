@@ -20,7 +20,10 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
           <p class="text-sm text-white font-medium truncate">Batch {String.slice(@batch.id, 0, 8)}</p>
-          <.badge variant={if(@batch.status == "completed", do: "success", else: "warning")} label={@batch.status} />
+          <.badge
+            variant={if(@batch.status == "completed", do: "success", else: "warning")}
+            label={@batch.status}
+          />
         </div>
         <p class="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-wider">
           Initiated {format_datetime(@batch.created_at)}
@@ -37,7 +40,10 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
       <div class="hidden md:flex flex-col gap-1.5 w-40 flex-shrink-0">
         <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
           <span class="text-slate-500 font-mono">{@batch.processed_items}/{@batch.total_items}</span>
-          <span class={["font-mono", if(@batch.status == "completed", do: "text-emerald-400", else: "text-indigo-400")]}>
+          <span class={[
+            "font-mono",
+            if(@batch.status == "completed", do: "text-emerald-400", else: "text-indigo-400")
+          ]}>
             {calculate_progress(@batch)}%
           </span>
         </div>
@@ -63,7 +69,9 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
         <span class="hero-credit-card w-8 h-8 text-slate-600"></span>
       </div>
       <p class="text-slate-400 text-sm font-medium">No bulk payments found</p>
-      <p class="text-slate-600 text-xs">Upload a CSV file above to initiate your first payment batch</p>
+      <p class="text-slate-600 text-xs">
+        Upload a CSV file above to initiate your first payment batch
+      </p>
     </div>
     """
   end

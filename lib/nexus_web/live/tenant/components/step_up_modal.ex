@@ -301,7 +301,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                 [ Cancel Transaction ]
               </button>
             </div>
-
+            
     <!-- Security Primitives -->
             <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
               <.security_badge />

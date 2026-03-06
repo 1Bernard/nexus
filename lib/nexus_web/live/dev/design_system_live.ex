@@ -167,13 +167,23 @@ defmodule NexusWeb.Dev.DesignSystemLive do
         </.section>
 
         <%!-- ═══ DATA GRID (ELITE UI) ═══ --%>
-        <.section title="DataGrid (Elite UI)" subtitle="data_grid — comprehensive data table with unified search, limits, filters, and cursor pagination built-in">
+        <.section
+          title="DataGrid (Elite UI)"
+          subtitle="data_grid — comprehensive data table with unified search, limits, filters, and cursor pagination built-in"
+        >
           <div class="h-[600px] w-full mt-4">
             <.data_grid
               id="demo-invoices-grid"
               title="Recent Invoices"
               subtitle="Manage and track your latest submitted invoices."
-              params={%{"search" => @search_value, "limit" => 25, "cursor_before" => nil, "cursor_after" => "mock_cursor_123"}}
+              params={
+                %{
+                  "search" => @search_value,
+                  "limit" => 25,
+                  "cursor_before" => nil,
+                  "cursor_after" => "mock_cursor_123"
+                }
+              }
               total={1247}
               rows={[
                 %{
@@ -216,9 +226,15 @@ defmodule NexusWeb.Dev.DesignSystemLive do
 
               <:filters>
                 <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-700/50 min-w-max">
-                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all bg-slate-800 text-white shadow-sm">All</button>
-                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">Unpaid</button>
-                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">Matched</button>
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all bg-slate-800 text-white shadow-sm">
+                    All
+                  </button>
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">
+                    Unpaid
+                  </button>
+                  <button class="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300">
+                    Matched
+                  </button>
                 </div>
               </:filters>
 

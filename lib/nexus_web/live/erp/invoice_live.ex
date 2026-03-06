@@ -285,7 +285,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
     <.page_container class="px-4 md:px-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
       <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization" />
-
+      
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -310,137 +310,139 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-shield-check"
         />
       </div>
-
+      
     <!-- High-Density Data Table Card -->
-        <NexusWeb.NexusComponents.data_grid
-          id="invoices-table"
-          title="Inbound Invoices"
-          subtitle="Manage, filter, and audit inbound invoices."
-          params={@datagrid_params}
-          total={@total_count}
-          rows={@streams.invoices}
-          row_item={fn {_, inv} -> inv end}
-          row_click={fn {_, inv} -> JS.push("select_invoice", value: %{id: inv.id}) end}
-        >
-          <:primary_actions>
-            <div class="flex flex-col sm:flex-row items-center gap-3">
-              <NexusWeb.NexusComponents.nx_button
-                variant="outline"
-                size="sm"
-                icon="hero-arrow-down-tray"
-                phx-click="export-csv"
+      <NexusWeb.NexusComponents.data_grid
+        id="invoices-table"
+        title="Inbound Invoices"
+        subtitle="Manage, filter, and audit inbound invoices."
+        params={@datagrid_params}
+        total={@total_count}
+        rows={@streams.invoices}
+        row_item={fn {_, inv} -> inv end}
+        row_click={fn {_, inv} -> JS.push("select_invoice", value: %{id: inv.id}) end}
+      >
+        <:primary_actions>
+          <div class="flex flex-col sm:flex-row items-center gap-3">
+            <NexusWeb.NexusComponents.nx_button
+              variant="outline"
+              size="sm"
+              icon="hero-arrow-down-tray"
+              phx-click="export-csv"
+            >
+              Export
+            </NexusWeb.NexusComponents.nx_button>
+            <NexusWeb.NexusComponents.nx_button
+              variant="primary"
+              size="sm"
+              icon="hero-plus"
+              phx-click="toggle-manual-modal"
+            >
+              New Entry
+            </NexusWeb.NexusComponents.nx_button>
+          </div>
+        </:primary_actions>
+        <:filters>
+          <div class="relative">
+            <form phx-change="filter-status" class="m-0">
+              <select
+                name="status"
+                class="bg-slate-900/40 border border-[var(--nx-border)] text-slate-300 text-xs font-medium uppercase tracking-wider rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition-colors hover:border-slate-500"
               >
-                Export
-              </NexusWeb.NexusComponents.nx_button>
-              <NexusWeb.NexusComponents.nx_button
-                variant="primary"
-                size="sm"
-                icon="hero-plus"
-                phx-click="toggle-manual-modal"
+                <%= for option <- ["All Statuses", "Synced", "Pending"] do %>
+                  <option value={option} selected={@status_filter == option}>{option}</option>
+                <% end %>
+              </select>
+            </form>
+            <span class="hero-chevron-down w-3 h-3 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            </span>
+          </div>
+        </:filters>
+
+        <:col :let={invoice} label="Status">
+          <NexusWeb.NexusComponents.badge
+            variant={if invoice.status == "ingested", do: "success", else: "warning"}
+            label={if invoice.status == "ingested", do: "Synced", else: "Pending"}
+          />
+        </:col>
+
+        <:col :let={invoice} label="Vendor / Ref">
+          <div class="text-slate-200 font-medium">{invoice.entity_id}</div>
+          <div class="text-slate-500 font-mono text-[10px] mt-0.5">
+            {invoice.sap_document_number}
+          </div>
+        </:col>
+
+        <:col :let={invoice} label="Subsidiary">
+          <div class="text-slate-300">{invoice.subsidiary}</div>
+          <div class="text-slate-500 font-medium tracking-wide text-[10px] uppercase mt-0.5 flex items-center gap-1">
+            <span class="hero-document-text w-3 h-3"></span>
+            {length(invoice.line_items || [])} Items
+          </div>
+        </:col>
+
+        <:col :let={invoice} label="Timestamp">
+          <div class="text-slate-300">{invoice.created_at |> Calendar.strftime("%b %d, %Y")}</div>
+          <div class="text-slate-500 font-mono text-[10px] uppercase mt-0.5">
+            {invoice.created_at |> Calendar.strftime("%H:%M:%S UTC")}
+          </div>
+        </:col>
+
+        <:col :let={invoice} label="Amount" class="text-right">
+          <div class="text-slate-200 font-medium font-mono text-sm">
+            {format_currency_symbol(invoice.currency)}{format_amount(invoice.amount)}
+          </div>
+          <div class="text-slate-500 text-[10px] font-bold tracking-widest uppercase mt-0.5">
+            {invoice.currency}
+          </div>
+        </:col>
+
+        <:action :let={invoice}>
+          <div class="relative flex justify-end">
+            <button
+              phx-click={JS.toggle(to: "#action-menu-#{invoice.id}", in: "fade-in", out: "fade-out")}
+              phx-click-away={JS.hide(to: "#action-menu-#{invoice.id}", transition: "fade-out")}
+              class="text-slate-500 hover:text-indigo-400 p-1 rounded transition-colors group-hover:bg-slate-800 border border-transparent group-hover:border-slate-700/50"
+            >
+              <span class="hero-ellipsis-horizontal w-5 h-5"></span>
+            </button>
+
+            <div
+              id={"action-menu-#{invoice.id}"}
+              class="hidden absolute right-0 top-full mt-2 w-48 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-xl shadow-2xl overflow-hidden z-20 py-1"
+            >
+              <button
+                phx-click={JS.push("mock-action", value: %{action: "View Document", id: invoice.id})}
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                New Entry
-              </NexusWeb.NexusComponents.nx_button>
-            </div>
-          </:primary_actions>
-          <:filters>
-            <div class="relative">
-              <form phx-change="filter-status" class="m-0">
-                <select name="status" class="bg-slate-900/40 border border-[var(--nx-border)] text-slate-300 text-xs font-medium uppercase tracking-wider rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition-colors hover:border-slate-500">
-                  <%= for option <- ["All Statuses", "Synced", "Pending"] do %>
-                    <option value={option} selected={@status_filter == option}>{option}</option>
-                  <% end %>
-                </select>
-              </form>
-              <span class="hero-chevron-down w-3 h-3 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              </span>
-            </div>
-          </:filters>
-
-          <:col :let={invoice} label="Status">
-            <NexusWeb.NexusComponents.badge variant={if invoice.status == "ingested", do: "success", else: "warning"} label={if invoice.status == "ingested", do: "Synced", else: "Pending"} />
-          </:col>
-
-          <:col :let={invoice} label="Vendor / Ref">
-            <div class="text-slate-200 font-medium">{invoice.entity_id}</div>
-            <div class="text-slate-500 font-mono text-[10px] mt-0.5">
-              {invoice.sap_document_number}
-            </div>
-          </:col>
-
-          <:col :let={invoice} label="Subsidiary">
-            <div class="text-slate-300">{invoice.subsidiary}</div>
-            <div class="text-slate-500 font-medium tracking-wide text-[10px] uppercase mt-0.5 flex items-center gap-1">
-              <span class="hero-document-text w-3 h-3"></span>
-              {length(invoice.line_items || [])} Items
-            </div>
-          </:col>
-
-          <:col :let={invoice} label="Timestamp">
-            <div class="text-slate-300">{invoice.created_at |> Calendar.strftime("%b %d, %Y")}</div>
-            <div class="text-slate-500 font-mono text-[10px] uppercase mt-0.5">
-              {invoice.created_at |> Calendar.strftime("%H:%M:%S UTC")}
-            </div>
-          </:col>
-
-          <:col :let={invoice} label="Amount" class="text-right">
-            <div class="text-slate-200 font-medium font-mono text-sm">
-              {format_currency_symbol(invoice.currency)}{format_amount(invoice.amount)}
-            </div>
-            <div class="text-slate-500 text-[10px] font-bold tracking-widest uppercase mt-0.5">
-              {invoice.currency}
-            </div>
-          </:col>
-
-          <:action :let={invoice}>
-            <div class="relative flex justify-end">
+                <span class="hero-document-text w-4 h-4 text-slate-500"></span> View Document
+              </button>
               <button
                 phx-click={
-                  JS.toggle(to: "#action-menu-#{invoice.id}", in: "fade-in", out: "fade-out")
+                  JS.push("mock-action", value: %{action: "Audit Sync History", id: invoice.id})
                 }
-                phx-click-away={JS.hide(to: "#action-menu-#{invoice.id}", transition: "fade-out")}
-                class="text-slate-500 hover:text-indigo-400 p-1 rounded transition-colors group-hover:bg-slate-800 border border-transparent group-hover:border-slate-700/50"
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span class="hero-ellipsis-horizontal w-5 h-5"></span>
+                <span class="hero-clock w-4 h-4 text-slate-500"></span> Audit Sync History
               </button>
-
-              <div
-                id={"action-menu-#{invoice.id}"}
-                class="hidden absolute right-0 top-full mt-2 w-48 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-xl shadow-2xl overflow-hidden z-20 py-1"
+              <button
+                phx-click={JS.push("mock-action", value: %{action: "Download PDF", id: invoice.id})}
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <button
-                  phx-click={
-                    JS.push("mock-action", value: %{action: "View Document", id: invoice.id})
-                  }
-                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <span class="hero-document-text w-4 h-4 text-slate-500"></span> View Document
-                </button>
-                <button
-                  phx-click={
-                    JS.push("mock-action", value: %{action: "Audit Sync History", id: invoice.id})
-                  }
-                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <span class="hero-clock w-4 h-4 text-slate-500"></span> Audit Sync History
-                </button>
-                <button
-                  phx-click={JS.push("mock-action", value: %{action: "Download PDF", id: invoice.id})}
-                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <span class="hero-document-arrow-down w-4 h-4 text-slate-500"></span> Download PDF
-                </button>
-                <div class="my-1 border-t border-[var(--nx-border)]"></div>
-                <button
-                  phx-click={JS.push("mock-action", value: %{action: "Flag Anomaly", id: invoice.id})}
-                  class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
-                >
-                  <span class="hero-flag w-4 h-4"></span> Flag Anomaly
-                </button>
-              </div>
+                <span class="hero-document-arrow-down w-4 h-4 text-slate-500"></span> Download PDF
+              </button>
+              <div class="my-1 border-t border-[var(--nx-border)]"></div>
+              <button
+                phx-click={JS.push("mock-action", value: %{action: "Flag Anomaly", id: invoice.id})}
+                class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+              >
+                <span class="hero-flag w-4 h-4"></span> Flag Anomaly
+              </button>
             </div>
-          </:action>
-        </NexusWeb.NexusComponents.data_grid>
-
+          </div>
+        </:action>
+      </NexusWeb.NexusComponents.data_grid>
+      
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.modal
         id="manual-entry-modal"
@@ -462,7 +464,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.modal>
-
+      
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.modal
         :if={@selected_invoice}
