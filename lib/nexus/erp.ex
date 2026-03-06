@@ -5,6 +5,7 @@ defmodule Nexus.ERP do
   import Ecto.Query
   alias Nexus.Repo
   alias Nexus.Treasury.Projections.PolicyAuditLog
+  alias Nexus.Reporting.Projections.AuditLog
   alias Nexus.ERP.Queries.InvoiceQuery
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 
@@ -56,9 +57,16 @@ defmodule Nexus.ERP do
     offset = Keyword.get(opts, :offset, 0)
 
     # Fetch Invoices
+    invoices_query =
+      if org_id == :all do
+        InvoiceQuery.base()
+      else
+        InvoiceQuery.base()
+        |> InvoiceQuery.for_org(org_id)
+      end
+
     invoices =
-      InvoiceQuery.base()
-      |> InvoiceQuery.for_org(org_id)
+      invoices_query
       |> InvoiceQuery.newest_first()
       |> Repo.all()
       |> Enum.map(fn inv ->
@@ -74,11 +82,16 @@ defmodule Nexus.ERP do
       end)
 
     # Fetch Policy Audits
+    policy_query =
+      if org_id == :all do
+        PolicyAuditLog
+      else
+        from(p in PolicyAuditLog, where: p.org_id == ^org_id)
+      end
+
     audits =
-      from(p in PolicyAuditLog,
-        where: p.org_id == ^org_id,
-        order_by: [desc: p.changed_at]
-      )
+      policy_query
+      |> order_by(desc: :changed_at)
       |> Repo.all()
       |> Enum.map(fn log ->
         %{
@@ -92,8 +105,33 @@ defmodule Nexus.ERP do
         }
       end)
 
+    # Fetch Platform Audit Logs
+    audit_logs =
+      AuditLog
+      |> (fn query ->
+            if org_id == :all do
+              query
+            else
+              from(a in query, where: a.org_id == ^org_id)
+            end
+          end).()
+      |> order_by(desc: :recorded_at)
+      |> Repo.all()
+      |> Enum.map(fn log ->
+        %{
+          id: log.id,
+          icon: audit_icon(log.event_type),
+          color: "indigo",
+          title: render_audit_title(log),
+          subtitle:
+            "By #{log.actor_email} • #{Calendar.strftime(log.recorded_at, "%b %d, %H:%M:%S")}",
+          created_at: log.recorded_at,
+          time: format_time(log.recorded_at)
+        }
+      end)
+
     # Merge and Sort
-    (invoices ++ audits)
+    (invoices ++ audits ++ audit_logs)
     |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
     |> Enum.drop(offset)
     |> Enum.take(limit)
@@ -132,6 +170,31 @@ defmodule Nexus.ERP do
       _ -> "New Invoice Received"
     end
   end
+
+  defp audit_icon("tenant_provisioned"), do: "hero-plus-circle"
+  defp audit_icon("tenant_suspended"), do: "hero-pause-circle"
+  defp audit_icon("tenant_module_toggled"), do: "hero-adjustments-horizontal"
+  defp audit_icon(_), do: "hero-finger-print"
+
+  defp render_audit_title(%{event_type: "tenant_provisioned", tenant_name: name}),
+    do: "Provisioned new tenant: #{name || "Unknown Tenant"}"
+
+  defp render_audit_title(%{event_type: "tenant_suspended", tenant_name: name}),
+    do: "Suspended tenant: #{name || "Unknown Tenant"}"
+
+  defp render_audit_title(%{
+         event_type: "tenant_module_toggled",
+         details: %{"module_name" => mod, "enabled" => true}
+       }),
+       do: "Enabled feature: #{mod}"
+
+  defp render_audit_title(%{
+         event_type: "tenant_module_toggled",
+         details: %{"module_name" => mod, "enabled" => false}
+       }),
+       do: "Disabled feature: #{mod}"
+
+  defp render_audit_title(_), do: "System Level Action"
 
   @doc """
   Lists all bank statements for an organisation, newest first.

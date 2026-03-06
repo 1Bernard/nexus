@@ -35,16 +35,21 @@ defmodule NexusWeb.Router do
       live "/statements", ERP.StatementLive
       live "/reconciliation", Treasury.ReconciliationLive, :index
       live "/forecast", Treasury.ForecastLive, :index
+      live "/payments", Payments.BulkPaymentLive
       live "/intelligence", Tenant.AnalysisLive
       live "/admin/analysis", Admin.AnalysisLive
+      live "/admin/analysis/investigate/:id", Admin.AnomalyInvestigationLive
     end
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
       live "/backoffice", System.BackofficeLive
+      get "/backoffice/impersonate/:id", BackofficeController, :impersonate
+      delete "/backoffice/impersonate/end", BackofficeController, :end_impersonation
     end
 
     live_session :org_admin, on_mount: [{NexusWeb.UserAuth, :require_org_admin}] do
       live "/admin/users", Admin.UserLive.Index
+      live "/admin/policy", Admin.PolicyLive
     end
   end
 
@@ -53,6 +58,7 @@ defmodule NexusWeb.Router do
     pipe_through :api
 
     post "/webhooks/sap", ERP.WebhookController, :create
+    post "/webhooks/comms", Intelligence.WebhookController, :create
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

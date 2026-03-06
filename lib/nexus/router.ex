@@ -45,6 +45,12 @@ defmodule Nexus.Router do
     identity: :org_id
   )
 
+  dispatch(
+    [Nexus.Organization.Commands.SuspendTenant, Nexus.Organization.Commands.ToggleTenantModule],
+    to: Nexus.Organization.Aggregates.Tenant,
+    identity: :org_id
+  )
+
   # --- ERP Domain ---
   dispatch(Nexus.ERP.Commands.IngestInvoice,
     to: Nexus.ERP.Aggregates.Invoice,
@@ -83,6 +89,11 @@ defmodule Nexus.Router do
   )
 
   dispatch(Nexus.Treasury.Commands.EvaluateExposurePolicy,
+    to: Nexus.Treasury.Aggregates.Policy,
+    identity: :policy_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.ConfigureModeThresholds,
     to: Nexus.Treasury.Aggregates.Policy,
     identity: :policy_id
   )
@@ -127,5 +138,16 @@ defmodule Nexus.Router do
   dispatch(Nexus.Intelligence.Commands.AnalyzeSentiment,
     to: Nexus.Intelligence.Aggregates.Analysis,
     identity: :analysis_id
+  )
+
+  # --- Payments Domain ---
+  dispatch(Nexus.Payments.Commands.InitiateBulkPayment,
+    to: Nexus.Payments.Aggregates.BulkPayment,
+    identity: :bulk_payment_id
+  )
+
+  dispatch(Nexus.Payments.Commands.FinalizeBulkPayment,
+    to: Nexus.Payments.Aggregates.BulkPayment,
+    identity: :bulk_payment_id
   )
 end

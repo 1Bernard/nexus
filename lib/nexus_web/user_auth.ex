@@ -30,18 +30,23 @@ defmodule NexusWeb.UserAuth do
 
   # LiveView on_mount to protect LiveViews
   def on_mount(:mount_current_user, _params, session, socket) do
-    if user_id = session["user_id"] do
-      case Repo.get(User, user_id) do
+    # Check for God-Mode Impersonation Activity First
+    is_impersonated = not is_nil(session["impersonated_user_id"])
+    active_user_id = session["impersonated_user_id"] || session["user_id"]
+
+    if active_user_id do
+      case Repo.get(User, active_user_id) do
         nil ->
           {:halt, Phoenix.LiveView.redirect(socket, to: "/")}
 
         user ->
           socket =
             socket
-            |> Phoenix.Component.assign_new(:current_user_id, fn -> user_id end)
+            |> Phoenix.Component.assign_new(:current_user_id, fn -> active_user_id end)
             |> Phoenix.Component.assign_new(:current_user, fn -> user end)
+            |> Phoenix.Component.assign(:is_impersonated, is_impersonated)
             |> Phoenix.Component.assign_new(:session_id, fn ->
-              String.slice(String.upcase(user_id), 0, 8)
+              String.slice(String.upcase(active_user_id), 0, 8)
             end)
 
           # Avoid double-attaching the hook if it's already there (e.g. redundant on_mount)

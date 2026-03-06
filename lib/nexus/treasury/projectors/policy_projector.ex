@@ -75,6 +75,17 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
       on_conflict: {:replace, [:mode_thresholds, :updated_at]},
       conflict_target: [:org_id]
     )
+    |> Ecto.Multi.insert(
+      :policy_audit_log,
+      %Nexus.Treasury.Projections.PolicyAuditLog{
+        id: Nexus.Schema.generate_uuidv7(),
+        org_id: ev.org_id,
+        actor_email: ev.actor_email,
+        mode: "CONFIG",
+        threshold: Decimal.new("0"),
+        changed_at: to_datetime(ev.configured_at)
+      }
+    )
   end)
 
   project(%PolicyAlertTriggered{} = ev, _metadata, fn multi ->

@@ -13,8 +13,8 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
       mock_serving()
     else
       try do
-        # google-bert/bert-base-uncased is industry standard and has tokenizer.json
-        repo = "google-bert/bert-base-uncased"
+        # Use a model trained for Sequence Classification (Sentiment Analysis)
+        repo = "finiteautomata/bertweet-base-sentiment-analysis"
 
         # We wrap this in a timeout or just try-rescue
         # load_model can be slow (downloads 400MB)
@@ -26,8 +26,8 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
           defn_options: [compiler: EXLA]
         )
       rescue
-        e ->
-          Logger.error("[AI Sentinel] AI Model Load failed: #{inspect(e)}")
+        _e ->
+          Logger.error("[AI Sentinel] AI Model Load failed.")
           Logger.info("[AI Sentinel] Falling back to intelligent mock for system stability.")
           mock_serving()
       end
@@ -35,7 +35,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   end
 
   defp mock_serving do
-    Nx.Serving.new(fn ->
+    Nx.Serving.new(fn _opts ->
       fn _text ->
         %{
           predictions: [

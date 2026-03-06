@@ -7,8 +7,8 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
 
   defstruct [:id]
 
-  alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment}
-  alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored}
+  alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment, ResolveAnomaly}
+  alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
 
   # For anomaly detection, we only emit an event if it's an anomaly (score > 0.8)
   def execute(%__MODULE__{} = _state, %AnalyzeInvoice{} = cmd) do
@@ -61,6 +61,18 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
     end
   end
 
+  def execute(%__MODULE__{} = _state, %ResolveAnomaly{} = cmd) do
+    Logger.debug(
+      "[AI Sentinel] Executing ResolveAnomaly for #{cmd.analysis_id} with resolution #{cmd.resolution}"
+    )
+
+    %AnomalyResolved{
+      analysis_id: cmd.analysis_id,
+      resolution: cmd.resolution,
+      resolved_at: DateTime.utc_now()
+    }
+  end
+
   # Apply functions
   def apply(%__MODULE__{} = state, %AnomalyDetected{analysis_id: id}) do
     %__MODULE__{state | id: id}
@@ -68,5 +80,10 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
 
   def apply(%__MODULE__{} = state, %SentimentScored{analysis_id: id}) do
     %__MODULE__{state | id: id}
+  end
+
+  def apply(%__MODULE__{} = state, %AnomalyResolved{}) do
+    # Logical deletion, no state change needed on aggregate
+    state
   end
 end

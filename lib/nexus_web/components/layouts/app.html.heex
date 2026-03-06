@@ -3,6 +3,7 @@
   session_status="connected"
   session_id={@session_id}
   current_user={@current_user}
+  is_impersonated={assigns[:is_impersonated] || false}
 >
   <:topbar_title>{assigns[:page_title] || "Nexus"}</:topbar_title>
   <:topbar_subtitle>{assigns[:page_subtitle]}</:topbar_subtitle>

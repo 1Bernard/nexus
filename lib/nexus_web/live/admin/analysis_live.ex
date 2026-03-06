@@ -1,48 +1,17 @@
 defmodule NexusWeb.Admin.AnalysisLive do
   use NexusWeb, :live_view
 
+  alias Nexus.Intelligence.Queries.AnalysisQuery
+  alias Nexus.Intelligence.Projections.Analysis
+
   @impl true
   def mount(_params, _session, socket) do
-    # In a real app, we would subscribe to the Intelligence PubSub
-    # or query the Read Model for recent anomalies and sentiment data.
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Nexus.PubSub, "intelligence:analyses")
+    end
 
-    anomalies = [
-      %{
-        id: Nexus.Schema.generate_uuidv7(),
-        invoice_id: "INV-2023-9091",
-        vendor: "CorpTech",
-        amount: "€500,000.00",
-        score: 0.95,
-        reason: "Amount is a 4.2σ statistical outlier from vendor's historical rolling average",
-        flagged_at: DateTime.utc_now() |> DateTime.add(-3600, :second)
-      },
-      %{
-        id: Nexus.Schema.generate_uuidv7(),
-        invoice_id: "INV-2023-8821",
-        vendor: "Global Supplies Ltd",
-        amount: "€12,500.00",
-        score: 0.88,
-        reason: "Unexpected currency (USD instead of EUR) for this vendor",
-        flagged_at: DateTime.utc_now() |> DateTime.add(-86400, :second)
-      }
-    ]
-
-    sentiments = [
-      %{
-        id: Nexus.Schema.generate_uuidv7(),
-        source: "Email Interaction - Acme Corp",
-        sentiment: "positive",
-        confidence: 0.98,
-        scored_at: DateTime.utc_now() |> DateTime.add(-1200, :second)
-      },
-      %{
-        id: Nexus.Schema.generate_uuidv7(),
-        source: "Vendor Dispute - Zeta Logistics",
-        sentiment: "negative",
-        confidence: 0.91,
-        scored_at: DateTime.utc_now() |> DateTime.add(-7200, :second)
-      }
-    ]
+    anomalies = AnalysisQuery.list_all_anomalies()
+    sentiments = AnalysisQuery.list_all_sentiments()
 
     socket =
       socket
@@ -56,13 +25,30 @@ defmodule NexusWeb.Admin.AnalysisLive do
   end
 
   @impl true
+  def handle_info({:analysis_projected, %Analysis{} = _analysis}, socket) do
+    anomalies = AnalysisQuery.list_all_anomalies()
+    sentiments = AnalysisQuery.list_all_sentiments()
+
+    {:noreply,
+     socket
+     |> assign(:anomalies, anomalies)
+     |> assign(:sentiments, sentiments)}
+  end
+
+  @impl true
   def handle_event("set_tab", %{"tab" => tab}, socket) do
     {:noreply, assign(socket, :active_tab, tab)}
   end
 
   @impl true
   def handle_event("dismiss_anomaly", %{"id" => id}, socket) do
-    anomalies = Enum.reject(socket.assigns.anomalies, &(&1.id == id))
+    # In a full CQRS system we would dispatch a DismissAnomaly command.
+    # We remove it from the read model here so it functionally disappears.
+    if anomaly = Nexus.Repo.get(Analysis, id) do
+      Nexus.Repo.delete(anomaly)
+    end
+
+    anomalies = AnalysisQuery.list_all_anomalies()
 
     socket =
       socket
@@ -73,10 +59,8 @@ defmodule NexusWeb.Admin.AnalysisLive do
   end
 
   @impl true
-  def handle_event("investigate_anomaly", %{"id" => _id}, socket) do
-    # Simulated transition to investigate view
-    {:noreply,
-     put_flash(socket, :info, "Transitioning to investigation environment... (Simulated)")}
+  def handle_event("investigate_anomaly", %{"id" => id}, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/admin/analysis/investigate/#{id}")}
   end
 
   @impl true
@@ -108,7 +92,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                 Active Anomalies
               </h3>
               <div class="flex items-baseline gap-2">
-                <span class="text-3xl font-black text-slate-100 tracking-tight">2</span>
+                <span class="text-3xl font-black text-slate-100 tracking-tight"><%= length(@anomalies) %></span>
               </div>
             </div>
             <div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
@@ -127,7 +111,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                 Comms Evaluated
               </h3>
               <div class="flex items-baseline gap-2">
-                <span class="text-3xl font-black text-slate-100 tracking-tight">1,240</span>
+                <span class="text-3xl font-black text-slate-100 tracking-tight"><%= length(@sentiments) %></span>
               </div>
             </div>
             <div class="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
@@ -201,7 +185,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
               </div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               <%= if Enum.empty?(@anomalies) do %>
                 <div class="flex flex-col items-center justify-center py-16 text-center bg-black/10 rounded-xl border border-dashed border-white/10">
                   <div class="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-5">
@@ -223,8 +207,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                         <div>
                           <h4 class="text-sm font-bold text-slate-200">{anomaly.invoice_id}</h4>
                           <p class="text-[11px] font-medium text-slate-400 mt-0.5">
-                            {anomaly.vendor} &bull;
-                            <span class="text-slate-300">{anomaly.amount}</span>
+                            Org: <span class="text-slate-300 font-mono">{String.slice(anomaly.org_id, 0, 8)}</span>
                           </p>
                         </div>
                       </div>
@@ -288,7 +271,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
               </div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               <%= if Enum.empty?(@sentiments) do %>
                 <div class="flex flex-col items-center justify-center py-16 text-center bg-black/10 rounded-xl border border-dashed border-white/10">
                   <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-5">
@@ -317,7 +300,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                           />
                         </div>
                         <div>
-                          <h4 class="text-sm font-bold text-slate-200">{sent.source}</h4>
+                          <h4 class="text-sm font-bold text-slate-200">Source: {sent.source_id || "Unknown"}</h4>
                           <p class="text-[11px] text-slate-500 mt-0.5 uppercase font-medium tracking-wider">
                             {Calendar.strftime(sent.scored_at, "%b %d, %H:%M UTC")}
                           </p>

@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Events.TransferRequested do
     :from_currency,
     :to_currency,
     :amount,
+    :bulk_payment_id,
     :requested_at
   ]
 end

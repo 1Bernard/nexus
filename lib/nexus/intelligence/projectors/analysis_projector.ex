@@ -4,7 +4,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
     repo: Nexus.Repo,
     name: "Intelligence.AnalysisProjector"
 
-  alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored}
+  alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
   alias Nexus.Treasury.Events.SettlementUnmatched
   alias Nexus.Intelligence.Projections.Analysis
   require Logger
@@ -49,6 +49,14 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
     })
   end)
 
+  project(%AnomalyResolved{} = event, _metadata, fn multi ->
+    Ecto.Multi.delete_all(
+      multi,
+      :intelligence_analysis_resolved,
+      Ecto.Query.where(Analysis, id: ^event.analysis_id)
+    )
+  end)
+
   # Broadcast updates to the UI
   @impl true
   def after_update(_event, _metadata, %{intelligence_analysis: analysis}) do
@@ -56,6 +64,16 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
       Nexus.PubSub,
       "intelligence:analyses",
       {:analysis_projected, analysis}
+    )
+
+    :ok
+  end
+
+  def after_update(%AnomalyResolved{} = event, _metadata, _changes) do
+    Phoenix.PubSub.broadcast(
+      Nexus.PubSub,
+      "intelligence:analyses",
+      {:analysis_resolved, event.analysis_id}
     )
 
     :ok

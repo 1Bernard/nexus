@@ -120,3 +120,38 @@ for sub <- subsidiaries, cur <- currencies do
 end
 
 IO.puts("Dashboard data seeding complete.")
+
+# --- Seed Identity Domain (Demo Users) ---
+IO.puts("Seeding Identity Domain users...")
+
+admin_id = "019c9247-5ee0-7732-9423-5627160214ce"
+
+admin_cmd = %Nexus.Identity.Commands.RegisterSystemAdmin{
+  user_id: admin_id,
+  org_id: org_id,
+  email: "admin@nexus-platform.io",
+  display_name: "Nexus System Admin"
+}
+
+elena_id = Nexus.Schema.generate_uuidv7()
+
+elena_cmd = %Nexus.Identity.Commands.RegisterSystemAdmin{
+  user_id: elena_id,
+  org_id: org_id,
+  email: "elena@global-corp.com",
+  display_name: "Elena (Global Corp App)"
+}
+
+case Nexus.App.dispatch(admin_cmd) do
+  :ok -> IO.puts("Successfully registered admin@nexus-platform.io in the EventStore.")
+  {:error, :already_registered} -> IO.puts("Admin already registered.")
+  {:error, reason} -> IO.puts("Failed to register admin: \#{inspect(reason)}")
+end
+
+case Nexus.App.dispatch(elena_cmd) do
+  :ok -> IO.puts("Successfully registered elena@global-corp.com in the EventStore.")
+  {:error, :already_registered} -> IO.puts("Elena already registered.")
+  {:error, reason} -> IO.puts("Failed to register Elena: \#{inspect(reason)}")
+end
+
+IO.puts("Identity Domain seeding complete.")

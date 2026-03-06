@@ -2,14 +2,25 @@ defmodule Nexus.Organization.Aggregates.Tenant do
   @moduledoc """
   The Organization boundary. Enforces unique tenant names and issues user invitations.
   """
-  defstruct [:id, :name, invitations: MapSet.new()]
+  defstruct [
+    :id,
+    :name,
+    status: "ACTIVE",
+    modules_enabled: MapSet.new(),
+    invitations: MapSet.new()
+  ]
 
   alias Nexus.Organization.Commands.ProvisionTenant
   alias Nexus.Organization.Commands.InviteUser
   alias Nexus.Organization.Commands.RedeemInvitation
+  alias Nexus.Organization.Commands.SuspendTenant
+  alias Nexus.Organization.Commands.ToggleTenantModule
+
   alias Nexus.Organization.Events.TenantProvisioned
   alias Nexus.Organization.Events.UserInvited
   alias Nexus.Organization.Events.InvitationRedeemed
+  alias Nexus.Organization.Events.TenantSuspended
+  alias Nexus.Organization.Events.TenantModuleToggled
 
   # --- Provisioning ---
 
@@ -64,6 +75,53 @@ defmodule Nexus.Organization.Aggregates.Tenant do
     }
   end
 
+  # --- System Admin Actions (God-Mode) ---
+
+  def execute(%__MODULE__{id: nil}, %SuspendTenant{}) do
+    {:error, :tenant_not_found}
+  end
+
+  def execute(%__MODULE__{id: id, status: "SUSPENDED"} = _state, %SuspendTenant{})
+      when not is_nil(id) do
+    {:error, :already_suspended}
+  end
+
+  def execute(%__MODULE__{id: id} = _state, %SuspendTenant{} = cmd) when not is_nil(id) do
+    %TenantSuspended{
+      org_id: cmd.org_id,
+      suspended_by: cmd.suspended_by,
+      reason: cmd.reason,
+      suspended_at: DateTime.utc_now()
+    }
+  end
+
+  def execute(%__MODULE__{id: nil}, %ToggleTenantModule{}) do
+    {:error, :tenant_not_found}
+  end
+
+  def execute(%__MODULE__{id: id, status: "SUSPENDED"}, %ToggleTenantModule{})
+      when not is_nil(id) do
+    {:error, :tenant_suspended}
+  end
+
+  def execute(%__MODULE__{id: id, modules_enabled: modules} = _state, %ToggleTenantModule{} = cmd)
+      when not is_nil(id) do
+    # Only emit if the state is actually changing
+    is_enabled = MapSet.member?(modules, cmd.module_name)
+
+    if is_enabled == cmd.enabled do
+      []
+    else
+      %TenantModuleToggled{
+        org_id: cmd.org_id,
+        module_name: cmd.module_name,
+        enabled: cmd.enabled,
+        toggled_by: cmd.toggled_by,
+        toggled_at: DateTime.utc_now()
+      }
+    end
+  end
+
   # --- State Mutators ---
 
   def apply(%__MODULE__{} = state, %TenantProvisioned{} = event) do
@@ -72,5 +130,20 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 
   def apply(%__MODULE__{} = state, %UserInvited{} = event) do
     %{state | invitations: MapSet.put(state.invitations, event.email)}
+  end
+
+  def apply(%__MODULE__{} = state, %TenantSuspended{}) do
+    %{state | status: "SUSPENDED"}
+  end
+
+  def apply(%__MODULE__{} = state, %TenantModuleToggled{} = event) do
+    modules =
+      if event.enabled do
+        MapSet.put(state.modules_enabled, event.module_name)
+      else
+        MapSet.delete(state.modules_enabled, event.module_name)
+      end
+
+    %{state | modules_enabled: modules}
   end
 end

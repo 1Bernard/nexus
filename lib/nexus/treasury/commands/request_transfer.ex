@@ -14,6 +14,8 @@ defmodule Nexus.Treasury.Commands.RequestTransfer do
     field :amount, :decimal
     # Dynamic threshold for policy enforcement
     field :threshold, :decimal
+    # Optional correlation ID for bulk batches
+    field :bulk_payment_id, :binary_id
   end
 
   def changeset(cmd, attrs) do
@@ -25,7 +27,8 @@ defmodule Nexus.Treasury.Commands.RequestTransfer do
       :from_currency,
       :to_currency,
       :amount,
-      :threshold
+      :threshold,
+      :bulk_payment_id
     ])
     |> validate_required([:transfer_id, :org_id, :user_id, :from_currency, :to_currency, :amount])
   end

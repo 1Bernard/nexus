@@ -36,4 +36,31 @@ defmodule Nexus.Intelligence.Queries.AnalysisQuery do
     |> order_by([a], desc: a.scored_at)
     |> Repo.all()
   end
+
+  @doc """
+  Returns anomaly items globally (for Admin view).
+  """
+  def list_all_anomalies() do
+    Analysis
+    |> where([a], a.type == "anomaly")
+    |> order_by([a], desc: a.flagged_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns sentiment insights globally (for Admin view).
+  """
+  def list_all_sentiments() do
+    Analysis
+    |> where([a], a.type == "sentiment")
+    |> order_by([a], desc: a.scored_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a specific anomaly by ID.
+  """
+  def get_anomaly!(id) do
+    Repo.get!(Analysis, id)
+  end
 end

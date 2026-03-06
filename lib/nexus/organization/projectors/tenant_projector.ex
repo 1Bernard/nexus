@@ -8,6 +8,9 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
     name: "Organization.TenantProjector"
 
   alias Nexus.Organization.Events.TenantProvisioned
+  alias Nexus.Organization.Events.TenantSuspended
+  alias Nexus.Organization.Events.TenantModuleToggled
+
   alias Nexus.Organization.Projections.Tenant
 
   project(%TenantProvisioned{} = event, _metadata, fn multi ->
@@ -36,5 +39,50 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
       :error ->
         multi
     end
+  end)
+
+  project(%TenantSuspended{} = event, _metadata, fn multi ->
+    import Ecto.Query
+
+    Ecto.Multi.update_all(
+      multi,
+      :tenant,
+      from(t in Tenant, where: t.org_id == ^event.org_id),
+      set: [
+        status: "SUSPENDED",
+        suspended_at: event.suspended_at,
+        updated_at: DateTime.utc_now()
+      ]
+    )
+    |> Ecto.Multi.run(:broadcast, fn _repo, _changes ->
+      Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
+      {:ok, event}
+    end)
+  end)
+
+  project(%TenantModuleToggled{} = event, _metadata, fn multi ->
+    Ecto.Multi.run(multi, :tenant, fn repo, _changes ->
+      import Ecto.Query
+      tenant = repo.one(from(t in Tenant, where: t.org_id == ^event.org_id))
+
+      if tenant do
+        modules =
+          if event.enabled do
+            Enum.uniq([event.module_name | tenant.modules_enabled || []])
+          else
+            List.delete(tenant.modules_enabled || [], event.module_name)
+          end
+
+        tenant
+        |> Ecto.Changeset.change(%{modules_enabled: modules})
+        |> repo.update()
+      else
+        {:error, :not_found}
+      end
+    end)
+    |> Ecto.Multi.run(:broadcast, fn _repo, _changes ->
+      Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
+      {:ok, event}
+    end)
   end)
 end

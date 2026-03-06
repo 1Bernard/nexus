@@ -42,7 +42,7 @@ defmodule NexusWeb.Admin.UserLiveTest do
       assert html =~ "Manage your team"
       assert html =~ "Test Admin"
       assert html =~ "test_admin@nexus.app"
-      assert html =~ "Generate Invite Link"
+      assert html =~ "Invite User"
 
       # Presence check (Active Now sidebar should show the admin)
       assert html =~ "Active Now"
@@ -53,8 +53,9 @@ defmodule NexusWeb.Admin.UserLiveTest do
       {:ok, page_live, _html} = live(conn, "/admin/users")
 
       # 1. Open the modal
-      html = page_live |> element("button", "Generate Invite Link") |> render_click()
-      assert html =~ "Select a role for the new team member"
+      html = page_live |> element("button", "Invite User") |> render_click()
+      assert html =~ "Generate Invitation"
+      assert html =~ "Assigned Role"
       assert html =~ "admin"
       assert html =~ "trader"
 
@@ -65,9 +66,9 @@ defmodule NexusWeb.Admin.UserLiveTest do
         |> render_submit()
 
       # 3. Verify modal state changed to success
-      assert html =~ "Link Generated"
+      assert html =~ "Single-Use Secure Link"
       assert html =~ "/auth/invite/"
-      assert html =~ "Send this link to the new user. It will expire in 24 hours."
+      assert html =~ "This link will expire in 24 hours. Once used, it cannot be reused."
     end
 
     test "filters users by role correctly", %{conn: conn, org_id: org_id} do

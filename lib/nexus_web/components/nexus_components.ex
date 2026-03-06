@@ -79,16 +79,25 @@ defmodule NexusWeb.NexusComponents do
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
   attr :class, :string, default: nil
+  attr :is_backoffice, :boolean, default: false
   slot :actions
 
   def page_header(assigns) do
     ~H"""
     <div class={["flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0", @class]}>
       <div>
-        <h1 class="text-3xl font-serif italic font-bold text-white tracking-tight">
+        <h1 class={[
+          "text-3xl font-serif italic font-bold tracking-tight",
+          if(@is_backoffice, do: "text-rose-500", else: "text-white")
+        ]}>
           {@title}
         </h1>
-        <p :if={@subtitle} class="text-slate-500 text-sm mt-1">{@subtitle}</p>
+        <p :if={@subtitle} class={[
+          "text-sm mt-1 uppercase tracking-widest font-bold",
+          if(@is_backoffice, do: "text-rose-400/70", else: "text-slate-500")
+        ]}>
+          {@subtitle}
+        </p>
       </div>
       <div :if={@actions != []} class="flex items-center gap-3 shrink-0">
         {render_slot(@actions)}
@@ -114,6 +123,8 @@ defmodule NexusWeb.NexusComponents do
   attr :session_status, :string, default: "connected"
   attr :session_id, :string, default: nil
   attr :current_user, :any, required: true, doc: "The authenticated user struct"
+  attr :is_backoffice, :boolean, default: false
+  attr :is_impersonated, :boolean, default: false
   slot :topbar_title
   slot :topbar_subtitle
   slot :topbar_actions
@@ -126,21 +137,40 @@ defmodule NexusWeb.NexusComponents do
       phx-hook="NavInteractions"
       class="min-h-screen bg-[var(--nx-bg)] text-slate-100 font-sans selection:bg-indigo-500/40 flex transition-[width] duration-300 [&.sidebar-collapsed]:[--nx-sidebar-w:88px]"
     >
-      <%!-- Mobile Overlay --%>
+    <%!-- Mobile Overlay --%>
       <div
         id="sidebar-overlay"
         class="fixed inset-0 bg-[#0B0E14]/80 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden"
       >
       </div>
 
+      <%!-- God-Mode Impersonation Banner --%>
+      <div
+        :if={@is_impersonated}
+        class="fixed top-0 left-0 w-full h-8 bg-rose-600 text-white z-[100] flex items-center justify-center text-[11px] font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(225,29,72,0.4)]"
+      >
+        <div class="flex items-center gap-3">
+          <span class="hero-exclamation-triangle w-4 h-4"></span>
+          <span>Impersonating Session: {@current_user.email} (READ ONLY)</span>
+          <span class="mx-2 opacity-30">|</span>
+          <.link href="/backoffice/impersonate/end" method="delete" class="px-2 py-0.5 bg-rose-950/40 hover:bg-rose-950/80 rounded transition-colors border border-rose-500/30">
+            End Impersonation
+          </.link>
+        </div>
+      </div>
+
       <.sidebar
+        :if={!@is_backoffice}
         current_path={@current_path}
         session_status={@session_status}
         session_id={@session_id}
         current_user={@current_user}
       />
 
-      <div class="flex-1 lg:ml-[var(--nx-sidebar-w)] flex flex-col min-h-screen transition-all duration-300 w-full overflow-x-hidden">
+      <div class={[
+        "flex-1 flex flex-col min-h-screen transition-all duration-300 w-full overflow-x-hidden",
+        if(!@is_backoffice, do: "lg:ml-[var(--nx-sidebar-w)]")
+      ]}>
         <.topbar current_user={@current_user} session_id={@session_id}>
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
@@ -176,13 +206,15 @@ defmodule NexusWeb.NexusComponents do
       %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
       %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
       %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"},
-      %{path: "/forecast", label: "Cash Flow Outlook", icon: "hero-presentation-chart-line"}
+      %{path: "/forecast", label: "Cash Flow Outlook", icon: "hero-presentation-chart-line"},
+      %{path: "/payments", label: "Bulk Payments", icon: "hero-credit-card"}
     ]
 
     admin_nav = [
       %{path: "/admin/users", label: "Manage Users", icon: "hero-users"},
       %{path: "/activity", label: "Activity & Audit", icon: "hero-shield-check"},
       %{path: "/admin/analysis", label: "AI Sentinel", icon: "hero-cpu-chip"},
+      %{path: "/admin/policy", label: "Policy Settings", icon: "hero-adjustments-horizontal"},
       %{path: "/backoffice", label: "Backoffice", icon: "hero-server-stack"}
     ]
 
@@ -1476,6 +1508,74 @@ defmodule NexusWeb.NexusComponents do
           <span class="hero-x-mark w-5 h-5"></span>
         </button>
         {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Slide-over (Drawer) overlay that enters from the right.
+  Ideal for vertically-scaling content like tenant management.
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :on_close, :any, default: nil
+  attr :title, :string, default: nil
+  attr :subtitle, :string, default: nil
+  slot :inner_block, required: true
+  slot :footer
+
+  def slide_over(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class={[
+        "fixed inset-0 z-50 overflow-hidden transition-all duration-500",
+        if(@show, do: "visible", else: "invisible")
+      ]}
+    >
+      <%!-- Backdrop --%>
+      <div
+        class={[
+          "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500 ease-in-out",
+          if(@show, do: "opacity-100", else: "opacity-0")
+        ]}
+        phx-click={@on_close}
+      />
+
+      <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 cursor-default">
+        <div class={[
+          "w-screen max-w-xl transform transition-transform duration-500 ease-in-out bg-[#0B0E14] border-l border-white/10 shadow-2xl flex flex-col",
+          if(@show, do: "translate-x-0", else: "translate-x-full")
+        ]}>
+          <%!-- Header --%>
+          <div class="px-6 py-6 border-b border-white/5 shrink-0">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 :if={@title} class="text-xl font-bold text-white tracking-tight">{@title}</h2>
+                <p :if={@subtitle} class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">{@subtitle}</p>
+              </div>
+              <button
+                type="button"
+                phx-click={@on_close}
+                class="rounded-md text-slate-500 hover:text-white transition-colors focus:outline-none"
+              >
+                <span class="sr-only">Close panel</span>
+                <span class="hero-x-mark w-6 h-6"></span>
+              </button>
+            </div>
+          </div>
+
+          <%!-- Content --%>
+          <div class="flex-1 overflow-y-auto px-6 py-8 scroll-soft">
+            {render_slot(@inner_block)}
+          </div>
+
+          <%!-- Footer --%>
+          <div :if={@footer != []} class="px-6 py-6 border-t border-white/5 bg-slate-900/20 shrink-0">
+            {render_slot(@footer)}
+          </div>
+        </div>
       </div>
     </div>
     """

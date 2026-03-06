@@ -21,6 +21,11 @@ defmodule Nexus.Identity.Queries.UserQuery do
   end
 
   @doc """
+  Fetches a single user by their unique ID.
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
   Returns the total count of users in an organization.
   """
   def total_users_count(org_id) do

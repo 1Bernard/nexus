@@ -542,19 +542,26 @@ defmodule NexusWeb.Tenant.DashboardLive do
                     <div class="flex flex-col gap-1">
                       <div class="flex items-center gap-1.5">
                         <span class="text-slate-300 font-bold">{log.actor_email}</span>
-                        <span class="text-slate-600">changed mode to</span>
-                        <span class={[
-                          "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
-                          log.mode == "strict" && "bg-rose-500/20 text-rose-400",
-                          log.mode == "relaxed" && "bg-emerald-500/20 text-emerald-400",
-                          log.mode == "standard" && "bg-indigo-500/20 text-indigo-400"
-                        ]}>
-                          {log.mode}
-                        </span>
+                        <%= if log.mode == "CONFIG" do %>
+                          <span class="text-slate-600">updated thresholds</span>
+                        <% else %>
+                          <span class="text-slate-600">changed mode to</span>
+                          <span class={[
+                            "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                            log.mode == "strict" && "bg-rose-500/20 text-rose-400",
+                            log.mode == "relaxed" && "bg-emerald-500/20 text-emerald-400",
+                            log.mode == "standard" && "bg-indigo-500/20 text-indigo-400"
+                          ]}>
+                            {log.mode}
+                          </span>
+                        <% end %>
                       </div>
-                      <span class="text-slate-500 font-mono">
-                        Threshold: €{Decimal.div(log.threshold, 1_000_000) |> Decimal.round(1)}M
-                      </span>
+                      <%= if log.mode != "CONFIG" do %>
+                        <span class="text-slate-500 font-mono">
+                          <% m_val = Decimal.div(log.threshold, 1_000_000) %>
+                          Threshold: €<%= if Decimal.gte?(log.threshold, 1_000_000) do %><%= Decimal.round(m_val, 1) %>M<% else %><%= Decimal.div(log.threshold, 1_000) |> Decimal.round(0) %>K<% end %>
+                        </span>
+                      <% end %>
                     </div>
                     <span class="text-slate-600 shrink-0">
                       {Calendar.strftime(log.changed_at, "%H:%M UTC")}
@@ -694,11 +701,19 @@ defmodule NexusWeb.Tenant.DashboardLive do
   @impl true
   def handle_event("update_threshold", %{"mode" => mode}, socket) do
     org_id = socket.assigns.current_user.org_id
+    policy = Treasury.get_treasury_policy(org_id)
+
+    modes =
+      (policy && policy.mode_thresholds) ||
+        %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
+
+    threshold_val = Map.get(modes, mode, "1000000")
 
     cmd = %Nexus.Treasury.Commands.SetPolicyMode{
       policy_id: org_id,
       org_id: org_id,
       mode: mode,
+      threshold: Decimal.new(threshold_val),
       actor_email: socket.assigns.current_user.email
     }
 

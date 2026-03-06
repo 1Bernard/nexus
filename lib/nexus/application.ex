@@ -32,6 +32,8 @@ defmodule Nexus.Application do
       Nexus.App,
       # --- Intelligence Domain ---
       Nexus.Intelligence.Projectors.AnalysisProjector,
+      # --- Reporting Domain ---
+      Nexus.Reporting.Projectors.AuditProjector,
 
       # 4. Web Transport
       NexusWeb.Endpoint
@@ -59,11 +61,14 @@ defmodule Nexus.Application do
             Nexus.Treasury.Projectors.PolicyProjector,
             Nexus.Treasury.Projectors.ForecastProjector,
             Nexus.Treasury.Projectors.ReconciliationProjector,
+            Nexus.Payments.Projectors.BulkPaymentProjector,
             # --- Bridge Handlers ---
             Nexus.Treasury.Handlers.ExposureBridge,
             Nexus.Treasury.Handlers.ExposurePolicyHandler,
+            Nexus.Intelligence.Handlers.InvoiceAnalyzer,
             # --- Process Managers ---
-            Nexus.Treasury.ProcessManagers.ReconciliationManager
+            Nexus.Treasury.ProcessManagers.ReconciliationManager,
+            Nexus.Payments.ProcessManagers.BulkPaymentSaga
           ]
       end
 

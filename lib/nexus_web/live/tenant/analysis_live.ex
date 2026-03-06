@@ -61,25 +61,6 @@ defmodule NexusWeb.Tenant.AnalysisLive do
         </:actions>
       </.page_header>
 
-      <%!-- Intelligence Protocol Banner --%>
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-3xl backdrop-blur-sm relative overflow-hidden group">
-        <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/15 transition-all duration-700">
-        </div>
-
-        <div class="relative z-10 flex items-center gap-5">
-          <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <span class="hero-sparkles w-8 h-8 animate-pulse"></span>
-          </div>
-          <div>
-            <h2 class="text-2xl font-bold tracking-tight text-white">Sentinel Ingestion Active</h2>
-            <p class="text-slate-500 text-sm mt-1">
-              Scanning <span class="text-indigo-400 font-mono">Real-Time</span>
-              ERP and Comms streams • 99.8% Confidence
-            </p>
-          </div>
-        </div>
-
-      </div>
 
       <%!-- Dashboard Stats --%>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

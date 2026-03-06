@@ -82,7 +82,9 @@ defmodule NexusWeb.Identity.BiometricLive do
     case Phoenix.Token.verify(
            socket.endpoint,
            "biometric_registration",
-           socket.assigns.registration_token || "", max_age: 1800) do
+           socket.assigns.registration_token || "",
+           max_age: 1800
+         ) do
       {:ok, %{org_id: org_id, role: role, email: email, display_name: name}} ->
         command = %Nexus.Identity.Commands.RegisterUser{
           user_id: socket.assigns.user_id,
@@ -151,8 +153,8 @@ defmodule NexusWeb.Identity.BiometricLive do
 
     # To keep the demo working, we simulate finding the user we registered earlier:
     user =
-      Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "elena@global-corp.com") ||
-        Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "admin@nexus-platform.io")
+      Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "admin@nexus-platform.io") ||
+        Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "elena@global-corp.com")
 
     # If neither exists, this will crash the demo, which is expected since registration or bootstrap must happen first.
 

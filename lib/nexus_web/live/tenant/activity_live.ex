@@ -5,7 +5,8 @@ defmodule NexusWeb.Tenant.ActivityLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    org_id = socket.assigns.current_user.org_id
+    user = socket.assigns.current_user
+    org_id = if user.role == "system_admin", do: :all, else: user.org_id
 
     # For now, let's just list 20 activities
     activities = ERP.list_activity(org_id, limit: 20)
