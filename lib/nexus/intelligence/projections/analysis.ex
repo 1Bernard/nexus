@@ -21,7 +21,7 @@ defmodule Nexus.Intelligence.Projections.Analysis do
   schema "intelligence_analyses" do
     field :org_id, :binary_id
     field :invoice_id, :binary_id
-    field :source_id, :binary_id
+    field :source_id, :string
     field :type, :string
     field :score, :float
     field :sentiment, :string

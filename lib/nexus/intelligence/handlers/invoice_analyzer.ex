@@ -17,7 +17,7 @@ defmodule Nexus.Intelligence.Handlers.InvoiceAnalyzer do
     )
 
     # Generate a deterministic analysis ID based on the invoice ID
-    analysis_id = "anm-" <> String.replace(event.invoice_id, "INV-", "")
+    analysis_id = Nexus.Schema.generate_uuidv7()
 
     command = %AnalyzeInvoice{
       analysis_id: analysis_id,

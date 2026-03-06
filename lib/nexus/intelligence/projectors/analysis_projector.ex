@@ -11,7 +11,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
 
   project(%AnomalyDetected{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(multi, :intelligence_analysis, %Analysis{
-      id: event.analysis_id,
+      id: ensure_uuid(event.analysis_id),
       org_id: event.org_id,
       invoice_id: event.invoice_id,
       type: "anomaly",
@@ -39,7 +39,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
 
   project(%SentimentScored{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(multi, :intelligence_analysis, %Analysis{
-      id: event.analysis_id,
+      id: ensure_uuid(event.analysis_id),
       org_id: event.org_id,
       source_id: event.source_id,
       type: "sentiment",
@@ -50,10 +50,12 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
   end)
 
   project(%AnomalyResolved{} = event, _metadata, fn multi ->
+    target_id = ensure_uuid(event.analysis_id)
+
     Ecto.Multi.delete_all(
       multi,
       :intelligence_analysis_resolved,
-      Ecto.Query.where(Analysis, id: ^event.analysis_id)
+      Ecto.Query.where(Analysis, id: ^target_id)
     )
   end)
 
@@ -101,5 +103,11 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
   defp parse_datetime(other) do
     Logger.warning("[AnalysisProjector] Unexpected datetime format: #{inspect(other)}")
     nil
+  end
+
+  defp ensure_uuid(id) when is_binary(id) do
+    id
+    |> String.replace_prefix("anm-", "")
+    |> String.trim()
   end
 end

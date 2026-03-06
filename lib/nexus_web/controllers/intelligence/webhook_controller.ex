@@ -10,7 +10,7 @@ defmodule NexusWeb.Intelligence.WebhookController do
   def create(conn, %{"source" => source, "text" => text}) do
     Logger.info("[WebhookController] Received comms from #{source}")
 
-    analysis_id = "anm-" <> Nexus.Schema.generate_uuidv7()
+    analysis_id = Nexus.Schema.generate_uuidv7()
 
     # We use a static demo org id here, but in reality this would be inferred by the API key
     # or the source email domain matching a tenant in the DB.
