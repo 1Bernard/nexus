@@ -30,8 +30,8 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
             sap_document_number: event.sap_document_number,
             sap_status: event.sap_status,
             status: "ingested",
-            created_at: parse_date(event.ingested_at) || DateTime.utc_now(),
-            updated_at: parse_date(event.ingested_at) || DateTime.utc_now()
+            created_at: Nexus.Schema.parse_datetime(event.ingested_at),
+            updated_at: Nexus.Schema.parse_datetime(event.ingested_at)
           },
           on_conflict: :nothing,
           conflict_target: :id
@@ -47,23 +47,6 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
     multi
   end)
 
-  @impl Commanded.Projections.Ecto
-  def after_update(event, _metadata, _changes) do
-    case event do
-      %InvoiceIngested{} ->
-        Phoenix.PubSub.broadcast(
-          Nexus.PubSub,
-          "erp_invoices:#{event.org_id}",
-          {:invoice_ingested, event.invoice_id}
-        )
-
-      _ ->
-        :ok
-    end
-
-    :ok
-  end
-
   defp coerce_to_string(%Decimal{} = d), do: Decimal.to_string(d, :normal)
   defp coerce_to_string(val) when is_binary(val), do: val
 
@@ -71,14 +54,4 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
     do: Decimal.from_float(val * 1.0) |> Decimal.to_string(:normal)
 
   defp coerce_to_string(_), do: "0.00"
-
-  defp parse_date(nil), do: nil
-  defp parse_date(%DateTime{} = dt), do: dt
-
-  defp parse_date(str) when is_binary(str) do
-    case DateTime.from_iso8601(str) do
-      {:ok, dt, _offset} -> dt
-      _ -> nil
-    end
-  end
 end

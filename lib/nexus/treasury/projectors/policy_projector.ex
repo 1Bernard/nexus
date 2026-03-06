@@ -16,36 +16,29 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
 
   alias Nexus.Treasury.Projections.{TreasuryPolicy, PolicyAlert}
 
-  project(%TransferThresholdSet{} = ev, _metadata, fn multi ->
+  project(%TransferThresholdSet{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :treasury_policy,
       %TreasuryPolicy{
-        id: ev.policy_id,
-        org_id: ev.org_id,
-        transfer_threshold: parse_decimal(ev.threshold)
+        id: event.policy_id,
+        org_id: event.org_id,
+        transfer_threshold: parse_decimal(event.threshold)
       },
       on_conflict: {:replace, [:transfer_threshold, :updated_at]},
       conflict_target: [:org_id]
     )
   end)
 
-  project(%PolicyModeChanged{} = ev, _metadata, fn multi ->
-    # Broadcast so DashboardLive can update the active tab in real time
-    Phoenix.PubSub.broadcast(
-      Nexus.PubSub,
-      "policy_mode:#{ev.org_id}",
-      {:policy_mode_changed, ev}
-    )
-
+  project(%PolicyModeChanged{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :treasury_policy,
       %TreasuryPolicy{
-        id: ev.policy_id,
-        org_id: ev.org_id,
-        mode: ev.mode,
-        transfer_threshold: parse_decimal(ev.threshold)
+        id: event.policy_id,
+        org_id: event.org_id,
+        mode: event.mode,
+        transfer_threshold: parse_decimal(event.threshold)
       },
       on_conflict: {:replace, [:mode, :transfer_threshold, :updated_at]},
       conflict_target: [:org_id]
@@ -54,23 +47,23 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
         id: Nexus.Schema.generate_uuidv7(),
-        org_id: ev.org_id,
-        actor_email: ev.actor_email,
-        mode: ev.mode,
-        threshold: parse_decimal(ev.threshold),
-        changed_at: to_datetime(ev.changed_at)
+        org_id: event.org_id,
+        actor_email: event.actor_email,
+        mode: event.mode,
+        threshold: parse_decimal(event.threshold),
+        changed_at: Nexus.Schema.parse_datetime(event.changed_at)
       }
     )
   end)
 
-  project(%ModeThresholdsConfigured{} = ev, _metadata, fn multi ->
+  project(%ModeThresholdsConfigured{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :treasury_policy,
       %TreasuryPolicy{
-        id: ev.policy_id,
-        org_id: ev.org_id,
-        mode_thresholds: ev.mode_thresholds
+        id: event.policy_id,
+        org_id: event.org_id,
+        mode_thresholds: event.mode_thresholds
       },
       on_conflict: {:replace, [:mode_thresholds, :updated_at]},
       conflict_target: [:org_id]
@@ -79,29 +72,26 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
         id: Nexus.Schema.generate_uuidv7(),
-        org_id: ev.org_id,
-        actor_email: ev.actor_email,
+        org_id: event.org_id,
+        actor_email: event.actor_email,
         mode: "CONFIG",
         threshold: Decimal.new("0"),
-        changed_at: to_datetime(ev.configured_at)
+        changed_at: Nexus.Schema.parse_datetime(event.configured_at)
       }
     )
   end)
 
-  project(%PolicyAlertTriggered{} = ev, _metadata, fn multi ->
-    # Broadcast to PubSub for LiveView updates
-    Phoenix.PubSub.broadcast(Nexus.PubSub, "policy_alerts:#{ev.org_id}", {:policy_alert, ev})
-
+  project(%PolicyAlertTriggered{} = event, _metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :policy_alert,
       %PolicyAlert{
         id: Nexus.Schema.generate_uuidv7(),
-        org_id: ev.org_id,
-        currency_pair: ev.currency_pair,
-        exposure_amount: parse_decimal(ev.exposure_amount),
-        threshold: parse_decimal(ev.threshold),
-        triggered_at: to_datetime(ev.triggered_at)
+        org_id: event.org_id,
+        currency_pair: event.currency_pair,
+        exposure_amount: parse_decimal(event.exposure_amount),
+        threshold: parse_decimal(event.threshold),
+        triggered_at: Nexus.Schema.parse_datetime(event.triggered_at)
       }
     )
   end)
@@ -109,15 +99,4 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
   defp parse_decimal(val) when is_struct(val, Decimal), do: val
   defp parse_decimal(val) when is_binary(val), do: Decimal.new(val)
   defp parse_decimal(val) when is_number(val), do: Decimal.from_float(val * 1.0)
-
-  defp to_datetime(%DateTime{} = dt), do: dt
-
-  defp to_datetime(iso_string) when is_binary(iso_string) do
-    case DateTime.from_iso8601(iso_string) do
-      {:ok, dt, _offset} -> dt
-      _ -> DateTime.utc_now()
-    end
-  end
-
-  defp to_datetime(_), do: DateTime.utc_now()
 end

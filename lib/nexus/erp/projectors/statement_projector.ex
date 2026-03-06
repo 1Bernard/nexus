@@ -2,7 +2,6 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
   @moduledoc """
   Projects StatementUploaded and StatementRejected events into the
   erp_statements and erp_statement_lines read-model tables.
-  Broadcasts to PubSub so StatementLive can update in real time.
   """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
@@ -13,17 +12,17 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
   alias Nexus.ERP.Events.{StatementUploaded, StatementRejected}
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 
-  project(%StatementUploaded{} = ev, _metadata, fn multi ->
+  project(%StatementUploaded{} = event, _metadata, fn multi ->
     statement_attrs = %{
-      id: ev.statement_id,
-      org_id: ev.org_id,
-      filename: ev.filename,
-      format: ev.format,
+      id: event.statement_id,
+      org_id: event.org_id,
+      filename: event.filename,
+      format: event.format,
       status: "uploaded",
-      line_count: length(ev.lines),
+      line_count: length(event.lines),
       matched_count: 0,
-      overlap_warning: exists_similar_statement?(ev.org_id, ev.filename),
-      uploaded_at: parse_datetime(ev.uploaded_at)
+      overlap_warning: exists_similar_statement?(event.org_id, event.filename),
+      uploaded_at: Nexus.Schema.parse_datetime(event.uploaded_at)
     }
 
     multi
@@ -31,30 +30,13 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
       on_conflict: :nothing,
       conflict_target: :id
     )
-    |> insert_statement_lines(ev.lines, ev.statement_id, ev.org_id)
+    |> insert_statement_lines(event.lines, event.statement_id, event.org_id)
   end)
 
-  project(%StatementRejected{} = _ev, _metadata, fn multi ->
+  project(%StatementRejected{} = _event, _metadata, fn multi ->
     # Rejected statements are not persisted to the read model — they are audit events only.
     multi
   end)
-
-  @impl Commanded.Projections.Ecto
-  def after_update(event, _metadata, _changes) do
-    case event do
-      %StatementUploaded{} ->
-        Phoenix.PubSub.broadcast(
-          Nexus.PubSub,
-          "erp_statements:#{event.org_id}",
-          {:statement_uploaded, event.statement_id}
-        )
-
-      _ ->
-        :ok
-    end
-
-    :ok
-  end
 
   # ---------------------------------------------------------------------------
   # Private helpers
@@ -83,16 +65,6 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
         conflict_target: :id
       )
     end)
-  end
-
-  defp parse_datetime(%DateTime{} = dt), do: dt
-  defp parse_datetime(nil), do: DateTime.utc_now()
-
-  defp parse_datetime(str) when is_binary(str) do
-    case DateTime.from_iso8601(str) do
-      {:ok, dt, _} -> dt
-      _ -> DateTime.utc_now()
-    end
   end
 
   defp exists_similar_statement?(org_id, filename) do

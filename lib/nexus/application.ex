@@ -48,7 +48,8 @@ defmodule Nexus.Application do
             # WebSocket gateway — requires live network; excluded in test env
             Nexus.Treasury.Gateways.PolygonClient,
             Nexus.Treasury.Gateways.MarketSimulator,
-            Nexus.Identity.Projectors.UserProjector,
+            Nexus.Identity.Projectors.UserRegistrationProjector,
+            Nexus.Identity.Projectors.UserRoleProjector,
             # --- Organization Domain ---
             Nexus.Organization.Projectors.TenantProjector,
             Nexus.Organization.Projectors.InvitationProjector,
@@ -66,6 +67,12 @@ defmodule Nexus.Application do
             Nexus.Treasury.Handlers.ExposureBridge,
             Nexus.Treasury.Handlers.ExposurePolicyHandler,
             Nexus.Intelligence.Handlers.InvoiceAnalyzer,
+            # --- Real-Time Notification Handlers (Rule 3) ---
+            Nexus.Payments.Handlers.BulkPaymentHandler,
+            Nexus.Intelligence.Handlers.RealTimeAnalysisHandler,
+            Nexus.Organization.Handlers.RealTimeTenantHandler,
+            Nexus.Treasury.Handlers.PolicyNotificationHandler,
+            Nexus.ERP.Handlers.ERPNotificationHandler,
             # --- Process Managers ---
             Nexus.Treasury.ProcessManagers.ReconciliationManager,
             Nexus.Payments.ProcessManagers.BulkPaymentSaga

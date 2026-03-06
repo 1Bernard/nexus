@@ -142,10 +142,13 @@ defmodule Nexus.Identity.BiometricVerificationTest do
   # --- Helpers ---
 
   defp project_event(event, event_number) do
-    metadata = %{handler_name: "Identity.Projectors.UserProjector", event_number: event_number}
+    metadata = %{
+      handler_name: "Identity.Projectors.UserRegistrationProjector",
+      event_number: event_number
+    }
 
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
-      Nexus.Identity.Projectors.UserProjector.handle(event, metadata)
+      Nexus.Identity.Projectors.UserRegistrationProjector.handle(event, metadata)
     end)
   end
 

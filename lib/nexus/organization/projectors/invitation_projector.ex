@@ -25,7 +25,7 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
         role: event.role,
         invited_by: event.invited_by,
         invitation_token: event.invitation_token,
-        invited_at: parse_datetime(event.invited_at),
+        invited_at: Nexus.Schema.parse_datetime(event.invited_at),
         status: "pending",
         created_at: DateTime.utc_now(),
         updated_at: DateTime.utc_now()
@@ -40,18 +40,7 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
       multi,
       :redeem_invitation,
       from(i in Invitation, where: i.invitation_token == ^event.invitation_token),
-      set: [status: "redeemed", updated_at: event.redeemed_at]
+      set: [status: "redeemed", updated_at: Nexus.Schema.parse_datetime(event.redeemed_at)]
     )
   end)
-
-  defp parse_datetime(%DateTime{} = dt), do: dt
-
-  defp parse_datetime(dt) when is_binary(dt) do
-    case DateTime.from_iso8601(dt) do
-      {:ok, datetime, _offset} -> datetime
-      _ -> nil
-    end
-  end
-
-  defp parse_datetime(_), do: nil
 end

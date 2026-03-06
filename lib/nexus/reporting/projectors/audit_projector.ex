@@ -19,7 +19,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       org_id: event.org_id,
       tenant_name: event.name,
       details: %{admin_email: event.initial_admin_email},
-      recorded_at: parse_timestamp(event.provisioned_at)
+      recorded_at: Nexus.Schema.parse_datetime(event.provisioned_at)
     })
   end)
 
@@ -30,7 +30,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.suspended_by,
       org_id: event.org_id,
       details: %{reason: event.reason},
-      recorded_at: parse_timestamp(event.suspended_at)
+      recorded_at: Nexus.Schema.parse_datetime(event.suspended_at)
     })
   end)
 
@@ -41,18 +41,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.toggled_by,
       org_id: event.org_id,
       details: %{module_name: event.module_name, enabled: event.enabled},
-      recorded_at: parse_timestamp(event.toggled_at)
+      recorded_at: Nexus.Schema.parse_datetime(event.toggled_at)
     })
   end)
-
-  defp parse_timestamp(%DateTime{} = dt), do: dt
-
-  defp parse_timestamp(ts) when is_binary(ts) do
-    case DateTime.from_iso8601(ts) do
-      {:ok, dt, _} -> dt
-      _ -> DateTime.utc_now()
-    end
-  end
-
-  defp parse_timestamp(_), do: DateTime.utc_now()
 end

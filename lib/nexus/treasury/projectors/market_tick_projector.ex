@@ -20,25 +20,10 @@ defmodule Nexus.Treasury.Projectors.MarketTickProjector do
         _ -> Decimal.new("0")
       end
 
-    tick_time =
-      case event.timestamp do
-        t when is_binary(t) ->
-          case DateTime.from_iso8601(t) do
-            {:ok, dt, _offset} -> dt
-            _ -> DateTime.utc_now()
-          end
-
-        %DateTime{} = t ->
-          t
-
-        _ ->
-          DateTime.utc_now()
-      end
-
     Ecto.Multi.insert(multi, :market_tick, %MarketTick{
       pair: event.pair,
       price: price,
-      tick_time: tick_time
+      tick_time: Nexus.Schema.parse_datetime(event.timestamp)
     })
   end)
 end

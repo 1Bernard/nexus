@@ -30,7 +30,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       actor_email: event.actor_email,
       currency: event.currency,
       status: :pending,
-      matched_at: to_datetime(event.timestamp || metadata.created_at)
+      matched_at: Nexus.Schema.parse_datetime(event.timestamp || metadata.created_at)
     })
     |> Ecto.Multi.update_all(
       :update_invoice_status,
@@ -57,7 +57,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       actor_email: event.actor_email,
       currency: event.currency,
       status: :matched,
-      matched_at: to_datetime(event.timestamp || metadata.created_at)
+      matched_at: Nexus.Schema.parse_datetime(event.timestamp || metadata.created_at)
     }
 
     multi
@@ -67,7 +67,7 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
         set: [
           status: :matched,
           actor_email: event.actor_email,
-          matched_at: to_datetime(event.timestamp || metadata.created_at)
+          matched_at: Nexus.Schema.parse_datetime(event.timestamp || metadata.created_at)
         ]
       ]
     )
@@ -124,12 +124,15 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
     )
   end)
 
-  project(%ReconciliationReversed{} = event, _metadata, fn multi ->
+  project(%ReconciliationReversed{} = event, metadata, fn multi ->
     multi
     |> Ecto.Multi.update_all(
       :update_reconciliation_status,
       from(r in Reconciliation, where: r.reconciliation_id == ^event.reconciliation_id),
-      set: [status: :reversed]
+      set: [
+        status: :reversed,
+        matched_at: Nexus.Schema.parse_datetime(event.timestamp || metadata.created_at)
+      ]
     )
     |> Ecto.Multi.update_all(
       :update_invoice_status,
@@ -151,15 +154,4 @@ defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
       inc: [matched_count: -1]
     )
   end)
-
-  defp to_datetime(%DateTime{} = dt), do: dt
-
-  defp to_datetime(iso_string) when is_binary(iso_string) do
-    case DateTime.from_iso8601(iso_string) do
-      {:ok, dt, _offset} -> dt
-      _ -> DateTime.utc_now()
-    end
-  end
-
-  defp to_datetime(_), do: DateTime.utc_now()
 end

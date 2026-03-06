@@ -1,0 +1,263 @@
+12:41:35.540 [info] [Nexus] Application starting in test environment
+12:41:35.589 [info] [Identity] ETS Challenge Store Initialized at auth_challenges
+12:41:35.589 [info] [Treasury] ETS Price Cache Initialized
+12:41:35.610 [debug] Attempting to start Postgrex
+12:41:35.611 [debug] Successfully started Postgrex (#PID<0.425.0>)
+12:41:35.611 [debug] Attempting to start Postgrex
+12:41:35.611 [debug] Successfully started Postgrex (#PID<0.438.0>)
+12:41:35.615 [debug] Attempting to start Postgrex.Notifications
+12:41:35.617 [debug] Successfully started Postgrex.Notifications (#PID<0.458.0>)
+Running ExUnit with seed: 708653, max_cases: 20
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   @moduletag :no_sandbox
+    │   ~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:6: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 12 │ 
+    │ 
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:12: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 18 │ 
+    │ 
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:18: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 24 │       Nexus.Repo.delete_all(TreasuryPolicy)
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:24: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   @moduletag :no_sandbox
+    │   ~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:6: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 12 │ 
+    │ 
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:12: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 18 │ 
+    │ 
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:18: Nexus.Treasury.PolicyModeTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 24 │       Nexus.Repo.delete_all(TreasuryPolicy)
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/policy_mode_test.exs:24: Nexus.Treasury.PolicyModeTest (module)
+
+12:41:36.009 [debug] QUERY OK source="treasury_policy_alerts" db=1.0ms decode=1.2ms queue=30.1ms
+DELETE FROM "treasury_policy_alerts" AS t0 []
+12:41:36.011 [debug] QUERY OK source="treasury_policy_audit_logs" db=0.3ms queue=0.3ms
+DELETE FROM "treasury_policy_audit_logs" AS t0 []
+12:41:36.012 [debug] QUERY OK source="treasury_policies" db=0.2ms queue=0.2ms
+DELETE FROM "treasury_policies" AS t0 []
+12:41:36.014 [debug] QUERY OK source="projection_versions" db=0.3ms queue=0.2ms
+DELETE FROM "projection_versions" AS p0 WHERE (p0."projection_name" IN ('Treasury.PolicyProjector')) []
+12:41:36.016 [info] 		[36mGiven [32mthe organization "Nexus Corp" has no policy mode set
+12:41:36.024 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Policy` with UUID "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb"
+12:41:36.040 [debug] Nexus.Treasury.Aggregates.Policy<8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb@0> executing command: %Nexus.Treasury.Commands.SetPolicyMode{policy_id: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", org_id: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", mode: "strict", threshold: Decimal.new("50000"), actor_email: "test@example.com", changed_at: ~U[2026-03-06 12:41:36.016160Z]}
+12:41:36.096 [debug] Listener received notification on channel "event_store.events" with payload: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb,1355,1,1"
+12:41:36.096 [debug] Appended 1 event(s) to stream "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb"
+12:41:36.098 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,1814,1814"
+12:41:36.122 [debug] QUERY OK db=13.8ms
+begin []
+12:41:36.127 [debug] Nexus.Treasury.Aggregates.Policy<8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "1e9b438d-6d82-43c9-8407-6d7c4d2626de", event_number: 1, stream_id: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", stream_version: 1, causation_id: "507f8c54-b62d-4d19-94e5-8a158734e72e", correlation_id: "7c261211-f576-46e1-8fc7-4160dd5965e7", event_type: "Elixir.Nexus.Treasury.Events.PolicyModeChanged", data: %Nexus.Treasury.Events.PolicyModeChanged{policy_id: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", org_id: "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", mode: "strict", threshold: "50000", actor_email: "test@example.com", changed_at: "2026-03-06T12:41:36.016160Z"}, created_at: ~U[2026-03-06 12:41:36.070126Z], metadata: %{}}]
+12:41:36.137 [debug] QUERY OK source="projection_versions" db=1.9ms
+INSERT INTO "projection_versions" AS p0 ("projection_name","last_seen_event_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) ["Treasury.PolicyProjector", 1, ~N[2026-03-06 12:41:36.133753], ~N[2026-03-06 12:41:36.133753], 1, "Treasury.PolicyProjector", 1]
+12:41:36.139 [debug] QUERY OK source="treasury_policies" db=1.6ms
+INSERT INTO "treasury_policies" ("id","mode","mode_thresholds","org_id","transfer_threshold","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("org_id") DO UPDATE SET "mode" = EXCLUDED."mode","transfer_threshold" = EXCLUDED."transfer_threshold","updated_at" = EXCLUDED."updated_at" ["8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", "strict", %{"relaxed" => "10000000", "standard" => "1000000", "strict" => "50000"}, "8f78a9d1-f293-4df0-9ffd-d7f63a6dd5bb", Decimal.new("50000"), ~U[2026-03-06 12:41:36.137397Z], ~U[2026-03-06 12:41:36.137397Z]]
+12:41:36.140 [debug] QUERY OK db=0.1ms
+rollback []
+
+
+  1) scenario Treasury manager selects Strict mode and it persists across page reloads Treasury manager selects Strict mode and it persists across page reloads (Nexus.Treasury.PolicyModeTest)
+     test/nexus/treasury/policy_mode_test.exs:6
+     ** (ArgumentError) :utc_datetime_usec expects microsecond precision, got: ~U[2026-03-06 12:41:36Z]
+     code: project_event(event, 1)
+     stacktrace:
+       (ecto 3.13.5) lib/ecto/type.ex:1566: Ecto.Type.check_usec!/2
+       (ecto 3.13.5) lib/ecto/type.ex:621: Ecto.Type.dump_utc_datetime_usec/1
+       (ecto 3.13.5) lib/ecto/type.ex:1049: Ecto.Type.process_dumpers/3
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1296: Ecto.Repo.Schema.dump_field!/6
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1310: anonymous fn/6 in Ecto.Repo.Schema.dump_fields!/5
+       (stdlib 7.1) maps.erl:894: :maps.fold_1/4
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1308: Ecto.Repo.Schema.dump_fields!/5
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1240: Ecto.Repo.Schema.dump_changes!/7
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:476: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+       (ecto 3.13.5) lib/ecto/multi.ex:905: Ecto.Multi.apply_operation/5
+       (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+       (ecto 3.13.5) lib/ecto/multi.ex:878: anonymous fn/5 in Ecto.Multi.apply_operations/5
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql.ex:1473: anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4
+       (db_connection 2.9.0) lib/db_connection.ex:1747: DBConnection.run_transaction/4
+       (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+       (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Treasury.Projectors.PolicyProjector.update_projection/3
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql/sandbox.ex:629: Ecto.Adapters.SQL.Sandbox.unboxed_run/2
+       test/nexus/treasury/policy_mode_test.exs:102: (test)
+
+12:41:36.156 [debug] QUERY OK source="treasury_policy_alerts" db=15.3ms
+DELETE FROM "treasury_policy_alerts" AS t0 []
+12:41:36.156 [debug] QUERY OK source="treasury_policy_audit_logs" db=0.3ms
+DELETE FROM "treasury_policy_audit_logs" AS t0 []
+12:41:36.157 [debug] QUERY OK source="treasury_policies" db=0.3ms
+DELETE FROM "treasury_policies" AS t0 []
+12:41:36.157 [debug] QUERY OK source="projection_versions" db=0.5ms
+DELETE FROM "projection_versions" AS p0 WHERE (p0."projection_name" IN ('Treasury.PolicyProjector')) []
+12:41:36.157 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Policy` with UUID "1b1ebcd1-5426-48ab-97ad-f2011713353e"
+12:41:36.172 [debug] Nexus.Treasury.Aggregates.Policy<1b1ebcd1-5426-48ab-97ad-f2011713353e@0> executing command: %Nexus.Treasury.Commands.SetPolicyMode{policy_id: "1b1ebcd1-5426-48ab-97ad-f2011713353e", org_id: "1b1ebcd1-5426-48ab-97ad-f2011713353e", mode: "strict", threshold: Decimal.new("50000"), actor_email: "test@example.com", changed_at: ~U[2026-03-06 12:41:36.157827Z]}
+12:41:36.205 [debug] Appended 1 event(s) to stream "1b1ebcd1-5426-48ab-97ad-f2011713353e"
+12:41:36.205 [debug] Listener received notification on channel "event_store.events" with payload: "1b1ebcd1-5426-48ab-97ad-f2011713353e,1356,1,1"
+12:41:36.205 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,1815,1815"
+12:41:36.220 [debug] QUERY OK db=14.1ms
+begin []
+12:41:36.221 [debug] QUERY OK source="projection_versions" db=0.7ms
+INSERT INTO "projection_versions" AS p0 ("projection_name","last_seen_event_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) ["Treasury.PolicyProjector", 1, ~N[2026-03-06 12:41:36.220218], ~N[2026-03-06 12:41:36.220218], 1, "Treasury.PolicyProjector", 1]
+12:41:36.222 [debug] QUERY OK source="treasury_policies" db=0.2ms
+INSERT INTO "treasury_policies" ("id","mode","mode_thresholds","org_id","transfer_threshold","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("org_id") DO UPDATE SET "mode" = EXCLUDED."mode","transfer_threshold" = EXCLUDED."transfer_threshold","updated_at" = EXCLUDED."updated_at" ["1b1ebcd1-5426-48ab-97ad-f2011713353e", "strict", %{"relaxed" => "10000000", "standard" => "1000000", "strict" => "50000"}, "1b1ebcd1-5426-48ab-97ad-f2011713353e", Decimal.new("50000"), ~U[2026-03-06 12:41:36.221531Z], ~U[2026-03-06 12:41:36.221531Z]]
+12:41:36.222 [debug] Nexus.Treasury.Aggregates.Policy<1b1ebcd1-5426-48ab-97ad-f2011713353e@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "35d26667-8fe1-4fab-8517-836b288c1cab", event_number: 1, stream_id: "1b1ebcd1-5426-48ab-97ad-f2011713353e", stream_version: 1, causation_id: "95388384-2daf-49ee-a856-f855eabc5e06", correlation_id: "37f19ef6-95ab-401c-9bc7-8362dfb33478", event_type: "Elixir.Nexus.Treasury.Events.PolicyModeChanged", data: %Nexus.Treasury.Events.PolicyModeChanged{policy_id: "1b1ebcd1-5426-48ab-97ad-f2011713353e", org_id: "1b1ebcd1-5426-48ab-97ad-f2011713353e", mode: "strict", threshold: "50000", actor_email: "test@example.com", changed_at: "2026-03-06T12:41:36.157827Z"}, created_at: ~U[2026-03-06 12:41:36.187727Z], metadata: %{}}]
+12:41:36.222 [debug] QUERY OK db=0.1ms
+rollback []
+
+
+  2) scenario Switching from Strict to Relaxed emits an audit event Switching from Strict to Relaxed emits an audit event (Nexus.Treasury.PolicyModeTest)
+     test/nexus/treasury/policy_mode_test.exs:12
+     ** (ArgumentError) :utc_datetime_usec expects microsecond precision, got: ~U[2026-03-06 12:41:36Z]
+     code: project_event(event, 1)
+     stacktrace:
+       (ecto 3.13.5) lib/ecto/type.ex:1566: Ecto.Type.check_usec!/2
+       (ecto 3.13.5) lib/ecto/type.ex:621: Ecto.Type.dump_utc_datetime_usec/1
+       (ecto 3.13.5) lib/ecto/type.ex:1049: Ecto.Type.process_dumpers/3
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1296: Ecto.Repo.Schema.dump_field!/6
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1310: anonymous fn/6 in Ecto.Repo.Schema.dump_fields!/5
+       (stdlib 7.1) maps.erl:894: :maps.fold_1/4
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1308: Ecto.Repo.Schema.dump_fields!/5
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1240: Ecto.Repo.Schema.dump_changes!/7
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:476: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+       (ecto 3.13.5) lib/ecto/multi.ex:905: Ecto.Multi.apply_operation/5
+       (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+       (ecto 3.13.5) lib/ecto/multi.ex:878: anonymous fn/5 in Ecto.Multi.apply_operations/5
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql.ex:1473: anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4
+       (db_connection 2.9.0) lib/db_connection.ex:1747: DBConnection.run_transaction/4
+       (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+       (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Treasury.Projectors.PolicyProjector.update_projection/3
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql/sandbox.ex:629: Ecto.Adapters.SQL.Sandbox.unboxed_run/2
+       test/nexus/treasury/policy_mode_test.exs:66: (test)
+
+12:41:36.236 [debug] QUERY OK source="treasury_policy_alerts" db=14.3ms
+DELETE FROM "treasury_policy_alerts" AS t0 []
+12:41:36.237 [debug] QUERY OK source="treasury_policy_audit_logs" db=0.3ms
+DELETE FROM "treasury_policy_audit_logs" AS t0 []
+12:41:36.237 [debug] QUERY OK source="treasury_policies" db=0.3ms
+DELETE FROM "treasury_policies" AS t0 []
+12:41:36.238 [debug] QUERY OK source="projection_versions" db=0.5ms
+DELETE FROM "projection_versions" AS p0 WHERE (p0."projection_name" IN ('Treasury.PolicyProjector')) []
+12:41:36.238 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Policy` with UUID "f1df6ee2-d9be-416d-baf7-327bd67d694f"
+12:41:36.239 [debug] Nexus.Treasury.Aggregates.Policy<f1df6ee2-d9be-416d-baf7-327bd67d694f@0> executing command: %Nexus.Treasury.Commands.SetPolicyMode{policy_id: "f1df6ee2-d9be-416d-baf7-327bd67d694f", org_id: "f1df6ee2-d9be-416d-baf7-327bd67d694f", mode: "standard", threshold: Decimal.new("1000000"), actor_email: "test@example.com", changed_at: ~U[2026-03-06 12:41:36.238453Z]}
+12:41:36.240 [debug] Appended 1 event(s) to stream "f1df6ee2-d9be-416d-baf7-327bd67d694f"
+12:41:36.240 [debug] Listener received notification on channel "event_store.events" with payload: "f1df6ee2-d9be-416d-baf7-327bd67d694f,1357,1,1"
+12:41:36.240 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,1816,1816"
+12:41:36.241 [debug] Nexus.Treasury.Aggregates.Policy<f1df6ee2-d9be-416d-baf7-327bd67d694f@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "b9fd54ed-cc66-4104-988a-e4171c4aa24f", event_number: 1, stream_id: "f1df6ee2-d9be-416d-baf7-327bd67d694f", stream_version: 1, causation_id: "e768fd22-5488-44e4-a50f-17d8dfdcd615", correlation_id: "5ce33628-664b-464c-b95d-47f59c3e815a", event_type: "Elixir.Nexus.Treasury.Events.PolicyModeChanged", data: %Nexus.Treasury.Events.PolicyModeChanged{policy_id: "f1df6ee2-d9be-416d-baf7-327bd67d694f", org_id: "f1df6ee2-d9be-416d-baf7-327bd67d694f", mode: "standard", threshold: "1000000", actor_email: "test@example.com", changed_at: "2026-03-06T12:41:36.238453Z"}, created_at: ~U[2026-03-06 12:41:36.239360Z], metadata: %{}}]
+12:41:36.254 [debug] QUERY OK db=14.1ms
+begin []
+12:41:36.256 [debug] QUERY OK source="projection_versions" db=0.8ms
+INSERT INTO "projection_versions" AS p0 ("projection_name","last_seen_event_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) ["Treasury.PolicyProjector", 1, ~N[2026-03-06 12:41:36.254790], ~N[2026-03-06 12:41:36.254790], 1, "Treasury.PolicyProjector", 1]
+12:41:36.256 [debug] QUERY OK source="treasury_policies" db=0.2ms
+INSERT INTO "treasury_policies" ("id","mode","mode_thresholds","org_id","transfer_threshold","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("org_id") DO UPDATE SET "mode" = EXCLUDED."mode","transfer_threshold" = EXCLUDED."transfer_threshold","updated_at" = EXCLUDED."updated_at" ["f1df6ee2-d9be-416d-baf7-327bd67d694f", "standard", %{"relaxed" => "10000000", "standard" => "1000000", "strict" => "50000"}, "f1df6ee2-d9be-416d-baf7-327bd67d694f", Decimal.new("1000000"), ~U[2026-03-06 12:41:36.256134Z], ~U[2026-03-06 12:41:36.256134Z]]
+12:41:36.256 [debug] QUERY OK db=0.1ms
+rollback []
+
+
+  3) scenario Policy changes are recorded in the audit trail with the actor's email Policy changes are recorded in the audit trail with the actor's email (Nexus.Treasury.PolicyModeTest)
+     test/nexus/treasury/policy_mode_test.exs:24
+     ** (ArgumentError) :utc_datetime_usec expects microsecond precision, got: ~U[2026-03-06 12:41:36Z]
+     code: project_event(event, 1)
+     stacktrace:
+       (ecto 3.13.5) lib/ecto/type.ex:1566: Ecto.Type.check_usec!/2
+       (ecto 3.13.5) lib/ecto/type.ex:621: Ecto.Type.dump_utc_datetime_usec/1
+       (ecto 3.13.5) lib/ecto/type.ex:1049: Ecto.Type.process_dumpers/3
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1296: Ecto.Repo.Schema.dump_field!/6
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1310: anonymous fn/6 in Ecto.Repo.Schema.dump_fields!/5
+       (stdlib 7.1) maps.erl:894: :maps.fold_1/4
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1308: Ecto.Repo.Schema.dump_fields!/5
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1240: Ecto.Repo.Schema.dump_changes!/7
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:476: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+       (ecto 3.13.5) lib/ecto/multi.ex:905: Ecto.Multi.apply_operation/5
+       (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+       (ecto 3.13.5) lib/ecto/multi.ex:878: anonymous fn/5 in Ecto.Multi.apply_operations/5
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql.ex:1473: anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4
+       (db_connection 2.9.0) lib/db_connection.ex:1747: DBConnection.run_transaction/4
+       (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+       (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Treasury.Projectors.PolicyProjector.update_projection/3
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql/sandbox.ex:629: Ecto.Adapters.SQL.Sandbox.unboxed_run/2
+       test/nexus/treasury/policy_mode_test.exs:66: (test)
+
+12:41:36.271 [debug] QUERY OK source="treasury_policy_alerts" db=14.5ms
+DELETE FROM "treasury_policy_alerts" AS t0 []
+12:41:36.272 [debug] QUERY OK source="treasury_policy_audit_logs" db=0.3ms
+DELETE FROM "treasury_policy_audit_logs" AS t0 []
+12:41:36.272 [debug] QUERY OK source="treasury_policies" db=0.4ms
+DELETE FROM "treasury_policies" AS t0 []
+12:41:36.273 [debug] QUERY OK source="projection_versions" db=0.5ms
+DELETE FROM "projection_versions" AS p0 WHERE (p0."projection_name" IN ('Treasury.PolicyProjector')) []
+12:41:36.273 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Policy` with UUID "d698f4f6-0c54-489d-a516-f9d46562cf1c"
+12:41:36.273 [debug] Nexus.Treasury.Aggregates.Policy<d698f4f6-0c54-489d-a516-f9d46562cf1c@0> executing command: %Nexus.Treasury.Commands.SetPolicyMode{policy_id: "d698f4f6-0c54-489d-a516-f9d46562cf1c", org_id: "d698f4f6-0c54-489d-a516-f9d46562cf1c", mode: "strict", threshold: Decimal.new("50000"), actor_email: "test@example.com", changed_at: ~U[2026-03-06 12:41:36.273137Z]}
+12:41:36.275 [debug] Appended 1 event(s) to stream "d698f4f6-0c54-489d-a516-f9d46562cf1c"
+12:41:36.275 [debug] Listener received notification on channel "event_store.events" with payload: "d698f4f6-0c54-489d-a516-f9d46562cf1c,1358,1,1"
+12:41:36.275 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,1817,1817"
+12:41:36.276 [debug] Nexus.Treasury.Aggregates.Policy<d698f4f6-0c54-489d-a516-f9d46562cf1c@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "f6fd15e6-dc0e-4c71-8957-4937de23b224", event_number: 1, stream_id: "d698f4f6-0c54-489d-a516-f9d46562cf1c", stream_version: 1, causation_id: "36718f88-a5c4-413b-8ea0-2246daaffbb2", correlation_id: "3a2f0e08-d2cb-4d00-b34a-6310682794ce", event_type: "Elixir.Nexus.Treasury.Events.PolicyModeChanged", data: %Nexus.Treasury.Events.PolicyModeChanged{policy_id: "d698f4f6-0c54-489d-a516-f9d46562cf1c", org_id: "d698f4f6-0c54-489d-a516-f9d46562cf1c", mode: "strict", threshold: "50000", actor_email: "test@example.com", changed_at: "2026-03-06T12:41:36.273137Z"}, created_at: ~U[2026-03-06 12:41:36.274057Z], metadata: %{}}]
+12:41:36.289 [debug] QUERY OK db=13.6ms
+begin []
+12:41:36.290 [debug] QUERY OK source="projection_versions" db=0.8ms
+INSERT INTO "projection_versions" AS p0 ("projection_name","last_seen_event_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) ["Treasury.PolicyProjector", 1, ~N[2026-03-06 12:41:36.289188], ~N[2026-03-06 12:41:36.289188], 1, "Treasury.PolicyProjector", 1]
+12:41:36.291 [debug] QUERY OK source="treasury_policies" db=0.3ms
+INSERT INTO "treasury_policies" ("id","mode","mode_thresholds","org_id","transfer_threshold","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT ("org_id") DO UPDATE SET "mode" = EXCLUDED."mode","transfer_threshold" = EXCLUDED."transfer_threshold","updated_at" = EXCLUDED."updated_at" ["d698f4f6-0c54-489d-a516-f9d46562cf1c", "strict", %{"relaxed" => "10000000", "standard" => "1000000", "strict" => "50000"}, "d698f4f6-0c54-489d-a516-f9d46562cf1c", Decimal.new("50000"), ~U[2026-03-06 12:41:36.290564Z], ~U[2026-03-06 12:41:36.290564Z]]
+12:41:36.291 [debug] QUERY OK db=0.1ms
+rollback []
+
+
+  4) scenario Policy alerts use the persisted mode threshold, not a hardcoded default Policy alerts use the persisted mode threshold, not a hardcoded default (Nexus.Treasury.PolicyModeTest)
+     test/nexus/treasury/policy_mode_test.exs:18
+     ** (ArgumentError) :utc_datetime_usec expects microsecond precision, got: ~U[2026-03-06 12:41:36Z]
+     code: project_event(event, 1)
+     stacktrace:
+       (ecto 3.13.5) lib/ecto/type.ex:1566: Ecto.Type.check_usec!/2
+       (ecto 3.13.5) lib/ecto/type.ex:621: Ecto.Type.dump_utc_datetime_usec/1
+       (ecto 3.13.5) lib/ecto/type.ex:1049: Ecto.Type.process_dumpers/3
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1296: Ecto.Repo.Schema.dump_field!/6
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1310: anonymous fn/6 in Ecto.Repo.Schema.dump_fields!/5
+       (stdlib 7.1) maps.erl:894: :maps.fold_1/4
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1308: Ecto.Repo.Schema.dump_fields!/5
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:1240: Ecto.Repo.Schema.dump_changes!/7
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:476: anonymous fn/15 in Ecto.Repo.Schema.do_insert/4
+       (ecto 3.13.5) lib/ecto/multi.ex:905: Ecto.Multi.apply_operation/5
+       (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+       (ecto 3.13.5) lib/ecto/multi.ex:878: anonymous fn/5 in Ecto.Multi.apply_operations/5
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql.ex:1473: anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4
+       (db_connection 2.9.0) lib/db_connection.ex:1747: DBConnection.run_transaction/4
+       (ecto 3.13.5) lib/ecto/repo/transaction.ex:30: Ecto.Repo.Transaction.transact/4
+       (nexus 0.1.0) deps/commanded_ecto_projections/lib/projections/ecto.ex:97: Nexus.Treasury.Projectors.PolicyProjector.update_projection/3
+       (ecto_sql 3.13.4) lib/ecto/adapters/sql/sandbox.ex:629: Ecto.Adapters.SQL.Sandbox.unboxed_run/2
+       test/nexus/treasury/policy_mode_test.exs:66: (test)
+
+
+Finished in 0.5 seconds (0.00s async, 0.5s sync)
+4 scenarios, 4 failures

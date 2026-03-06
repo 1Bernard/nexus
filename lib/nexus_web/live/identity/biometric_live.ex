@@ -238,6 +238,18 @@ defmodule NexusWeb.Identity.BiometricLive do
     end
   end
 
+  @impl true
+  def handle_event("go_to_dashboard", _params, socket) do
+    token = Phoenix.Token.sign(socket.endpoint, "user auth", socket.assigns.user_id)
+    {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
+  end
+
+  @impl true
+  def handle_event("biometric_reset", params, socket) do
+    error = Map.get(params, "error")
+    {:noreply, assign(socket, status: "idle", progress: 0, error_message: error)}
+  end
+
   # Helper mirroring aggregate logic for bootstrap bypass
   defp bootstrap_user?(cose_key_bin, cred_id) do
     cose_key_bin in [
@@ -276,18 +288,6 @@ defmodule NexusWeb.Identity.BiometricLive do
   end
 
   defp decode_and_unmarshal_cose(other), do: other
-
-  @impl true
-  def handle_event("go_to_dashboard", _params, socket) do
-    token = Phoenix.Token.sign(socket.endpoint, "user auth", socket.assigns.user_id)
-    {:noreply, redirect(socket, to: ~p"/auth/login?token=#{token}")}
-  end
-
-  @impl true
-  def handle_event("biometric_reset", params, socket) do
-    error = Map.get(params, "error")
-    {:noreply, assign(socket, status: "idle", progress: 0, error_message: error)}
-  end
 
   @impl true
   def handle_info(:advance_screening_1, socket) do

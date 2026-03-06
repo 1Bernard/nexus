@@ -23,4 +23,19 @@ defmodule Nexus.Schema do
   end
 
   def generate_uuidv7, do: Uniq.UUID.uuid7()
+
+  @doc """
+  Safely parses a datetime from a binary or returns the DateTime if already parsed.
+  Returns DateTime.utc_now() (truncated to seconds) if input is nil or invalid.
+  """
+  def parse_datetime(%DateTime{} = dt), do: dt |> DateTime.truncate(:microsecond)
+
+  def parse_datetime(iso8601) when is_binary(iso8601) do
+    case DateTime.from_iso8601(iso8601) do
+      {:ok, dt, _offset} -> dt |> DateTime.truncate(:microsecond)
+      {:error, _reason} -> DateTime.utc_now() |> DateTime.truncate(:microsecond)
+    end
+  end
+
+  def parse_datetime(_), do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
 end

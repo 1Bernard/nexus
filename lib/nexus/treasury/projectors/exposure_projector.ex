@@ -28,12 +28,6 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
         n when is_number(n) -> Decimal.new(n)
       end
 
-    calculated_at =
-      case event.timestamp do
-        %DateTime{} = dt -> dt
-        s when is_binary(s) -> elem(DateTime.from_iso8601(s), 1)
-      end
-
     Ecto.Multi.insert(
       multi,
       :exposure_snapshot,
@@ -43,7 +37,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
         subsidiary: event.subsidiary,
         currency: event.currency,
         exposure_amount: exposure_amount,
-        calculated_at: calculated_at
+        calculated_at: Nexus.Schema.parse_datetime(event.timestamp)
       },
       on_conflict: :replace_all,
       conflict_target: [:id]

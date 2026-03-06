@@ -153,6 +153,17 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
     end
   end
 
+  @impl true
+  def handle_event("noop", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("close_modal", _params, socket) do
+    send(self(), :close_step_up)
+    {:noreply, socket}
+  end
+
   # Helpers mirroring aggregate logic for bootstrap bypass and decoding
   defp bootstrap_user?(cose_key_bin, cred_id) do
     cose_key_bin in [
@@ -191,17 +202,6 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
   end
 
   defp decode_and_unmarshal_cose(other), do: other
-
-  @impl true
-  def handle_event("noop", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("close_modal", _params, socket) do
-    send(self(), :close_step_up)
-    {:noreply, socket}
-  end
 
   defp decode_base64_url!(string), do: Base.url_decode64!(string, padding: false)
 

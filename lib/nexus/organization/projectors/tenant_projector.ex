@@ -31,10 +31,6 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
           on_conflict: :nothing,
           conflict_target: :id
         )
-        |> Ecto.Multi.run(:broadcast, fn _repo, _changes ->
-          Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
-          {:ok, event}
-        end)
 
       :error ->
         multi
@@ -54,10 +50,6 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
         updated_at: DateTime.utc_now()
       ]
     )
-    |> Ecto.Multi.run(:broadcast, fn _repo, _changes ->
-      Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
-      {:ok, event}
-    end)
   end)
 
   project(%TenantModuleToggled{} = event, _metadata, fn multi ->
@@ -79,10 +71,6 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
       else
         {:error, :not_found}
       end
-    end)
-    |> Ecto.Multi.run(:broadcast, fn _repo, _changes ->
-      Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
-      {:ok, event}
     end)
   end)
 end
