@@ -159,7 +159,8 @@ defmodule Nexus.Treasury do
           org_id: org_id,
           currency: currency,
           horizon_days: horizon_days,
-          predictions: predictions
+          predictions: predictions,
+          generated_at: DateTime.utc_now()
         }
 
         Nexus.App.dispatch(command, consistency: :strong)
@@ -311,7 +312,8 @@ defmodule Nexus.Treasury do
     command = %SetTransferThreshold{
       policy_id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
-      threshold: threshold
+      threshold: threshold,
+      set_at: DateTime.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -348,7 +350,8 @@ defmodule Nexus.Treasury do
           variance: variance,
           variance_reason: reason,
           actor_email: actor_email,
-          currency: line.currency
+          currency: line.currency,
+          timestamp: DateTime.utc_now()
         }
       else
         %Nexus.Treasury.Commands.ReconcileTransaction{
@@ -361,7 +364,8 @@ defmodule Nexus.Treasury do
           variance: variance,
           variance_reason: reason,
           actor_email: actor_email,
-          currency: line.currency
+          currency: line.currency,
+          timestamp: DateTime.utc_now()
         }
       end
 
@@ -375,7 +379,8 @@ defmodule Nexus.Treasury do
     command = %Nexus.Treasury.Commands.ApproveReconciliation{
       org_id: org_id,
       reconciliation_id: reconciliation_id,
-      approver_email: approver_email
+      approver_email: approver_email,
+      timestamp: DateTime.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -388,7 +393,8 @@ defmodule Nexus.Treasury do
     command = %Nexus.Treasury.Commands.RejectReconciliation{
       org_id: org_id,
       reconciliation_id: reconciliation_id,
-      rejector_email: rejector_email
+      rejector_email: rejector_email,
+      timestamp: DateTime.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -401,7 +407,8 @@ defmodule Nexus.Treasury do
     command = %Nexus.Treasury.Commands.ReverseReconciliation{
       org_id: org_id,
       reconciliation_id: reconciliation_id,
-      actor_email: actor_email
+      actor_email: actor_email,
+      timestamp: DateTime.utc_now()
     }
 
     Nexus.App.dispatch(command)

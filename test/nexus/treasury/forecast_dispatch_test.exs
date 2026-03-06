@@ -12,7 +12,8 @@ defmodule Nexus.Treasury.ForecastDispatchTest do
       org_id: "00000000-0000-0000-0000-000000000000",
       currency: "EUR",
       horizon_days: 30,
-      predictions: [%{date: "2026-03-03", predicted_amount: 1000.5}]
+      predictions: [%{date: "2026-03-03", predicted_amount: 1000.5}],
+      generated_at: DateTime.utc_now()
     }
 
     IO.puts("\n=== DISPATCHING MOCK COMMAND ===")

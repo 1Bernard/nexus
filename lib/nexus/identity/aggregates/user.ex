@@ -5,8 +5,6 @@ defmodule Nexus.Identity.Aggregates.User do
   """
   defstruct [:id, :org_id, :email, :display_name, :role, :status, :cose_key, :credential_id]
 
-  alias Nexus.Identity.AuthChallengeStore
-
   alias Nexus.Identity.Commands.{
     RegisterUser,
     RegisterSystemAdmin,
@@ -16,7 +14,6 @@ defmodule Nexus.Identity.Aggregates.User do
   }
 
   alias Nexus.Identity.Events.{BiometricVerified, UserRegistered, StepUpVerified, UserRoleChanged}
-  alias Nexus.Identity.WebAuthn
 
   # --- Command Handlers ---
 
@@ -29,7 +26,7 @@ defmodule Nexus.Identity.Aggregates.User do
       role: "system_admin",
       cose_key: Base.encode64("bootstrap_cose_key"),
       credential_id: Base.encode64("bootstrap_credential_id"),
-      registered_at: DateTime.utc_now()
+      registered_at: cmd.registered_at
     }
   end
 
@@ -38,120 +35,42 @@ defmodule Nexus.Identity.Aggregates.User do
   end
 
   def execute(%__MODULE__{id: nil}, %RegisterUser{} = cmd) do
-    with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.user_id),
-         {:ok, {auth_data, _result}} <-
-           WebAuthn.register(cmd.attestation_object, cmd.client_data_json, challenge) do
-      cose_key = auth_data.attested_credential_data.credential_public_key
-      credential_id = auth_data.attested_credential_data.credential_id
-
-      %UserRegistered{
-        user_id: cmd.user_id,
-        org_id: cmd.org_id,
-        email: cmd.email,
-        display_name: cmd.display_name,
-        role: cmd.role,
-        cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
-        credential_id: Base.encode64(credential_id),
-        registered_at: DateTime.utc_now()
-      }
-    else
-      {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
-      {:error, reason} -> {:error, {:webauthn_error, reason}}
-    end
+    %UserRegistered{
+      user_id: cmd.user_id,
+      org_id: cmd.org_id,
+      email: cmd.email,
+      display_name: cmd.display_name,
+      role: cmd.role,
+      cose_key: cmd.cose_key,
+      credential_id: cmd.credential_id,
+      registered_at: cmd.registered_at
+    }
   end
 
   def execute(%__MODULE__{id: nil}, %VerifyBiometric{}) do
     {:error, :unregistered_user}
   end
 
-  def execute(
-        %__MODULE__{id: id, cose_key: cose_key_bin, credential_id: cred_id} = _state,
-        %VerifyBiometric{} = cmd
-      ) do
-    if bootstrap_user?(cose_key_bin, cred_id) do
-      with {:ok, _challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id) do
-        %BiometricVerified{
-          user_id: id,
-          org_id: cmd.org_id,
-          handshake_id: cmd.challenge_id,
-          verified_at: DateTime.utc_now()
-        }
-      else
-        {:error, reason} -> {:error, {:challenge_error, reason}}
-      end
-    else
-      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
-           raw_cred_id <- decode_or_raw(cred_id),
-           raw_cose_key <- decode_and_unmarshal_cose(cose_key_bin),
-           :ok <- validate_credentials(raw_cred_id, raw_cose_key),
-           {:ok, _} <-
-             WebAuthn.authenticate(
-               cmd.raw_id,
-               cmd.authenticator_data,
-               cmd.signature,
-               cmd.client_data_json,
-               challenge,
-               [{raw_cred_id, raw_cose_key}]
-             ) do
-        %BiometricVerified{
-          user_id: id,
-          org_id: cmd.org_id,
-          handshake_id: cmd.challenge_id,
-          verified_at: DateTime.utc_now()
-        }
-      else
-        {:error, :missing_credentials} -> {:error, :missing_credentials}
-        {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
-        {:error, reason} -> {:error, {:webauthn_error, reason}}
-      end
-    end
+  def execute(%__MODULE__{id: id, status: :registered}, %VerifyBiometric{} = cmd) do
+    %BiometricVerified{
+      user_id: id,
+      org_id: cmd.org_id,
+      handshake_id: cmd.challenge_id,
+      verified_at: cmd.verified_at
+    }
   end
 
   def execute(%__MODULE__{id: nil}, %VerifyStepUp{}) do
     {:error, :unregistered_user}
   end
 
-  def execute(
-        %__MODULE__{id: id, cose_key: cose_key_bin, credential_id: cred_id} = _state,
-        %VerifyStepUp{} = cmd
-      ) do
-    if bootstrap_user?(cose_key_bin, cred_id) do
-      with {:ok, _challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id) do
-        %StepUpVerified{
-          user_id: id,
-          org_id: cmd.org_id,
-          action_id: cmd.action_id,
-          verified_at: DateTime.utc_now()
-        }
-      else
-        {:error, reason} -> {:error, {:challenge_error, reason}}
-      end
-    else
-      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(cmd.challenge_id),
-           raw_cred_id <- decode_or_raw(cred_id),
-           raw_cose_key <- decode_and_unmarshal_cose(cose_key_bin),
-           :ok <- validate_credentials(raw_cred_id, raw_cose_key),
-           {:ok, _} <-
-             WebAuthn.authenticate(
-               cmd.raw_id,
-               cmd.authenticator_data,
-               cmd.signature,
-               cmd.client_data_json,
-               challenge,
-               [{raw_cred_id, raw_cose_key}]
-             ) do
-        %StepUpVerified{
-          user_id: id,
-          org_id: cmd.org_id,
-          action_id: cmd.action_id,
-          verified_at: DateTime.utc_now()
-        }
-      else
-        {:error, :missing_credentials} -> {:error, :missing_credentials}
-        {:error, reason} when is_atom(reason) -> {:error, {:challenge_error, reason}}
-        {:error, reason} -> {:error, {:webauthn_error, reason}}
-      end
-    end
+  def execute(%__MODULE__{id: id, status: :registered}, %VerifyStepUp{} = cmd) do
+    %StepUpVerified{
+      user_id: id,
+      org_id: cmd.org_id,
+      action_id: cmd.action_id,
+      verified_at: cmd.verified_at
+    }
   end
 
   def execute(%__MODULE__{id: id}, %ChangeUserRole{} = cmd) when not is_nil(id) do
@@ -159,7 +78,7 @@ defmodule Nexus.Identity.Aggregates.User do
       user_id: cmd.user_id,
       role: cmd.role,
       actor_id: cmd.actor_id,
-      changed_at: DateTime.utc_now()
+      changed_at: cmd.changed_at
     }
   end
 
@@ -170,55 +89,6 @@ defmodule Nexus.Identity.Aggregates.User do
   def execute(state, cmd) do
     {:error, {:unexpected_command, state, cmd}}
   end
-
-  # --- Private Helpers ---
-
-  # Returns true when the user is a bootstrapped admin using placeholder credentials,
-  # meaning real WebAuthn verification is skipped and we only validate the challenge exists.
-  defp bootstrap_user?(cose_key_bin, cred_id) do
-    IO.inspect({cose_key_bin, cred_id}, label: "BOOTSTRAP CHECK")
-
-    cose_key_bin in [
-      "BOOTSTRAP_PLACEHOLDER",
-      "bootstrap_cose_key",
-      Base.encode64("bootstrap_cose_key")
-    ] or
-      cred_id in [
-        "BOOTSTRAP_PLACEHOLDER",
-        "bootstrap_credential_id",
-        Base.encode64("bootstrap_credential_id")
-      ]
-  end
-
-  # Ecto might return the base64 string or the raw DB binary depending on projections
-  defp decode_or_raw(nil), do: nil
-
-  defp decode_or_raw(string) when is_binary(string) do
-    case Base.decode64(string, padding: false) do
-      {:ok, decoded} -> decoded
-      :error -> string
-    end
-  end
-
-  defp decode_or_raw(other), do: other
-
-  defp decode_and_unmarshal_cose(nil), do: nil
-
-  defp decode_and_unmarshal_cose(binary) when is_binary(binary) do
-    raw = decode_or_raw(binary)
-
-    try do
-      :erlang.binary_to_term(raw)
-    rescue
-      ArgumentError -> raw
-    end
-  end
-
-  defp decode_and_unmarshal_cose(other), do: other
-
-  defp validate_credentials(nil, _), do: {:error, :missing_credentials}
-  defp validate_credentials(_, nil), do: {:error, :missing_credentials}
-  defp validate_credentials(_, _), do: :ok
 
   # --- State Transitions ---
 

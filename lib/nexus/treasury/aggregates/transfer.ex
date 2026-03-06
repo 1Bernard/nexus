@@ -28,7 +28,7 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
         to_currency: cmd.to_currency,
         amount: cmd.amount,
         bulk_payment_id: cmd.bulk_payment_id,
-        requested_at: DateTime.utc_now()
+        requested_at: cmd.requested_at
       }
     end
   end

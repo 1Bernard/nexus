@@ -33,7 +33,8 @@ defmodule Nexus.Treasury.ExposurePolicyTest do
     cmd = %SetTransferThreshold{
       policy_id: state.org_id,
       org_id: state.org_id,
-      threshold: Decimal.new(threshold)
+      threshold: Decimal.new(threshold),
+      set_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -70,7 +71,8 @@ defmodule Nexus.Treasury.ExposurePolicyTest do
       policy_id: state.org_id,
       org_id: state.org_id,
       currency_pair: pair,
-      exposure_amount: exposure_amount
+      exposure_amount: exposure_amount,
+      evaluated_at: DateTime.utc_now()
     }
 
     # Capture the events returned by dispatch (if we used direct aggregate call)

@@ -34,7 +34,8 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       subsidiary: "Munich HQ",
       line_items: [%{description: "Consulting", amount: "1000"}],
       sap_document_number: "SAP-#{invoice_id}",
-      sap_status: "Verified_Via_Network"
+      sap_status: "Verified_Via_Network",
+      ingested_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(command)
@@ -57,7 +58,8 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       subsidiary: "Munich HQ",
       line_items: [%{description: "Software License", amount: amount}],
       sap_document_number: "SAP-#{invoice_id}",
-      sap_status: "Verified_Via_Network"
+      sap_status: "Verified_Via_Network",
+      ingested_at: DateTime.utc_now()
     }
 
     result = App.dispatch(command)
@@ -79,7 +81,8 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       subsidiary: "Munich HQ",
       line_items: [%{description: "Refund", amount: amount}],
       sap_document_number: "SAP-#{invoice_id}",
-      sap_status: "Verified_Via_Network"
+      sap_status: "Verified_Via_Network",
+      ingested_at: DateTime.utc_now()
     }
 
     result = App.dispatch(command)
@@ -98,7 +101,8 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       subsidiary: "Munich HQ",
       line_items: [%{description: "Consulting", amount: "1000"}],
       sap_document_number: "SAP-#{invoice_id}",
-      sap_status: "Verified_Via_Network"
+      sap_status: "Verified_Via_Network",
+      ingested_at: DateTime.utc_now()
     }
 
     result = App.dispatch(command)

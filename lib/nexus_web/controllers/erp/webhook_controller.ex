@@ -66,7 +66,8 @@ defmodule NexusWeb.ERP.WebhookController do
       subsidiary: Map.get(payload, "subsidiary", "Unknown Subsidiary"),
       line_items: Map.get(payload, "line_items", []),
       sap_document_number: "SAP-#{invoice_id}",
-      sap_status: Map.get(enriched_data, :sap_status, "Verified")
+      sap_status: Map.get(enriched_data, :sap_status, "Verified"),
+      ingested_at: DateTime.utc_now()
     }
 
     # 4. Dispatch the command. Our existing CQRS Aggregates will handle idempotency and validation.

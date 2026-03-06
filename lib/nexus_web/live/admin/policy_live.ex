@@ -60,7 +60,8 @@ defmodule NexusWeb.Admin.PolicyLive do
       policy_id: org_id,
       org_id: org_id,
       mode_thresholds: mode_thresholds,
-      actor_email: email
+      actor_email: email,
+      configured_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(cmd, consistency: :strong) do

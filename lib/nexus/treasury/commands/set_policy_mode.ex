@@ -4,6 +4,6 @@ defmodule Nexus.Treasury.Commands.SetPolicyMode do
   Valid modes are: "standard", "strict", "relaxed".
   The threshold is derived from the mode and included for aggregate validation.
   """
-  @enforce_keys [:policy_id, :org_id, :mode, :threshold, :actor_email]
-  defstruct [:policy_id, :org_id, :mode, :threshold, :actor_email]
+  @enforce_keys [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
+  defstruct [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
 end

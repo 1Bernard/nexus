@@ -126,7 +126,8 @@ defmodule NexusWeb.Admin.UserLive.Index do
     command = %Nexus.Identity.Commands.ChangeUserRole{
       user_id: user_id,
       role: role,
-      actor_id: socket.assigns.current_user.id
+      actor_id: socket.assigns.current_user.id,
+      changed_at: DateTime.utc_now()
     }
 
     # Dispatch command to the application (Commanded)

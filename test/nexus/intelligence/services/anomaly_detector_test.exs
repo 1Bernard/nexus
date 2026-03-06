@@ -12,7 +12,8 @@ defmodule Nexus.Intelligence.Services.AnomalyDetectorTest do
         invoice_id: "INV-TEST-001",
         vendor_name: "CorpTech",
         amount: Decimal.new("2500.00"),
-        currency: "EUR"
+        currency: "EUR",
+        flagged_at: DateTime.utc_now()
       }
 
       assert {:ok, result} = AnomalyDetector.analyze(command)
@@ -28,7 +29,8 @@ defmodule Nexus.Intelligence.Services.AnomalyDetectorTest do
         invoice_id: "INV-TEST-002",
         vendor_name: "Generic Vendor",
         amount: Decimal.new("100.00"),
-        currency: "EUR"
+        currency: "EUR",
+        flagged_at: DateTime.utc_now()
       }
 
       assert {:ok, result} = AnomalyDetector.analyze(command)

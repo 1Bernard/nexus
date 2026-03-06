@@ -61,7 +61,8 @@ defmodule NexusWeb.ERP.StatementLive do
           org_id: org_id,
           filename: filename,
           format: format,
-          raw_content: raw_content
+          raw_content: raw_content,
+          uploaded_at: DateTime.utc_now()
         }
 
         case App.dispatch(command, consistency: :strong) do

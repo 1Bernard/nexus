@@ -714,7 +714,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       org_id: org_id,
       mode: mode,
       threshold: Decimal.new(threshold_val),
-      actor_email: socket.assigns.current_user.email
+      actor_email: socket.assigns.current_user.email,
+      changed_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(cmd) do
@@ -759,7 +760,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       to_currency: "USD",
       # €5M -> High Value
       amount: "5000000",
-      threshold: socket.assigns.transfer_threshold
+      threshold: socket.assigns.transfer_threshold,
+      requested_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(command) do

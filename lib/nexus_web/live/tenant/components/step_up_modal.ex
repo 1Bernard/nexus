@@ -93,27 +93,104 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
         socket
       ) do
     challenge_id = "step_up_#{socket.assigns.current_user.id}"
+    user = socket.assigns.current_user
 
-    command = %Nexus.Identity.Commands.VerifyStepUp{
-      user_id: socket.assigns.current_user.id,
-      org_id: socket.assigns.current_user.org_id,
-      challenge_id: challenge_id,
-      action_id: socket.assigns.action_id,
-      raw_id: decode_base64_url!(raw_id),
-      authenticator_data: decode_base64_url!(auth_data),
-      signature: decode_base64_url!(sig),
-      client_data_json: decode_base64_url!(client)
-    }
+    with {:ok, challenge} <- AuthChallengeStore.pop_challenge(challenge_id) do
+      # Perform verification here in the Component
+      raw_id_bin = decode_base64_url!(raw_id)
+      auth_data_bin = decode_base64_url!(auth_data)
+      sig_bin = decode_base64_url!(sig)
+      client_bin = decode_base64_url!(client)
 
-    case App.dispatch(command) do
-      :ok ->
-        send(self(), {:step_up_success, socket.assigns.action_id})
-        {:noreply, assign(socket, status: "success", progress: 100)}
+      # Convert state keys back to binary if they are Base64'd
+      credential_id_bin = decode_or_raw(user.credential_id)
+      cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
 
+      # Skip verification for bootstrap user if applicable
+      is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
+
+      verification_result =
+        if is_bootstrap do
+          {:ok, :bootstrap}
+        else
+          WebAuthn.authenticate(
+            raw_id_bin,
+            auth_data_bin,
+            sig_bin,
+            client_bin,
+            challenge,
+            [{credential_id_bin, cose_key_bin}]
+          )
+        end
+
+      case verification_result do
+        {:ok, _} ->
+          command = %Nexus.Identity.Commands.VerifyStepUp{
+            user_id: user.id,
+            org_id: user.org_id,
+            challenge_id: challenge_id,
+            action_id: socket.assigns.action_id,
+            verified_at: DateTime.utc_now()
+          }
+
+          case App.dispatch(command) do
+            :ok ->
+              send(self(), {:step_up_success, socket.assigns.action_id})
+              {:noreply, assign(socket, status: "success", progress: 100)}
+
+            {:error, reason} ->
+              {:noreply, assign(socket, status: "idle", error_message: inspect(reason))}
+          end
+
+        {:error, reason} ->
+          {:noreply,
+           assign(socket, status: "idle", error_message: "WebAuthn Error: #{inspect(reason)}")}
+      end
+    else
       {:error, reason} ->
-        {:noreply, assign(socket, status: "idle", error_message: inspect(reason))}
+        {:noreply,
+         assign(socket, status: "idle", error_message: "Challenge Error: #{inspect(reason)}")}
     end
   end
+
+  # Helpers mirroring aggregate logic for bootstrap bypass and decoding
+  defp bootstrap_user?(cose_key_bin, cred_id) do
+    cose_key_bin in [
+      "BOOTSTRAP_PLACEHOLDER",
+      "bootstrap_cose_key",
+      Base.encode64("bootstrap_cose_key")
+    ] or
+      cred_id in [
+        "BOOTSTRAP_PLACEHOLDER",
+        "bootstrap_credential_id",
+        Base.encode64("bootstrap_credential_id")
+      ]
+  end
+
+  defp decode_or_raw(nil), do: nil
+
+  defp decode_or_raw(string) when is_binary(string) do
+    case Base.decode64(string, padding: false) do
+      {:ok, decoded} -> decoded
+      :error -> string
+    end
+  end
+
+  defp decode_or_raw(other), do: other
+
+  defp decode_and_unmarshal_cose(nil), do: nil
+
+  defp decode_and_unmarshal_cose(binary) when is_binary(binary) do
+    raw = decode_or_raw(binary)
+
+    try do
+      :erlang.binary_to_term(raw)
+    rescue
+      ArgumentError -> raw
+    end
+  end
+
+  defp decode_and_unmarshal_cose(other), do: other
 
   @impl true
   def handle_event("noop", _params, socket) do
@@ -224,7 +301,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                 [ Cancel Transaction ]
               </button>
             </div>
-            
+
     <!-- Security Primitives -->
             <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
               <.security_badge />

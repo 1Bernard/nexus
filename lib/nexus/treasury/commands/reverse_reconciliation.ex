@@ -3,6 +3,7 @@ defmodule Nexus.Treasury.Commands.ReverseReconciliation do
   defstruct [
     :org_id,
     :reconciliation_id,
-    :actor_email
+    :actor_email,
+    :timestamp
   ]
 end

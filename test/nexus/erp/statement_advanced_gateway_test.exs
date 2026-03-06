@@ -32,7 +32,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "bank_statement.csv",
         format: "csv",
-        raw_content: content
+        raw_content: content,
+        uploaded_at: DateTime.utc_now()
       }
 
       assert :ok = App.dispatch(cmd1)
@@ -81,7 +82,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "recon_test.csv",
         format: "csv",
-        raw_content: content
+        raw_content: content,
+        uploaded_at: DateTime.utc_now()
       }
 
       assert :ok = App.dispatch(cmd1)
@@ -108,7 +110,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         statement_line_id: line.id,
         amount: "100.00",
         currency: "EUR",
-        actor_email: "test@example.com"
+        actor_email: "test@example.com",
+        timestamp: DateTime.utc_now()
       }
 
       assert :ok = App.dispatch(recon_cmd)
@@ -142,7 +145,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "alpha.csv",
         format: "csv",
-        raw_content: content
+        raw_content: content,
+        uploaded_at: DateTime.utc_now()
       })
 
       {:ok, [%{data: e1, event_number: n1}]} = Nexus.EventStore.read_stream_forward(s1_id)
@@ -153,7 +157,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "beta.csv",
         format: "csv",
-        raw_content: content
+        raw_content: content,
+        uploaded_at: DateTime.utc_now()
       })
 
       {:ok, [%{data: e2, event_number: n2}]} = Nexus.EventStore.read_stream_forward(s2_id)

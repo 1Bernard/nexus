@@ -11,7 +11,9 @@ config :nexus, Nexus.Repo,
   hostname: System.get_env("DB_HOST") || "localhost",
   database: System.get_env("DB_NAME") || "nexus_test_industrial",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: 50,
+  queue_target: 10000,
+  queue_interval: 20000
 
 config :nexus, Nexus.EventStore,
   column_data_type: "jsonb",

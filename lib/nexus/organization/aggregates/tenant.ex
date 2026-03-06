@@ -34,7 +34,7 @@ defmodule Nexus.Organization.Aggregates.Tenant do
         name: String.trim(cmd.name),
         initial_admin_email: String.downcase(String.trim(cmd.initial_admin_email)),
         provisioned_by: cmd.provisioned_by,
-        provisioned_at: DateTime.utc_now()
+        provisioned_at: cmd.provisioned_at
       }
     end
   end
@@ -56,8 +56,8 @@ defmodule Nexus.Organization.Aggregates.Tenant do
         email: email,
         role: cmd.role,
         invited_by: cmd.invited_by,
-        invitation_token: Ecto.UUID.generate(),
-        invited_at: DateTime.utc_now()
+        invitation_token: cmd.invitation_token,
+        invited_at: cmd.invited_at
       }
     end
   end
@@ -71,7 +71,7 @@ defmodule Nexus.Organization.Aggregates.Tenant do
       org_id: cmd.org_id,
       invitation_token: cmd.invitation_token,
       redeemed_by_user_id: cmd.redeemed_by_user_id,
-      redeemed_at: DateTime.utc_now()
+      redeemed_at: cmd.redeemed_at
     }
   end
 
@@ -91,7 +91,7 @@ defmodule Nexus.Organization.Aggregates.Tenant do
       org_id: cmd.org_id,
       suspended_by: cmd.suspended_by,
       reason: cmd.reason,
-      suspended_at: DateTime.utc_now()
+      suspended_at: cmd.suspended_at
     }
   end
 
@@ -117,7 +117,7 @@ defmodule Nexus.Organization.Aggregates.Tenant do
         module_name: cmd.module_name,
         enabled: cmd.enabled,
         toggled_by: cmd.toggled_by,
-        toggled_at: DateTime.utc_now()
+        toggled_at: cmd.toggled_at
       }
     end
   end

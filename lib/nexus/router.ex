@@ -130,12 +130,12 @@ defmodule Nexus.Router do
   )
 
   # --- Intelligence Domain ---
-  dispatch(Nexus.Intelligence.Commands.AnalyzeInvoice,
-    to: Nexus.Intelligence.Aggregates.Analysis,
-    identity: :analysis_id
-  )
-
-  dispatch(Nexus.Intelligence.Commands.AnalyzeSentiment,
+  dispatch(
+    [
+      Nexus.Intelligence.Commands.AnalyzeInvoice,
+      Nexus.Intelligence.Commands.AnalyzeSentiment,
+      Nexus.Intelligence.Commands.ResolveAnomaly
+    ],
     to: Nexus.Intelligence.Aggregates.Analysis,
     identity: :analysis_id
   )

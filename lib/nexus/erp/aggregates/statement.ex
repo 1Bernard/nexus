@@ -29,7 +29,7 @@ defmodule Nexus.ERP.Aggregates.Statement do
           filename: cmd.filename,
           format: cmd.format,
           lines: lines_with_ids,
-          uploaded_at: DateTime.utc_now()
+          uploaded_at: cmd.uploaded_at
         }
 
       {:error, reason} ->
@@ -37,7 +37,7 @@ defmodule Nexus.ERP.Aggregates.Statement do
           statement_id: cmd.statement_id,
           org_id: cmd.org_id,
           reason: reason,
-          rejected_at: DateTime.utc_now()
+          rejected_at: cmd.uploaded_at
         }
     end
   end

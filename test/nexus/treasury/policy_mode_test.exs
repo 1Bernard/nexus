@@ -48,7 +48,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
-      actor_email: "test@example.com"
+      actor_email: "test@example.com",
+      changed_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -83,7 +84,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
-      actor_email: "test@example.com"
+      actor_email: "test@example.com",
+      changed_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -110,7 +112,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       org_id: state.org_id,
       mode: mode,
       threshold: threshold,
-      actor_email: "test@example.com"
+      actor_email: "test@example.com",
+      changed_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -137,7 +140,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
     threshold_cmd = %SetTransferThreshold{
       policy_id: state.org_id,
       org_id: state.org_id,
-      threshold: state.threshold
+      threshold: state.threshold,
+      set_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(threshold_cmd)
@@ -157,7 +161,8 @@ defmodule Nexus.Treasury.PolicyModeTest do
       policy_id: state.org_id,
       org_id: state.org_id,
       currency_pair: "EUR/USD",
-      exposure_amount: exposure_amount
+      exposure_amount: exposure_amount,
+      evaluated_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(evaluate_cmd)

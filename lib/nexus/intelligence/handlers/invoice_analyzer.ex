@@ -26,7 +26,8 @@ defmodule Nexus.Intelligence.Handlers.InvoiceAnalyzer do
       # Proxying subsidiary as vendor
       vendor_name: event.subsidiary,
       amount: Decimal.new(event.amount),
-      currency: event.currency
+      currency: event.currency,
+      flagged_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(command) do

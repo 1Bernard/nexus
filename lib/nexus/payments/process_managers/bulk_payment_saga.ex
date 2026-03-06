@@ -48,7 +48,8 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
         # Default threshold
         threshold: Decimal.new(1_000_000),
         # Correlation ID for bulk batches
-        bulk_payment_id: ev.bulk_payment_id
+        bulk_payment_id: ev.bulk_payment_id,
+        requested_at: DateTime.utc_now()
       }
     end)
   end
@@ -60,7 +61,8 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
     if processed + 1 >= total do
       %FinalizeBulkPayment{
         bulk_payment_id: saga.bulk_payment_id,
-        org_id: saga.org_id
+        org_id: saga.org_id,
+        completed_at: DateTime.utc_now()
       }
     else
       []

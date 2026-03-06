@@ -1,25 +1,7 @@
 defmodule Nexus.Identity.Commands.VerifyStepUp do
   @moduledoc """
-  Command to verify a secondary biometric factor for a high-value action.
+  Command representing a successful step-up biometric verification.
   """
-  @enforce_keys [
-    :user_id,
-    :org_id,
-    :challenge_id,
-    :action_id,
-    :raw_id,
-    :authenticator_data,
-    :signature,
-    :client_data_json
-  ]
-  defstruct [
-    :user_id,
-    :org_id,
-    :challenge_id,
-    :action_id,
-    :raw_id,
-    :authenticator_data,
-    :signature,
-    :client_data_json
-  ]
+  @enforce_keys [:user_id, :org_id, :challenge_id, :action_id, :verified_at]
+  defstruct [:user_id, :org_id, :challenge_id, :action_id, :verified_at]
 end

@@ -20,7 +20,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
           org_id: cmd.org_id,
           invoice_id: cmd.invoice_id,
           reason: "Invoice amount must be positive",
-          rejected_at: DateTime.utc_now()
+          rejected_at: cmd.ingested_at
         }
 
       Enum.empty?(List.wrap(cmd.line_items)) ->
@@ -28,7 +28,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
           org_id: cmd.org_id,
           invoice_id: cmd.invoice_id,
           reason: "Invoice must have at least one line item",
-          rejected_at: DateTime.utc_now()
+          rejected_at: cmd.ingested_at
         }
 
       true ->
@@ -42,7 +42,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
           line_items: cmd.line_items,
           sap_document_number: cmd.sap_document_number,
           sap_status: cmd.sap_status,
-          ingested_at: DateTime.utc_now()
+          ingested_at: cmd.ingested_at
         }
     end
   end

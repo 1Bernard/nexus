@@ -25,7 +25,8 @@ defmodule Mix.Tasks.Nexus.BootstrapRootAdmin do
       org_id: root_org_id,
       name: "Nexus Platform",
       initial_admin_email: admin_email,
-      provisioned_by: "system_bootstrap"
+      provisioned_by: "system_bootstrap",
+      provisioned_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(provision_cmd) do
@@ -36,7 +37,8 @@ defmodule Mix.Tasks.Nexus.BootstrapRootAdmin do
           user_id: admin_id,
           org_id: root_org_id,
           email: admin_email,
-          display_name: "Master Admin"
+          display_name: "Master Admin",
+          registered_at: DateTime.utc_now()
         }
 
         case Nexus.App.dispatch(register_cmd) do

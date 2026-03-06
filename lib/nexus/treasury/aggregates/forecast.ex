@@ -13,7 +13,7 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
       currency: cmd.currency,
       horizon_days: cmd.horizon_days,
       predictions: cmd.predictions,
-      generated_at: DateTime.utc_now()
+      generated_at: cmd.generated_at
     }
   end
 

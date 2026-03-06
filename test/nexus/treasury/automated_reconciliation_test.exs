@@ -38,7 +38,8 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       subsidiary: "Munich HQ",
       line_items: [%{description: "Service", amount: "1500.00"}],
       sap_document_number: "SAP-101",
-      sap_status: "Verified"
+      sap_status: "Verified",
+      ingested_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(ingest_cmd)
@@ -61,7 +62,8 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       statement_id: statement_id,
       filename: "statement.csv",
       format: "csv",
-      raw_content: csv_content
+      raw_content: csv_content,
+      uploaded_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(upload_cmd)
@@ -103,7 +105,8 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       statement_id: statement_id,
       filename: "statement.csv",
       format: "csv",
-      raw_content: csv_content
+      raw_content: csv_content,
+      uploaded_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(upload_cmd)
@@ -126,7 +129,8 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       subsidiary: "Tokyo Branch",
       line_items: [%{description: "Goods", amount: "2400.00"}],
       sap_document_number: "SAP-202",
-      sap_status: "Verified"
+      sap_status: "Verified",
+      ingested_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(ingest_cmd)

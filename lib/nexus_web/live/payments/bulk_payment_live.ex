@@ -44,7 +44,8 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
           bulk_payment_id: bulk_payment_id,
           org_id: socket.assigns.current_user.org_id,
           user_id: socket.assigns.current_user.id,
-          payments: payments
+          payments: payments,
+          initiated_at: DateTime.utc_now()
         }
 
         case Nexus.App.dispatch(cmd) do

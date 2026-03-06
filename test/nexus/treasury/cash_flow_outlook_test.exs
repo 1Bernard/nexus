@@ -41,7 +41,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: org_id,
       currency: curr,
       horizon_days: 30,
-      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}]
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}],
+      generated_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -78,7 +79,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       org_id: state.org_id,
       currency: state.currency,
       horizon_days: 30,
-      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}]
+      predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}],
+      generated_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -111,7 +113,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       horizon_days: 30,
       predictions: [
         %{date: "2026-03-03", predicted_amount: Decimal.to_string(Decimal.negate(amount_dec))}
-      ]
+      ],
+      generated_at: DateTime.utc_now()
     }
 
     assert :ok == Nexus.App.dispatch(cmd)

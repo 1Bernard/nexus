@@ -32,7 +32,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
       org_id: cmd.org_id,
       mode_thresholds: cmd.mode_thresholds,
       actor_email: cmd.actor_email,
-      configured_at: DateTime.utc_now()
+      configured_at: cmd.configured_at
     }
   end
 
@@ -41,7 +41,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
       policy_id: cmd.policy_id,
       org_id: cmd.org_id,
       threshold: cmd.threshold,
-      set_at: DateTime.utc_now()
+      set_at: cmd.set_at
     }
   end
 
@@ -55,7 +55,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
       mode: cmd.mode,
       threshold: Decimal.new(threshold_val),
       actor_email: cmd.actor_email,
-      changed_at: DateTime.utc_now()
+      changed_at: cmd.changed_at
     }
   end
 
@@ -75,7 +75,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
         currency_pair: cmd.currency_pair,
         exposure_amount: cmd.exposure_amount,
         threshold: threshold,
-        triggered_at: DateTime.utc_now()
+        triggered_at: cmd.evaluated_at
       }
     else
       []

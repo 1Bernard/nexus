@@ -21,10 +21,10 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
       bulk_payment_id: cmd.bulk_payment_id,
       org_id: cmd.org_id,
       user_id: cmd.user_id,
-      payments: Enum.map(cmd.payments, &Map.from_struct/1),
+      payments: cmd.payments,
       total_amount: total_amount,
       count: length(cmd.payments),
-      initiated_at: DateTime.utc_now()
+      initiated_at: cmd.initiated_at
     }
   end
 
@@ -33,7 +33,7 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
     %BulkPaymentCompleted{
       bulk_payment_id: cmd.bulk_payment_id,
       org_id: cmd.org_id,
-      completed_at: DateTime.utc_now()
+      completed_at: cmd.completed_at
     }
   end
 

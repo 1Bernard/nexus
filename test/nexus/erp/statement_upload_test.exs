@@ -74,7 +74,8 @@ defmodule Nexus.ERP.StatementUploadTest do
       org_id: state.org_id,
       filename: "january.sta",
       format: "mt940",
-      raw_content: @mt940_sample
+      raw_content: @mt940_sample,
+      uploaded_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(command)
@@ -102,7 +103,8 @@ defmodule Nexus.ERP.StatementUploadTest do
       org_id: state.org_id,
       filename: "january.csv",
       format: "csv",
-      raw_content: @csv_sample
+      raw_content: @csv_sample,
+      uploaded_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(command)
@@ -129,7 +131,8 @@ defmodule Nexus.ERP.StatementUploadTest do
       org_id: state.org_id,
       filename: "broken.sta",
       format: "mt940",
-      raw_content: @invalid_content
+      raw_content: @invalid_content,
+      uploaded_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(command)

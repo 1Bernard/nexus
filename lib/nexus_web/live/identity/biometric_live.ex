@@ -86,45 +86,75 @@ defmodule NexusWeb.Identity.BiometricLive do
            max_age: 1800
          ) do
       {:ok, %{org_id: org_id, role: role, email: email, display_name: name}} ->
-        command = %Nexus.Identity.Commands.RegisterUser{
-          user_id: socket.assigns.user_id,
-          org_id: org_id,
-          display_name: name,
-          email: email,
-          role: role,
-          attestation_object: decode_base64_url!(att),
-          client_data_json: decode_base64_url!(client)
-        }
+        user_id = socket.assigns.user_id
+        att_bin = decode_base64_url!(att)
+        client_bin = decode_base64_url!(client)
 
-        case App.dispatch(command) do
-          :ok ->
-            Process.send_after(self(), :advance_screening_1, 800)
-            {:noreply, assign(socket, step: :verifying, status: "success")}
+        with {:ok, challenge} <- AuthChallengeStore.pop_challenge(user_id),
+             {:ok, {auth_data, _result}} <- WebAuthn.register(att_bin, client_bin, challenge) do
+          cose_key = auth_data.attested_credential_data.credential_public_key
+          credential_id = auth_data.attested_credential_data.credential_id
 
+          command = %Nexus.Identity.Commands.RegisterUser{
+            user_id: user_id,
+            org_id: org_id,
+            display_name: name,
+            email: email,
+            role: role,
+            cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
+            credential_id: Base.encode64(credential_id),
+            registered_at: DateTime.utc_now()
+          }
+
+          case App.dispatch(command) do
+            :ok ->
+              Process.send_after(self(), :advance_screening_1, 800)
+              {:noreply, assign(socket, step: :verifying, status: "success")}
+
+            {:error, reason} ->
+              {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+          end
+        else
           {:error, reason} ->
-            {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+            {:noreply,
+             assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
         end
 
       {:error, _reason} ->
-        # Fallback for dev mode without token (e.g. hitting /auth/gate?type=register directly)
-        command = %Nexus.Identity.Commands.RegisterUser{
-          user_id: socket.assigns.user_id,
-          org_id: Nexus.Schema.generate_uuidv7(),
-          display_name: "Bernard Ansah",
-          email:
-            "bernard+#{Base.encode16(:crypto.strong_rand_bytes(4), case: :lower)}@example.com",
-          role: "admin",
-          attestation_object: decode_base64_url!(att),
-          client_data_json: decode_base64_url!(client)
-        }
+        # Fallback for dev mode
+        user_id = socket.assigns.user_id
+        att_bin = decode_base64_url!(att)
+        client_bin = decode_base64_url!(client)
 
-        case App.dispatch(command) do
-          :ok ->
-            Process.send_after(self(), :advance_screening_1, 800)
-            {:noreply, assign(socket, step: :verifying, status: "success")}
+        with {:ok, challenge} <- AuthChallengeStore.pop_challenge(user_id),
+             {:ok, {auth_data, _result}} <- WebAuthn.register(att_bin, client_bin, challenge) do
+          cose_key = auth_data.attested_credential_data.credential_public_key
+          credential_id = auth_data.attested_credential_data.credential_id
 
+          command = %Nexus.Identity.Commands.RegisterUser{
+            user_id: user_id,
+            org_id: Nexus.Schema.generate_uuidv7(),
+            display_name: "Bernard Ansah",
+            email:
+              "bernard+#{Base.encode16(:crypto.strong_rand_bytes(4), case: :lower)}@example.com",
+            role: "admin",
+            cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
+            credential_id: Base.encode64(credential_id),
+            registered_at: DateTime.utc_now()
+          }
+
+          case App.dispatch(command) do
+            :ok ->
+              Process.send_after(self(), :advance_screening_1, 800)
+              {:noreply, assign(socket, step: :verifying, status: "success")}
+
+            {:error, reason} ->
+              {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+          end
+        else
           {:error, reason} ->
-            {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+            {:noreply,
+             assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
         end
     end
   end
@@ -142,49 +172,110 @@ defmodule NexusWeb.Identity.BiometricLive do
       ) do
     challenge_id = "auth_#{socket.assigns.host}"
 
-    # In a real app we would query the read model for the user_id by credential_id
-    # Since we are mocking the scanner, we'll extract the known org_id and user_id from the DB if available
-    # Or mock it if testing. For the prototype we dispatch VerifyBiometric.
-    # The true 'Id' of the User aggregate is needed here.
-
-    # FOR PROTOTYPE PURPOSES: We use a hardcoded user lookup or error out since we can't reliably
-    # fake the credential_id mapping without a DB lookup.
-    # In full implementation: UserProjector.get_by_credential_id(raw_id)
-
-    # To keep the demo working, we simulate finding the user we registered earlier:
+    # Simulation: lookup user by email for demo purposes
     user =
       Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "admin@nexus-platform.io") ||
         Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "elena@global-corp.com")
 
-    # If neither exists, this will crash the demo, which is expected since registration or bootstrap must happen first.
-
     if user do
-      command = %Nexus.Identity.Commands.VerifyBiometric{
-        user_id: user.id,
-        org_id: user.org_id,
-        challenge_id: challenge_id,
-        raw_id: decode_base64_url!(raw_id),
-        authenticator_data: decode_base64_url!(auth_data),
-        signature: decode_base64_url!(sig),
-        client_data_json: decode_base64_url!(client)
-      }
+      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(challenge_id) do
+        # Perform verification here in the LiveView
+        raw_id_bin = decode_base64_url!(raw_id)
+        auth_data_bin = decode_base64_url!(auth_data)
+        sig_bin = decode_base64_url!(sig)
+        client_bin = decode_base64_url!(client)
 
-      IO.inspect({user.id, user.org_id}, label: "BIOMETRIC LOGIN ATTEMPT")
+        # Convert state keys back to binary if they are Base64'd in the projection
+        credential_id_bin = decode_or_raw(user.credential_id)
+        cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
 
-      case App.dispatch(command) do
-        :ok ->
-          Process.send_after(self(), :advance_screening_1, 800)
-          {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+        # Skip verification for bootstrap user if applicable
+        is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
 
+        verification_result =
+          if is_bootstrap do
+            {:ok, :bootstrap}
+          else
+            WebAuthn.authenticate(
+              raw_id_bin,
+              auth_data_bin,
+              sig_bin,
+              client_bin,
+              challenge,
+              [{credential_id_bin, cose_key_bin}]
+            )
+          end
+
+        case verification_result do
+          {:ok, _} ->
+            command = %Nexus.Identity.Commands.VerifyBiometric{
+              user_id: user.id,
+              org_id: user.org_id,
+              challenge_id: challenge_id,
+              verified_at: DateTime.utc_now()
+            }
+
+            case App.dispatch(command) do
+              :ok ->
+                Process.send_after(self(), :advance_screening_1, 800)
+                {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+
+              {:error, reason} ->
+                {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+            end
+
+          {:error, reason} ->
+            {:noreply,
+             assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
+        end
+      else
         {:error, reason} ->
-          IO.inspect(reason, label: "BIOMETRIC DISPATCH ERROR")
-          {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+          {:noreply,
+           assign(socket, step: :error, error_message: "Challenge Error: #{inspect(reason)}")}
       end
     else
-      {:noreply,
-       assign(socket, step: :error, error_message: "User not found. Please register first.")}
+      {:noreply, assign(socket, step: :error, error_message: "User not found.")}
     end
   end
+
+  # Helper mirroring aggregate logic for bootstrap bypass
+  defp bootstrap_user?(cose_key_bin, cred_id) do
+    cose_key_bin in [
+      "BOOTSTRAP_PLACEHOLDER",
+      "bootstrap_cose_key",
+      Base.encode64("bootstrap_cose_key")
+    ] or
+      cred_id in [
+        "BOOTSTRAP_PLACEHOLDER",
+        "bootstrap_credential_id",
+        Base.encode64("bootstrap_credential_id")
+      ]
+  end
+
+  defp decode_or_raw(nil), do: nil
+
+  defp decode_or_raw(string) when is_binary(string) do
+    case Base.decode64(string, padding: false) do
+      {:ok, decoded} -> decoded
+      :error -> string
+    end
+  end
+
+  defp decode_or_raw(other), do: other
+
+  defp decode_and_unmarshal_cose(nil), do: nil
+
+  defp decode_and_unmarshal_cose(binary) when is_binary(binary) do
+    raw = decode_or_raw(binary)
+
+    try do
+      :erlang.binary_to_term(raw)
+    rescue
+      ArgumentError -> raw
+    end
+  end
+
+  defp decode_and_unmarshal_cose(other), do: other
 
   @impl true
   def handle_event("go_to_dashboard", _params, socket) do

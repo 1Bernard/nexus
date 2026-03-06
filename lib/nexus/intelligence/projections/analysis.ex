@@ -1,6 +1,5 @@
 defmodule Nexus.Intelligence.Projections.Analysis do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Nexus.Schema
 
   @primary_key {:id, :binary_id, autogenerate: false}
   @derive {Jason.Encoder,

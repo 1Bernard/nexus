@@ -20,7 +20,8 @@ defmodule NexusWeb.Intelligence.WebhookController do
       analysis_id: analysis_id,
       org_id: demo_org_id,
       source_id: source,
-      text: text
+      text: text,
+      scored_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(command) do

@@ -14,7 +14,7 @@ defmodule Nexus.Treasury.Aggregates.Market do
     %MarketTickRecorded{
       pair: cmd.pair,
       price: cmd.price,
-      timestamp: cmd.timestamp || DateTime.utc_now()
+      timestamp: cmd.timestamp
     }
   end
 

@@ -16,7 +16,7 @@ defmodule Nexus.Treasury.Aggregates.Exposure do
       subsidiary: cmd.subsidiary,
       currency: cmd.currency,
       exposure_amount: cmd.exposure_amount,
-      timestamp: cmd.timestamp || DateTime.utc_now()
+      timestamp: cmd.timestamp
     }
   end
 

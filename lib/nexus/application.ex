@@ -31,9 +31,7 @@ defmodule Nexus.Application do
       # 3. Commanded Application (Command Dispatcher)
       Nexus.App,
       # --- Intelligence Domain ---
-      Nexus.Intelligence.Projectors.AnalysisProjector,
       # --- Reporting Domain ---
-      Nexus.Reporting.Projectors.AuditProjector,
 
       # 4. Web Transport
       NexusWeb.Endpoint
@@ -45,6 +43,8 @@ defmodule Nexus.Application do
       else
         children ++
           [
+            Nexus.Intelligence.Projectors.AnalysisProjector,
+            Nexus.Reporting.Projectors.AuditProjector,
             # WebSocket gateway — requires live network; excluded in test env
             Nexus.Treasury.Gateways.PolygonClient,
             Nexus.Treasury.Gateways.MarketSimulator,

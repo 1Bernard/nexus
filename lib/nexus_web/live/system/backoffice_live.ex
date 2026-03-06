@@ -349,7 +349,8 @@ defmodule NexusWeb.System.BackofficeLive do
     cmd = %SuspendTenant{
       org_id: tenant_id,
       suspended_by: admin_email,
-      reason: "Administrative action via Backoffice"
+      reason: "Administrative action via Backoffice",
+      suspended_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(cmd) do
@@ -373,7 +374,8 @@ defmodule NexusWeb.System.BackofficeLive do
       org_id: tenant_id,
       module_name: mod_name,
       enabled: enabled,
-      toggled_by: admin_email
+      toggled_by: admin_email,
+      toggled_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(cmd) do
@@ -409,7 +411,8 @@ defmodule NexusWeb.System.BackofficeLive do
       org_id: org_id,
       name: name,
       initial_admin_email: email,
-      provisioned_by: socket.assigns.current_user.email || "system_admin"
+      provisioned_by: socket.assigns.current_user.email || "system_admin",
+      provisioned_at: DateTime.utc_now()
     }
 
     case Nexus.App.dispatch(cmd) do

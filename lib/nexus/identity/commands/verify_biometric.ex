@@ -1,23 +1,7 @@
 defmodule Nexus.Identity.Commands.VerifyBiometric do
   @moduledoc """
-  Command representing the intent to authorize via hardware biometric.
+  Command representing a successful biometric verification.
   """
-  @enforce_keys [
-    :user_id,
-    :org_id,
-    :challenge_id,
-    :raw_id,
-    :authenticator_data,
-    :signature,
-    :client_data_json
-  ]
-  defstruct [
-    :user_id,
-    :org_id,
-    :challenge_id,
-    :raw_id,
-    :authenticator_data,
-    :signature,
-    :client_data_json
-  ]
+  @enforce_keys [:user_id, :org_id, :challenge_id, :verified_at]
+  defstruct [:user_id, :org_id, :challenge_id, :verified_at]
 end

@@ -36,9 +36,10 @@ defmodule Nexus.Identity.BiometricVerificationTest do
       user_id: user_id,
       org_id: org_id,
       email: "#{username}@example.com",
-      attestation_object: "mock_attestation_object",
-      client_data_json: "mock_client_data_json",
-      role: "trader"
+      cose_key: "mock_cose_key",
+      credential_id: "mock_cred_123",
+      role: "trader",
+      registered_at: DateTime.utc_now()
     }
 
     :ok = Nexus.App.dispatch(command)
@@ -71,14 +72,15 @@ defmodule Nexus.Identity.BiometricVerificationTest do
           _vars,
           state do
     # Simulate a WebAuthn signature and metadata
+    # In our architecture, the web layer (LiveView) pops the challenge before dispatch.
+    # This prevents replay attacks and ensures the aggregate stays pure (Rule 5).
+    {:ok, _challenge} = AuthChallengeStore.pop_challenge(state.session_id)
+
     command = %Nexus.Identity.Commands.VerifyBiometric{
       user_id: state.user.id,
       org_id: state.user.org_id,
       challenge_id: state.session_id,
-      raw_id: "mock_cred_123",
-      authenticator_data: "mock_auth_data",
-      signature: "mock_signature",
-      client_data_json: "mock_client_data_json"
+      verified_at: DateTime.utc_now()
     }
 
     :ok = Nexus.App.dispatch(command)
@@ -91,7 +93,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
   defthen ~r/^the challenge should be successfully popped from the ETS store$/,
           _vars,
           state do
-    # In our hardened flow, the User aggregate pops the challenge during execute/2.
+    # In our hardened flow, the web layer pops the challenge before dispatching commands.
     # Therefore, a second attempt to pop it here should return :not_found.
     # This proves the "One-time use" security pattern is active.
     result = AuthChallengeStore.pop_challenge(state.session_id)

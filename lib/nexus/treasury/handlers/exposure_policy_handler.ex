@@ -25,7 +25,8 @@ defmodule Nexus.Treasury.Handlers.ExposurePolicyHandler do
       policy_id: event.org_id,
       org_id: event.org_id,
       currency_pair: pair,
-      exposure_amount: event.exposure_amount
+      exposure_amount: event.exposure_amount,
+      evaluated_at: DateTime.utc_now()
     }
 
     Nexus.App.dispatch(command)

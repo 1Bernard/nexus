@@ -5,7 +5,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
   """
   require Logger
 
-  defstruct [:id]
+  defstruct [:id, :org_id]
 
   alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment, ResolveAnomaly}
   alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
@@ -29,7 +29,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
           invoice_id: cmd.invoice_id,
           score: score,
           reason: reason,
-          flagged_at: DateTime.utc_now()
+          flagged_at: cmd.flagged_at
         }
 
       {:ok, %{is_anomaly: false}} ->
@@ -52,7 +52,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
           source_id: cmd.source_id,
           sentiment: sentiment,
           confidence: confidence,
-          scored_at: DateTime.utc_now()
+          scored_at: cmd.scored_at
         }
 
       other ->
@@ -61,25 +61,26 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
     end
   end
 
-  def execute(%__MODULE__{} = _state, %ResolveAnomaly{} = cmd) do
+  def execute(%__MODULE__{} = state, %ResolveAnomaly{} = cmd) do
     Logger.debug(
       "[AI Sentinel] Executing ResolveAnomaly for #{cmd.analysis_id} with resolution #{cmd.resolution}"
     )
 
     %AnomalyResolved{
       analysis_id: cmd.analysis_id,
+      org_id: state.org_id || cmd.org_id,
       resolution: cmd.resolution,
-      resolved_at: DateTime.utc_now()
+      resolved_at: cmd.resolved_at
     }
   end
 
   # Apply functions
-  def apply(%__MODULE__{} = state, %AnomalyDetected{analysis_id: id}) do
-    %__MODULE__{state | id: id}
+  def apply(%__MODULE__{} = state, %AnomalyDetected{analysis_id: id, org_id: org_id}) do
+    %__MODULE__{state | id: id, org_id: org_id}
   end
 
-  def apply(%__MODULE__{} = state, %SentimentScored{analysis_id: id}) do
-    %__MODULE__{state | id: id}
+  def apply(%__MODULE__{} = state, %SentimentScored{analysis_id: id, org_id: org_id}) do
+    %__MODULE__{state | id: id, org_id: org_id}
   end
 
   def apply(%__MODULE__{} = state, %AnomalyResolved{}) do

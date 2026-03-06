@@ -49,7 +49,8 @@ defmodule Nexus.Treasury.ReconciliationTest do
         subsidiary: "Default",
         line_items: [%{description: "Test", amount: row.amount}],
         sap_document_number: "SAP-#{row.invoice_id}",
-        sap_status: "Verified"
+        sap_status: "Verified",
+        ingested_at: DateTime.utc_now()
       }
 
       assert :ok = App.dispatch(command)
@@ -88,7 +89,8 @@ defmodule Nexus.Treasury.ReconciliationTest do
       statement_id: statement_id,
       filename: "test.csv",
       format: "csv",
-      raw_content: csv_content
+      raw_content: csv_content,
+      uploaded_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(command)
@@ -127,7 +129,8 @@ defmodule Nexus.Treasury.ReconciliationTest do
       subsidiary: "Default",
       line_items: [%{description: "Test", amount: amount}],
       sap_document_number: "SAP-#{invoice_id_alias}",
-      sap_status: "Verified"
+      sap_status: "Verified",
+      ingested_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(command)
@@ -163,7 +166,8 @@ defmodule Nexus.Treasury.ReconciliationTest do
       statement_id: statement_id,
       filename: "test.csv",
       format: "csv",
-      raw_content: csv_content
+      raw_content: csv_content,
+      uploaded_at: DateTime.utc_now()
     }
 
     assert :ok = App.dispatch(command)

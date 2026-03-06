@@ -20,7 +20,8 @@ defmodule Nexus.Identity.StepUpAuthorizationTest do
       user_id: user_id,
       org_id: org_id,
       email: "test@example.com",
-      display_name: "Test User"
+      display_name: "Test User",
+      registered_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(register_cmd)
@@ -42,7 +43,8 @@ defmodule Nexus.Identity.StepUpAuthorizationTest do
       user_id: user_id,
       org_id: org_id,
       email: "test@example.com",
-      display_name: "Test User"
+      display_name: "Test User",
+      registered_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(register_cmd)
@@ -61,7 +63,8 @@ defmodule Nexus.Identity.StepUpAuthorizationTest do
       user_id: state.user_id,
       from_currency: "EUR",
       to_currency: "USD",
-      amount: amount
+      amount: amount,
+      requested_at: DateTime.utc_now()
     }
 
     result = App.dispatch(command)
@@ -79,10 +82,7 @@ defmodule Nexus.Identity.StepUpAuthorizationTest do
       org_id: state.org_id,
       challenge_id: challenge_id,
       action_id: "TX-123",
-      raw_id: "raw",
-      authenticator_data: "auth",
-      signature: "sig",
-      client_data_json: "client"
+      verified_at: DateTime.utc_now()
     }
 
     result = App.dispatch(command)

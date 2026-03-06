@@ -53,7 +53,8 @@ defmodule Nexus.Organization.TenantProvisioningTest do
       org_id: org_id,
       name: unique_name,
       initial_admin_email: email,
-      provisioned_by: state.system_admin
+      provisioned_by: state.system_admin,
+      provisioned_at: DateTime.utc_now()
     }
 
     # Dispatch normal flow
@@ -77,7 +78,8 @@ defmodule Nexus.Organization.TenantProvisioningTest do
       org_id: org_id,
       name: unique_name,
       initial_admin_email: "dummy@example.com",
-      provisioned_by: "not_system_admin"
+      provisioned_by: "not_system_admin",
+      provisioned_at: DateTime.utc_now()
     }
 
     # Dispatch through our TenantGate middleware (which doesn't exist yet, but will catch this)

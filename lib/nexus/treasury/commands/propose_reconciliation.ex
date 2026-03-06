@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Commands.ProposeReconciliation do
     :variance,
     :variance_reason,
     :actor_email,
-    :currency
+    :currency,
+    :timestamp
   ]
 end

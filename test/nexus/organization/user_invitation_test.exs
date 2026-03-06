@@ -31,7 +31,8 @@ defmodule Nexus.Organization.UserInvitationTest do
       org_id: state.org_id,
       name: "Stark Industries-#{Ecto.UUID.generate()}",
       initial_admin_email: state.admin_email,
-      provisioned_by: state.sys_admin
+      provisioned_by: state.sys_admin,
+      provisioned_at: DateTime.utc_now()
     }
 
     :ok = App.dispatch(cmd)
@@ -86,7 +87,9 @@ defmodule Nexus.Organization.UserInvitationTest do
       org_id: state.org_id,
       email: email,
       role: role,
-      invited_by: inviter
+      invited_by: inviter,
+      invitation_token: Ecto.UUID.generate(),
+      invited_at: DateTime.utc_now()
     }
 
     result = App.dispatch(cmd)
@@ -107,7 +110,9 @@ defmodule Nexus.Organization.UserInvitationTest do
       org_id: state.org_id,
       email: email,
       role: role,
-      invited_by: inviter
+      invited_by: inviter,
+      invitation_token: Ecto.UUID.generate(),
+      invited_at: DateTime.utc_now()
     }
 
     # Same deal as with TenantProvisioning - role checks will be done at the Web/Gate level,

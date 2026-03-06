@@ -50,7 +50,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
           variance_reason: cmd.variance_reason,
           actor_email: cmd.actor_email,
           currency: cmd.currency,
-          timestamp: DateTime.utc_now()
+          timestamp: cmd.timestamp
         }
     end
   end
@@ -74,7 +74,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
       variance_reason: r.variance_reason,
       actor_email: cmd.approver_email,
       currency: r.currency,
-      timestamp: DateTime.utc_now()
+      timestamp: cmd.timestamp
     }
   end
 
@@ -83,7 +83,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
       org_id: cmd.org_id,
       reconciliation_id: cmd.reconciliation_id,
       rejector_email: cmd.rejector_email,
-      timestamp: DateTime.utc_now()
+      timestamp: cmd.timestamp
     }
   end
 
@@ -110,7 +110,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
           variance_reason: cmd.variance_reason,
           actor_email: cmd.actor_email,
           currency: cmd.currency,
-          timestamp: DateTime.utc_now()
+          timestamp: cmd.timestamp
         }
     end
   end
@@ -122,7 +122,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
       invoice_id: r.invoice_id,
       statement_line_id: r.statement_line_id,
       actor_email: cmd.actor_email,
-      timestamp: DateTime.utc_now()
+      timestamp: cmd.timestamp
     }
   end
 
