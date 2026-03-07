@@ -10,16 +10,14 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
   defstruct [:bulk_payment_id, :org_id, :total_items, :processed_items]
 
   alias Nexus.Payments.Events.BulkPaymentInitiated
-  alias Nexus.Treasury.Events.TransferRequested
+  alias Nexus.Treasury.Events.TransferInitiated
   alias Nexus.Treasury.Commands.RequestTransfer
   alias Nexus.Payments.Commands.FinalizeBulkPayment
 
   # 1. Start the saga when bulk payment is initiated
   def interested?(%BulkPaymentInitiated{bulk_payment_id: id}), do: {:start, id}
-  # 2. Track progress for each individual transfer requested in the context of this bulk
-  # Note: TransferRequested needs matching bulk_payment_id in metadata or event fields.
-  # For now, let's assume we pass metadata or extend TransferRequested.
-  def interested?(%TransferRequested{transfer_id: _id} = event) do
+  # 2. Track progress for each individual transfer initiated in the context of this bulk
+  def interested?(%TransferInitiated{transfer_id: _id} = event) do
     # We need a way to correlate individual transfers back to the bulk batch.
     # In a real system, we'd use correlation IDs or a field in the event.
     # For this POC, let's look for a `bulk_payment_id` field in the event.
@@ -56,7 +54,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   def handle(
         %__MODULE__{processed_items: processed, total_items: total} = saga,
-        %TransferRequested{} = _ev
+        %TransferInitiated{} = _ev
       ) do
     if processed + 1 >= total do
       %FinalizeBulkPayment{
@@ -81,7 +79,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
     }
   end
 
-  def apply(%__MODULE__{processed_items: processed} = saga, %TransferRequested{} = _event) do
+  def apply(%__MODULE__{processed_items: processed} = saga, %TransferInitiated{} = _event) do
     %__MODULE__{saga | processed_items: processed + 1}
   end
 end

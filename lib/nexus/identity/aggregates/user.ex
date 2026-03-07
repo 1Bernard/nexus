@@ -10,10 +10,17 @@ defmodule Nexus.Identity.Aggregates.User do
     RegisterSystemAdmin,
     VerifyBiometric,
     VerifyStepUp,
-    ChangeUserRole
+    ChangeUserRole,
+    ChangeUserStatus
   }
 
-  alias Nexus.Identity.Events.{BiometricVerified, UserRegistered, StepUpVerified, UserRoleChanged}
+  alias Nexus.Identity.Events.{
+    BiometricVerified,
+    UserRegistered,
+    StepUpVerified,
+    UserRoleChanged,
+    UserStatusChanged
+  }
 
   # --- Command Handlers ---
 
@@ -82,9 +89,17 @@ defmodule Nexus.Identity.Aggregates.User do
     }
   end
 
-  def execute(%__MODULE__{id: nil}, %ChangeUserRole{}) do
-    {:error, :unregistered_user}
+  def execute(%__MODULE__{id: id}, %ChangeUserStatus{} = cmd) when not is_nil(id) do
+    %UserStatusChanged{
+      user_id: cmd.user_id,
+      status: cmd.status,
+      actor_id: cmd.actor_id,
+      changed_at: cmd.changed_at
+    }
   end
+
+  def execute(%__MODULE__{id: nil}, %ChangeUserRole{}), do: {:error, :unregistered_user}
+  def execute(%__MODULE__{id: nil}, %ChangeUserStatus{}), do: {:error, :unregistered_user}
 
   def execute(state, cmd) do
     {:error, {:unexpected_command, state, cmd}}
@@ -118,5 +133,9 @@ defmodule Nexus.Identity.Aggregates.User do
 
   def apply(%__MODULE__{} = state, %UserRoleChanged{} = event) do
     %__MODULE__{state | role: event.role}
+  end
+
+  def apply(%__MODULE__{} = state, %UserStatusChanged{} = event) do
+    %__MODULE__{state | status: String.to_atom(event.status)}
   end
 end

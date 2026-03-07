@@ -9,7 +9,7 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
 
   alias Nexus.Payments.Events.BulkPaymentInitiated
   alias Nexus.Payments.Events.BulkPaymentCompleted
-  alias Nexus.Treasury.Events.TransferRequested
+  alias Nexus.Treasury.Events.TransferInitiated
   alias Nexus.Payments.Projections.BulkPayment
   import Ecto.Query
 
@@ -25,7 +25,7 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
     })
   end)
 
-  project(%TransferRequested{bulk_payment_id: bulk_id}, _metadata, fn multi ->
+  project(%TransferInitiated{bulk_payment_id: bulk_id}, _metadata, fn multi ->
     if bulk_id do
       query = from(b in BulkPayment, where: b.id == ^bulk_id)
       Ecto.Multi.update_all(multi, :increment_processed, query, inc: [processed_items: 1])

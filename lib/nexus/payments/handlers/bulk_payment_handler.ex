@@ -10,7 +10,7 @@ defmodule Nexus.Payments.Handlers.BulkPaymentHandler do
 
   alias Nexus.Payments.Events.BulkPaymentInitiated
   alias Nexus.Payments.Events.BulkPaymentCompleted
-  alias Nexus.Treasury.Events.TransferRequested
+  alias Nexus.Treasury.Events.TransferInitiated
 
   def handle(%BulkPaymentInitiated{} = event, _metadata) do
     Phoenix.PubSub.broadcast(
@@ -22,7 +22,7 @@ defmodule Nexus.Payments.Handlers.BulkPaymentHandler do
     :ok
   end
 
-  def handle(%TransferRequested{bulk_payment_id: bulk_id}, _metadata) when not is_nil(bulk_id) do
+  def handle(%TransferInitiated{bulk_payment_id: bulk_id}, _metadata) when not is_nil(bulk_id) do
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,
       "payments:bulk_payments:updates",

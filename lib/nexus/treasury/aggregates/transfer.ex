@@ -4,8 +4,8 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   """
   defstruct [:id, :org_id, :status, :amount]
 
-  alias Nexus.Treasury.Commands.RequestTransfer
-  alias Nexus.Treasury.Events.TransferRequested
+  alias Nexus.Treasury.Commands.{RequestTransfer, AuthorizeTransfer, ExecuteTransfer}
+  alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
 
   # --- Constants ---
   @default_limit 1_000_000
@@ -17,32 +17,56 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
     # Use the dynamic threshold from the command, or fall back to default
     threshold = parse_decimal(cmd.threshold || @default_limit)
 
-    if Decimal.gt?(amount, threshold) do
-      {:error, :step_up_required}
-    else
-      %TransferRequested{
-        transfer_id: cmd.transfer_id,
-        org_id: cmd.org_id,
-        user_id: cmd.user_id,
-        from_currency: cmd.from_currency,
-        to_currency: cmd.to_currency,
-        amount: cmd.amount,
-        bulk_payment_id: cmd.bulk_payment_id,
-        requested_at: cmd.requested_at
-      }
-    end
+    status = if Decimal.gt?(amount, threshold), do: "pending_authorization", else: "authorized"
+
+    %TransferInitiated{
+      transfer_id: cmd.transfer_id,
+      org_id: cmd.org_id,
+      user_id: cmd.user_id,
+      from_currency: cmd.from_currency,
+      to_currency: cmd.to_currency,
+      amount: cmd.amount,
+      status: status,
+      bulk_payment_id: cmd.bulk_payment_id,
+      requested_at: cmd.requested_at
+    }
+  end
+
+  def execute(%__MODULE__{status: "pending_authorization"}, %AuthorizeTransfer{} = cmd) do
+    %TransferAuthorized{
+      transfer_id: cmd.transfer_id,
+      org_id: cmd.org_id,
+      actor_email: cmd.actor_email,
+      authorized_at: cmd.authorized_at
+    }
+  end
+
+  def execute(%__MODULE__{status: "authorized"}, %ExecuteTransfer{} = cmd) do
+    %TransferExecuted{
+      transfer_id: cmd.transfer_id,
+      org_id: cmd.org_id,
+      executed_at: cmd.executed_at
+    }
   end
 
   # --- State Transitions ---
 
-  def apply(%__MODULE__{} = state, %TransferRequested{} = event) do
+  def apply(%__MODULE__{} = state, %TransferInitiated{} = event) do
     %__MODULE__{
       state
       | id: event.transfer_id,
         org_id: event.org_id,
         amount: event.amount,
-        status: :requested
+        status: event.status
     }
+  end
+
+  def apply(%__MODULE__{} = state, %TransferAuthorized{} = _event) do
+    %__MODULE__{state | status: "authorized"}
+  end
+
+  def apply(%__MODULE__{} = state, %TransferExecuted{} = _event) do
+    %__MODULE__{state | status: "executed"}
   end
 
   # --- Private Helpers ---

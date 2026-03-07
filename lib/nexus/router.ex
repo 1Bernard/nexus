@@ -73,7 +73,12 @@ defmodule Nexus.Router do
     identity: :id
   )
 
-  dispatch(Nexus.Treasury.Commands.RequestTransfer,
+  dispatch(
+    [
+      Nexus.Treasury.Commands.RequestTransfer,
+      Nexus.Treasury.Commands.AuthorizeTransfer,
+      Nexus.Treasury.Commands.ExecuteTransfer
+    ],
     to: Nexus.Treasury.Aggregates.Transfer,
     identity: :transfer_id
   )

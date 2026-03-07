@@ -1,6 +1,6 @@
-defmodule Nexus.Treasury.Events.TransferRequested do
+defmodule Nexus.Treasury.Events.TransferInitiated do
   @moduledoc """
-  Event emitted when a transfer is initiated but may require step-up authorisation.
+  Event emitted when a transfer is initiated and its initial status is determined.
   """
   @derive [Jason.Encoder]
   @enforce_keys [
@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Events.TransferRequested do
     :from_currency,
     :to_currency,
     :amount,
+    :status,
     :requested_at
   ]
   defstruct [
@@ -19,6 +20,7 @@ defmodule Nexus.Treasury.Events.TransferRequested do
     :from_currency,
     :to_currency,
     :amount,
+    :status,
     :bulk_payment_id,
     :requested_at
   ]

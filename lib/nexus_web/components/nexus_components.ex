@@ -1520,6 +1520,8 @@ defmodule NexusWeb.NexusComponents do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_close, :string, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
   slot :inner_block, required: true
 
   def modal(assigns) do
@@ -1530,13 +1532,15 @@ defmodule NexusWeb.NexusComponents do
         "fixed inset-0 z-50 flex items-center justify-center transition-all duration-300",
         if(@show, do: "opacity-100 pointer-events-auto", else: "opacity-0 pointer-events-none")
       ]}
+      {@rest}
     >
       <%!-- Backdrop --%>
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" phx-click={@on_close} />
 
       <%!-- Content --%>
       <div class={[
-        "relative bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl transition-all duration-300",
+        "relative bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-3xl p-8 w-full mx-4 shadow-2xl transition-all duration-300",
+        @class || "max-w-lg",
         if(@show, do: "scale-100 translate-y-0", else: "scale-95 translate-y-4")
       ]}>
         <button

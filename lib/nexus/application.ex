@@ -89,7 +89,7 @@ defmodule Nexus.Application do
             Nexus.Treasury.Gateways.PolygonClient,
             Nexus.Treasury.Gateways.MarketSimulator,
             Nexus.Identity.Projectors.UserRegistrationProjector,
-            Nexus.Identity.Projectors.UserRoleProjector,
+            Nexus.Identity.Projectors.UserProjector,
             # --- Organization Domain ---
             Nexus.Organization.Projectors.TenantProjector,
             Nexus.Organization.Projectors.InvitationProjector,
@@ -112,9 +112,11 @@ defmodule Nexus.Application do
             Nexus.Intelligence.Handlers.RealTimeAnalysisHandler,
             Nexus.Organization.Handlers.RealTimeTenantHandler,
             Nexus.Treasury.Handlers.PolicyNotificationHandler,
+            Nexus.Treasury.Handlers.TransferNotificationHandler,
             Nexus.ERP.Handlers.ERPNotificationHandler,
             # --- Process Managers ---
             Nexus.Treasury.ProcessManagers.ReconciliationManager,
+            Nexus.Treasury.ProcessManagers.TransferManager,
             Nexus.Payments.ProcessManagers.BulkPaymentSaga
           ]
       end

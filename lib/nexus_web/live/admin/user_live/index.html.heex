@@ -1,9 +1,16 @@
 <.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in">
   <.page_header title="User Management" subtitle="Manage your team and their access levels" />
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="md:col-span-3">
-      <.data_grid id="users-grid" rows={@users} total={@total_count} params={@datagrid_params}>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+    <div class="lg:col-span-9">
+      <.data_grid
+        id="users-grid"
+        title="Member Directory"
+        subtitle="Manage institutional access levels and security clearances"
+        rows={@users}
+        total={@total_count}
+        params={@datagrid_params}
+      >
         <:primary_actions>
           <.nx_button
             phx-click="generate-invite"
@@ -43,14 +50,24 @@
 
         <:col :let={user} label="User">
           <div class="flex items-center">
-            <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center border border-slate-700/50 shadow-inner">
-              <span class="text-slate-400 font-bold text-sm leading-none">
-                {String.slice(user.display_name, 0, 2) |> String.upcase()}
-              </span>
+            <div class="relative flex-shrink-0 group">
+              <div class="h-10 w-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl flex items-center justify-center border border-slate-700/30 shadow-xl group-hover:scale-110 transition-all duration-500 relative overflow-hidden">
+                <div class="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <span class="text-slate-400 font-bold text-xs leading-none relative z-10 tracking-widest">
+                  {String.slice(user.display_name, 0, 2) |> String.upcase()}
+                </span>
+              </div>
+              <div
+                :if={Enum.any?(@active_users, fn u -> to_string(u.id) == to_string(user.id) end)}
+                class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-emerald-500 border-2 border-[var(--nx-bg)] rounded-full shadow-[0_0_15px_rgba(16,185,129,0.6)] z-20 animate-pulse"
+              >
+              </div>
             </div>
             <div class="ml-4">
-              <div class="text-sm font-bold text-slate-200">{user.display_name}</div>
-              <div class="text-[11px] text-slate-500 mt-0.5">{user.email}</div>
+              <div class="text-sm font-bold text-slate-100 tracking-tight">{user.display_name}</div>
+              <div class="text-[10px] font-mono text-slate-500 mt-0.5 uppercase tracking-tighter opacity-70">
+                {user.email}
+              </div>
             </div>
           </div>
         </:col>
@@ -70,16 +87,17 @@
         </:col>
 
         <:col :let={user} label="Status">
-          <div class="flex items-center">
-            <%= if Enum.any?(@active_users, fn u -> u.id == user.id end) do %>
-              <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse">
-              </div>
-              <span class="text-xs font-bold text-emerald-400">Active Now</span>
-            <% else %>
-              <div class="h-1.5 w-1.5 rounded-full bg-slate-700 mr-2"></div>
-              <span class="text-xs font-medium text-slate-500">Offline</span>
-            <% end %>
-          </div>
+          <.badge
+            variant={
+              case user.status do
+                "active" -> "success"
+                "suspended" -> "warning"
+                "blocked" -> "danger"
+                _ -> "neutral"
+              end
+            }
+            label={String.upcase(user.status)}
+          />
         </:col>
 
         <:col :let={user} label="ID" class="font-mono text-slate-500 text-xs">
@@ -98,40 +116,47 @@
       </.data_grid>
     </div>
     
-<!-- Active Sessions Sidebar -->
-    <div class="space-y-6">
-      <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-xl shadow-2xl">
-        <h3 class="text-sm font-bold text-slate-100 uppercase tracking-widest mb-4 flex items-center justify-between">
-          Active Now
-          <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] rounded-full border border-emerald-500/20">
+    <div class="lg:col-span-3 space-y-6">
+      <div class="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-indigo-500/10 transition-colors"></div>
+        
+        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+          Active Sessions
+          <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] rounded-lg border border-emerald-500/20 font-mono animate-pulse">
             {length(@active_users)} LIVE
           </span>
         </h3>
 
         <div class="space-y-4">
           <%= for active <- @active_users do %>
-            <div class="flex items-center gap-3 animate-fade-in">
+            <div class="flex items-center gap-4 animate-fade-in group/item">
               <div class="relative">
-                <div class="h-8 w-8 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 text-xs font-bold text-indigo-400">
+                <div class="h-9 w-9 bg-slate-950 rounded-xl flex items-center justify-center border border-slate-800/50 text-[10px] font-black text-indigo-400 group-hover/item:border-indigo-500/30 transition-all shadow-inner">
                   {String.slice(active.display_name, 0, 2) |> String.upcase()}
                 </div>
-                <div class="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-500 border-2 border-slate-900 rounded-full">
+                <div class="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]">
                 </div>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold text-slate-200 truncate">{active.display_name}</div>
-                <div class="text-[10px] text-slate-500 truncate">{active.role}</div>
+                <div class="text-sm font-bold text-slate-200 truncate group-hover/item:text-white transition-colors">{active.display_name}</div>
+                <div class="text-[9px] font-mono text-slate-500 truncate uppercase tracking-widest opacity-60">{active.role}</div>
               </div>
             </div>
           <% end %>
+          
+          <div :if={Enum.empty?(@active_users)} class="py-12 flex flex-col items-center justify-center opacity-30">
+            <span class="hero-users w-8 h-8 mb-2"></span>
+            <p class="text-[10px] font-black uppercase tracking-widest">No Active Sessions</p>
+          </div>
         </div>
       </div>
 
-      <div class="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur-xl">
-        <h3 class="text-sm font-bold text-indigo-300 uppercase tracking-widest mb-2 font-mono">
+      <div class="bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"></div>
+        <h3 class="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.2em] mb-3 font-mono">
           RBAC GUIDELINES
         </h3>
-        <p class="text-xs text-indigo-300/70 leading-relaxed italic">
+        <p class="text-[11px] text-indigo-300/60 leading-relaxed italic font-medium">
           "Admins can manage team access and billing. Traders can execute market operations. Viewers have read-only access to treasury metrics."
         </p>
       </div>
@@ -253,78 +278,231 @@
   <% end %>
 </.modal>
 
-<.modal :if={@editing_user} id="edit-user-modal" show={true} on_close="close-edit-modal">
-  <div class="flex items-center gap-3 mb-6">
-    <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-      <span class="hero-pencil-square w-6 h-6"></span>
-    </div>
-    <div>
-      <h3 class="text-xl font-bold text-slate-100 italic font-serif">Modify Permissions</h3>
-      <p class="text-xs text-slate-500">Update {@editing_user.display_name}'s access level</p>
-    </div>
-  </div>
-
-  <form phx-submit="update-user-role" class="space-y-6">
-    <input type="hidden" name="user_id" value={@editing_user.id} />
-
-    <div>
-      <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">
-        Select New Role
-      </label>
-      <div class="space-y-3">
-        <%= for role <- ["admin", "trader", "viewer"] do %>
-          <label class={"flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group #{if @editing_role == role, do: "bg-indigo-500/10 border-indigo-500/40", else: "bg-slate-950/40 border-slate-800/50 hover:bg-slate-900/40"}"}>
-            <div class="flex items-center gap-4">
-              <div class={[
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                if(@editing_role == role,
-                  do: "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20",
-                  else: "bg-slate-900 text-slate-500 group-hover:text-slate-300"
-                )
-              ]}>
-                <span class={case role do
-                    "admin" -> "hero-shield-check"
-                    "trader" -> "hero-presentation-chart-line"
-                    "viewer" -> "hero-eye"
-                  end <> " w-5 h-5"}>
-                </span>
-              </div>
-              <div>
-                <p class="text-sm font-bold text-slate-200 uppercase tracking-wide">
-                  {String.capitalize(role)}
-                </p>
-                <p class="text-[10px] text-slate-500">
-                  {case role do
-                    "admin" -> "Full system access & team management"
-                    "trader" -> "Execution-only, limited settings"
-                    "viewer" -> "Read-only access to dashboards"
-                  end}
-                </p>
-              </div>
-            </div>
-            <input
-              type="radio"
-              name="role"
-              value={role}
-              checked={@editing_role == role}
-              phx-click="set-editing-role"
-              phx-value-role={role}
-              class="hidden"
-            />
-            <div class={[
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-              if(@editing_role == role, do: "border-indigo-500", else: "border-slate-800")
-            ]}>
-              <div :if={@editing_role == role} class="w-2 h-2 bg-indigo-400 rounded-full"></div>
-            </div>
-          </label>
-        <% end %>
+<.modal
+  :if={@editing_user}
+  id="edit-user-modal"
+  show={true}
+  on_close="close-edit-modal"
+  class="max-w-5xl"
+>
+  <div class="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
+    <div class="flex items-center gap-6">
+      <div class="relative group">
+        <div class="w-20 h-20 rounded-[2.5rem] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-700/30 shadow-2xl group-hover:scale-105 transition-all duration-500 relative overflow-hidden">
+          <div class="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <span class="text-slate-400 font-bold text-3xl leading-none relative z-10 tracking-widest">
+            {String.slice(@editing_user.display_name, 0, 2) |> String.upcase()}
+          </span>
+        </div>
+        <div
+          :if={Enum.any?(@active_users, fn u -> to_string(u.id) == to_string(@editing_user.id) end)}
+          class="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 border-4 border-[var(--nx-surface)] rounded-full shadow-[0_0_20px_rgba(16,185,129,0.8)] z-20 animate-pulse"
+        >
+        </div>
+      </div>
+      <div>
+        <h3 class="text-4xl font-serif italic font-bold text-slate-100 tracking-tight mb-1">
+          {@editing_user.display_name}
+        </h3>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest opacity-80">
+          {@editing_user.email}
+        </p>
       </div>
     </div>
+    <.badge
+      variant={
+        case @editing_user.status do
+          "active" -> "success"
+          "suspended" -> "warning"
+          "blocked" -> "danger"
+          _ -> "neutral"
+        end
+      }
+      label={String.upcase(@editing_user.status)}
+    />
+  </div>
 
-    <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-      <.nx_button variant="ghost" type="button" phx-click="close-edit-modal">Cancel</.nx_button>
-      <.nx_button variant="primary" type="submit">Update Role</.nx_button>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-4">
+    <!-- Left Column: Identity & Security -->
+    <div class="space-y-8">
+      <section>
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
+          Identity Security
+        </h4>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-5 bg-slate-950/40 border border-slate-800/40 rounded-3xl hover:bg-slate-900/40 transition-all group/vault">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/5 flex items-center justify-center text-indigo-400 border border-indigo-500/10 group-hover/vault:border-indigo-500/30 transition-colors shadow-inner">
+                <span class="hero-finger-print w-5 h-5"></span>
+              </div>
+              <div>
+                <span class="text-sm font-bold text-slate-200 block">Biometric Passkey</span>
+                <span class="text-[10px] text-slate-500 font-mono">WebAuthn / FIDO2</span>
+              </div>
+            </div>
+            <%= if @editing_user.credential_id do %>
+              <span class="text-[9px] font-black text-emerald-500 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10 tracking-widest font-mono">
+                ENROLLED
+              </span>
+            <% else %>
+              <span class="text-[9px] font-black text-amber-500 bg-amber-500/5 px-2.5 py-1.5 rounded-lg border border-amber-500/10 tracking-widest font-mono">
+                NOT SET
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+          Institutional Access
+        </h4>
+        <div class="p-6 bg-slate-950/40 border border-slate-800/40 rounded-3xl space-y-6">
+          <div class="flex flex-col gap-4">
+            <div>
+              <p class="text-sm font-bold text-slate-100 tracking-tight">Operational Status</p>
+              <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Toggle account availability across the platform.</p>
+            </div>
+            <div class="grid grid-cols-2 bg-slate-950 p-1 rounded-2xl border border-slate-800/50 shadow-2xl">
+              <%= for status <- ["active", "suspended"] do %>
+                <button
+                  type="button"
+                  phx-click="set-editing-status"
+                  phx-value-status={status}
+                  class={[
+                    "py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                    if(@editing_status == status,
+                      do: "bg-slate-800 text-white shadow-xl ring-1 ring-white/5",
+                      else: "text-slate-500 hover:text-slate-300"
+                    )
+                  ]}
+                >
+                  {status}
+                </button>
+              <% end %>
+            </div>
+          </div>
+          
+          <div :if={@editing_status != @editing_user.status} class="pt-6 border-t border-white/5 animate-in slide-in-from-top-4 duration-500">
+            <.nx_button
+              variant="primary"
+              class="w-full py-4 shadow-[0_0_30px_rgba(99,102,241,0.2)] rounded-2xl"
+              phx-click="update-user-status"
+              phx-value-status={@editing_status}
+              phx-value-user_id={@editing_user.id}
+            >
+              Commit Status Initialization
+            </.nx_button>
+          </div>
+        </div>
+      </section>
+      
+      <section class="p-6 bg-rose-500/5 border border-rose-500/10 rounded-3xl group/lock">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20 group-hover/lock:scale-110 transition-transform">
+            <span class="hero-lock-closed w-4 h-4"></span>
+          </div>
+          <h4 class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">
+            Identity Revocation
+          </h4>
+        </div>
+        <p class="text-[11px] text-rose-200/50 leading-relaxed mb-6 font-medium">
+          Instantly revoke all active sessions, invalidate current JWTs, and block all API access for this identity.
+        </p>
+        <.nx_button
+          variant="ghost"
+          class="w-full text-rose-400 border-rose-500/20 hover:bg-rose-500/10 py-3 rounded-2xl transition-all active:scale-[0.98]"
+          phx-click="set-editing-status"
+          phx-value-status="blocked"
+        >
+          EXECUTE LOCKDOWN
+        </.nx_button>
+      </section>
     </div>
-  </form>
+
+    <!-- Right Column: Role Management -->
+    <div class="space-y-8">
+      <div>
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
+          Role & Entitlements
+        </h4>
+        
+        <form phx-submit="update-user-role" class="space-y-4">
+          <input type="hidden" name="user_id" value={@editing_user.id} />
+          
+          <div class="space-y-3">
+            <%= for role <- ["system_admin", "admin", "trader", "viewer"] do %>
+              <label class={"flex items-center justify-between p-5 rounded-3xl border transition-all cursor-pointer group shadow-xl #{if @editing_role == role, do: "bg-indigo-500/5 border-indigo-500/40 ring-1 ring-indigo-500/10 scale-[1.02]", else: "bg-slate-950/40 border-slate-800/40 hover:bg-slate-900/40"}"}>
+                <div class="flex items-center gap-5">
+                  <div class={[
+                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
+                    if(@editing_role == role,
+                      do: "bg-indigo-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.4)]",
+                      else: "bg-slate-900 text-slate-500 group-hover:text-slate-300 border border-slate-800/50"
+                    )
+                  ]}>
+                    <span class={case role do
+                        "system_admin" -> "hero-globe-alt"
+                        "admin" -> "hero-shield-check"
+                        "trader" -> "hero-presentation-chart-line"
+                        "viewer" -> "hero-eye"
+                      end <> " w-6 h-6"}>
+                    </span>
+                  </div>
+                  <div class="min-w-0">
+                    <p class={[
+                      "text-base font-bold tracking-tight mb-0.5 transition-colors",
+                      if(@editing_role == role, do: "text-white", else: "text-slate-300 group-hover:text-white")
+                    ]}>
+                      {String.capitalize(role) |> String.replace("_", " ")}
+                    </p>
+                    <p class="text-[11px] text-slate-500 leading-tight font-medium opacity-80">
+                      {case role do
+                        "system_admin" -> "Global Platform Administration"
+                        "admin" -> "Organizational access & team management"
+                        "trader" -> "Market operations & execution"
+                        "viewer" -> "Read-only audit & reporting"
+                      end}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="radio"
+                  name="role"
+                  value={role}
+                  checked={@editing_role == role}
+                  phx-click="set-editing-role"
+                  phx-value-role={role}
+                  class="hidden"
+                />
+                <div class={[
+                  "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
+                  if(@editing_role == role, do: "border-indigo-500 bg-indigo-500/5", else: "border-slate-800/50")
+                ]}>
+                  <div :if={@editing_role == role} class="w-2.5 h-2.5 bg-indigo-400 rounded-full shadow-[0_0_12px_rgba(129,140,248,0.8)]"></div>
+                </div>
+              </label>
+            <% end %>
+          </div>
+
+          <div class="flex justify-end gap-4 pt-8 border-t border-white/5">
+            <.nx_button variant="ghost" type="button" phx-click="close-edit-modal" class="px-8 py-3 rounded-2xl">
+              Dismiss
+            </.nx_button>
+            <.nx_button
+              variant="primary"
+              type="submit"
+              disabled={@editing_role == @editing_user.role}
+              class="px-8 py-3 rounded-2xl shadow-xl shadow-indigo-500/10"
+            >
+              Update Clearance Level
+            </.nx_button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </.modal>

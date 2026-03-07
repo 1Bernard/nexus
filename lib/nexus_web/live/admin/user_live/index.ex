@@ -22,7 +22,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
       Presence.track(
         self(),
         "#{@presence_topic}:#{socket.assigns.current_user.org_id}",
-        socket.assigns.current_user.id,
+        to_string(socket.assigns.current_user.id),
         %{
           display_name: socket.assigns.current_user.display_name,
           email: socket.assigns.current_user.email,
@@ -43,6 +43,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
       |> assign(:invite_role, "trader")
       |> assign(:editing_user, nil)
       |> assign(:editing_role, nil)
+      |> assign(:editing_status, nil)
       |> fetch_users()
       |> handle_presence_sync()
 
@@ -111,7 +112,9 @@ defmodule NexusWeb.Admin.UserLive.Index do
   @impl true
   def handle_event("edit-user", %{"id" => id}, socket) do
     user = Enum.find(socket.assigns.users, fn u -> u.id == id end)
-    {:noreply, assign(socket, editing_user: user, editing_role: user.role)}
+
+    {:noreply,
+     assign(socket, editing_user: user, editing_role: user.role, editing_status: user.status)}
   end
 
   @impl true
@@ -122,6 +125,10 @@ defmodule NexusWeb.Admin.UserLive.Index do
   @impl true
   def handle_event("set-editing-role", %{"role" => role}, socket) do
     {:noreply, assign(socket, editing_role: role)}
+  end
+
+  def handle_event("set-editing-status", %{"status" => status}, socket) do
+    {:noreply, assign(socket, editing_status: status)}
   end
 
   @impl true
@@ -144,6 +151,27 @@ defmodule NexusWeb.Admin.UserLive.Index do
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to update role: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("update-user-status", %{"status" => status, "user_id" => user_id}, socket) do
+    command = %Nexus.Identity.Commands.ChangeUserStatus{
+      user_id: user_id,
+      status: status,
+      actor_id: socket.assigns.current_user.id,
+      changed_at: DateTime.utc_now()
+    }
+
+    case Nexus.App.dispatch(command) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "User status updated successfully")
+         |> assign(editing_user: nil)
+         |> fetch_users()}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update status: #{inspect(reason)}")}
     end
   end
 
@@ -254,7 +282,8 @@ defmodule NexusWeb.Admin.UserLive.Index do
     active_users =
       Enum.map(presences, fn {user_id, %{metas: metas}} ->
         meta = List.first(metas)
-        Map.put(meta, :id, user_id)
+        # Presence keys are always strings, but we ensure consistency here
+        Map.put(meta, :id, to_string(user_id))
       end)
 
     assign(socket, active_users: active_users)

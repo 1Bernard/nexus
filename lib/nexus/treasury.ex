@@ -14,7 +14,15 @@ defmodule Nexus.Treasury do
   }
 
   alias Nexus.Treasury.Gateways.PriceCache
-  alias Nexus.Treasury.Commands.{SetTransferThreshold, GenerateForecast}
+
+  alias Nexus.Treasury.Commands.{
+    SetTransferThreshold,
+    GenerateForecast,
+    RequestTransfer,
+    AuthorizeTransfer,
+    ExecuteTransfer
+  }
+
   alias Nexus.Treasury.Projections.{TreasuryPolicy, Reconciliation}
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
   alias Nexus.Treasury.Services.ForecastEngine
@@ -433,5 +441,51 @@ defmodule Nexus.Treasury do
       total_matched_count: total_matched,
       match_rate: if(total_matched > 0, do: round(auto_matched / total_matched * 100), else: 0)
     }
+  end
+
+  @doc """
+  Initiates a fund transfer request.
+  """
+  def request_transfer(attrs) do
+    command = %RequestTransfer{
+      transfer_id: attrs.transfer_id,
+      org_id: attrs.org_id,
+      user_id: attrs.user_id,
+      from_currency: attrs.from_currency,
+      to_currency: attrs.to_currency,
+      amount: attrs.amount,
+      threshold: attrs.threshold,
+      bulk_payment_id: Map.get(attrs, :bulk_payment_id),
+      requested_at: DateTime.utc_now()
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Authorizes a pending transfer.
+  """
+  def authorize_transfer(org_id, transfer_id, actor_email \\ nil) do
+    command = %AuthorizeTransfer{
+      transfer_id: transfer_id,
+      org_id: org_id,
+      actor_email: actor_email,
+      authorized_at: DateTime.utc_now()
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Finalizes and executes an authorized transfer.
+  """
+  def execute_transfer(org_id, transfer_id) do
+    command = %ExecuteTransfer{
+      transfer_id: transfer_id,
+      org_id: org_id,
+      executed_at: DateTime.utc_now()
+    }
+
+    Nexus.App.dispatch(command)
   end
 end

@@ -26,6 +26,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
         "policy_mode:#{socket.assigns.current_user.org_id}"
       )
 
+      Phoenix.PubSub.subscribe(
+        Nexus.PubSub,
+        "transfers:#{socket.assigns.current_user.org_id}"
+      )
+
       # Start periodic staleness check
       :timer.send_interval(10_000, self(), :check_stale_data)
       # Defer heavy loading to after mount
@@ -667,8 +672,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
   @impl true
   def handle_info({:step_up_success, _action_id}, socket) do
-    # Give the success screen 1.5s of visibility, then close modal and finalize.
-    Process.send_after(self(), :close_step_up_and_finalize, 1500)
+    # Success screen visibility before closing
+    Process.send_after(self(), :close_step_up, 1500)
     {:noreply, socket}
   end
 
@@ -678,21 +683,33 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
-  def handle_info(:close_step_up_and_finalize, socket) do
-    # Hide the modal (triggering the success→idle reset in the LiveComponent),
-    # then finalize the transfer after a short delay.
-    Process.send_after(self(), :finalize_transfer, 500)
-    {:noreply, assign(socket, show_step_up: false)}
+  def handle_info({:transfer_initiated, %{status: "pending_authorization"} = event}, socket) do
+    {:noreply, assign(socket, show_step_up: true, pending_transfer: event)}
   end
 
-  @impl true
-  def handle_info(:finalize_transfer, socket) do
-    # Mocking the successful finalization after step-up
+  def handle_info({:transfer_initiated, %{status: "authorized"}}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_info({:transfer_authorized, _event}, socket) do
+    # The modal handles its own "success" state via :step_up_success from component
+    {:noreply, socket}
+  end
+
+  def handle_info({:transfer_executed, event}, socket) do
+    # Final cleanup and notification
+    socket =
+      if socket.assigns.pending_transfer &&
+           socket.assigns.pending_transfer.transfer_id == event.transfer_id do
+        assign(socket, show_step_up: false, pending_transfer: nil)
+        |> put_flash(:info, "Transfer #{event.transfer_id} executed successfully.")
+      else
+        socket
+      end
+
     {:noreply,
      socket
-     |> put_flash(:info, "Identity Verified. High-value transfer authorized.")
-     |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))
-     |> assign(:pending_transfer, nil)}
+     |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
   end
 
   @impl true
@@ -762,7 +779,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
     # For demo: Attempt a High-Value transfer that triggers Step-Up
     transfer_id = "TX-#{Base.encode32(:crypto.strong_rand_bytes(5), padding: false)}"
 
-    command = %Nexus.Treasury.Commands.RequestTransfer{
+    attrs = %{
       transfer_id: transfer_id,
       org_id: socket.assigns.current_user.org_id,
       user_id: socket.assigns.current_user.id,
@@ -770,19 +787,15 @@ defmodule NexusWeb.Tenant.DashboardLive do
       to_currency: "USD",
       # €5M -> High Value
       amount: "5000000",
-      threshold: socket.assigns.transfer_threshold,
-      requested_at: DateTime.utc_now()
+      threshold: socket.assigns.transfer_threshold
     }
 
-    case Nexus.App.dispatch(command) do
+    case Treasury.request_transfer(attrs) do
       :ok ->
         {:noreply,
          socket
-         |> put_flash(:info, "Transfer initiated successfully.")
+         |> put_flash(:info, "Transfer task created. Processing...")
          |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
-
-      {:error, :step_up_required} ->
-        {:noreply, assign(socket, show_step_up: true, pending_transfer: command)}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Transfer failed: #{inspect(reason)}")}
