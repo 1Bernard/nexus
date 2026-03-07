@@ -1,4 +1,8 @@
 defmodule NexusWeb.Telemetry do
+  @moduledoc """
+  Telemetry supervisor that declares Phoenix, Ecto, and VM metrics for reporting
+  to any configured telemetry reporter (e.g. StatsD, Prometheus).
+  """
   use Supervisor
   import Telemetry.Metrics
 

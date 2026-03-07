@@ -1,4 +1,8 @@
 defmodule NexusWeb.Tenant.DashboardLive do
+  @moduledoc """
+  Main institutional dashboard LiveView displaying real-time FX, exposure heatmap,
+  cash flow forecasts, policy alerts, and recent activity.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Treasury
@@ -692,12 +696,12 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
-  def handle_info({:policy_mode_changed, ev}, socket) do
+  def handle_info({:policy_mode_changed, event}, socket) do
     # Real-time update when another browser session changes the risk mode
     {:noreply,
      socket
-     |> assign(:policy_mode, ev.mode)
-     |> assign(:transfer_threshold, ev.threshold)
+     |> assign(:policy_mode, event.mode)
+     |> assign(:transfer_threshold, event.threshold)
      |> assign(
        :policy_audit_logs,
        Treasury.list_policy_audit_logs(socket.assigns.current_user.org_id)

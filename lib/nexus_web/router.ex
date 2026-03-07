@@ -1,4 +1,5 @@
 defmodule NexusWeb.Router do
+  @moduledoc false
   use NexusWeb, :router
 
   pipeline :browser do
@@ -43,8 +44,8 @@ defmodule NexusWeb.Router do
 
     live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
       live "/backoffice", System.BackofficeLive
-      get "/backoffice/impersonate/:id", BackofficeController, :impersonate
-      delete "/backoffice/impersonate/end", BackofficeController, :end_impersonation
+      get "/backoffice/impersonate/:id", System.BackofficeController, :impersonate
+      delete "/backoffice/impersonate/end", System.BackofficeController, :end_impersonation
     end
 
     live_session :org_admin, on_mount: [{NexusWeb.UserAuth, :require_org_admin}] do

@@ -1,4 +1,8 @@
 defmodule NexusWeb.Treasury.ReconciliationLive do
+  @moduledoc """
+  LiveView for the treasury reconciliation workspace — proposing, approving, and reversing
+  matches between invoices and bank statement lines.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Treasury

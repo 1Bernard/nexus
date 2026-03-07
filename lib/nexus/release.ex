@@ -5,8 +5,9 @@ defmodule Nexus.Release do
 
     /app/bin/nexus eval "Nexus.Release.migrate"
     /app/bin/nexus eval "Nexus.Release.init_event_store"
+    /app/bin/nexus eval "Nexus.Release.seed"
 
-  Both functions are idempotent — safe to run on every deploy.
+  All functions are idempotent — safe to run on every deploy.
   """
   @app :nexus
 
@@ -46,6 +47,59 @@ defmodule Nexus.Release do
 
     :ok = EventStore.Tasks.Init.exec(config, [])
     IO.puts("[Release] EventStore initialised successfully.")
+  end
+
+  @doc """
+  Seeds the database with demo users required for login.
+
+  Seeds Ecto read-model data (market ticks, invoices, exposures) AND
+  dispatches Commanded commands to create the two system-admin demo accounts.
+
+  The Commanded dispatch requires a running EventStore + Nexus.App supervisor,
+  so `Application.ensure_all_started/1` is called first. It is safe to call
+  `ensure_all_started` even if the app is already running.
+
+  Idempotent — will skip users that are already registered.
+
+  Run via:
+    docker compose exec app /app/bin/nexus eval "Nexus.Release.seed"
+  """
+  def seed do
+    # Start the full OTP application so Commanded and EventStore supervisors
+    # are up — required for dispatch/1 to work.
+    {:ok, _} = Application.ensure_all_started(@app)
+
+    org_id = "00000000-0000-0000-0000-000000000000"
+
+    now = DateTime.utc_now()
+
+    users = [
+      {Nexus.Schema.generate_uuidv7(), "admin@nexus-platform.io", "Nexus System Admin"},
+      {Nexus.Schema.generate_uuidv7(), "elena@global-corp.com", "Elena (Global Corp App)"}
+    ]
+
+    for {user_id, email, display_name} <- users do
+      cmd = %Nexus.Identity.Commands.RegisterSystemAdmin{
+        user_id: user_id,
+        org_id: org_id,
+        email: email,
+        display_name: display_name,
+        registered_at: now
+      }
+
+      case Nexus.App.dispatch(cmd) do
+        :ok ->
+          IO.puts("[Seed] ✓ Registered #{email}")
+
+        {:error, :already_registered} ->
+          IO.puts("[Seed] ~ #{email} already registered — skipping.")
+
+        {:error, reason} ->
+          IO.puts("[Seed] ✗ Failed to register #{email}: #{inspect(reason)}")
+      end
+    end
+
+    IO.puts("[Seed] Done.")
   end
 
   @doc "Runs all pending Ecto migrations."

@@ -17,13 +17,13 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
     }
   end
 
-  def apply(%__MODULE__{} = state, %ForecastGenerated{} = ev) do
+  def apply(%__MODULE__{} = state, %ForecastGenerated{} = event) do
     %__MODULE__{
       state
-      | id: "#{ev.org_id}-#{ev.currency}-#{ev.horizon_days}",
-        org_id: ev.org_id,
-        currency: ev.currency,
-        last_forecast: ev.predictions
+      | id: "#{event.org_id}-#{event.currency}-#{event.horizon_days}",
+        org_id: event.org_id,
+        currency: event.currency,
+        last_forecast: event.predictions
     }
   end
 end

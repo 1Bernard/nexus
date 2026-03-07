@@ -3,6 +3,9 @@ defmodule Nexus.Intelligence.Services.DocumentExtractor do
   Uses the Instructor library to extract structured financial data
   from unstructured text/OCR using an LLM.
   """
+  # Rule 6 exception: Instructor requires `use Ecto.Schema` directly to define
+  # its JSON extraction target via `embedded_schema`. This is NOT a projection.
+  # `use Nexus.Schema` cannot be used here because embedded_schema is Instructor-specific.
   use Ecto.Schema
   use Instructor
 

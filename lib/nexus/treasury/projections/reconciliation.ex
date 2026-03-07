@@ -1,4 +1,8 @@
 defmodule Nexus.Treasury.Projections.Reconciliation do
+  @moduledoc """
+  Read-model schema for the treasury_reconciliations table.
+  Tracks the lifecycle of each invoice-to-statement-line match attempt.
+  """
   use Nexus.Schema
 
   @primary_key {:reconciliation_id, :string, autogenerate: false}

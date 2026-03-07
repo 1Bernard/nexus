@@ -19,28 +19,28 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
   # 2. Track progress for each individual transfer requested in the context of this bulk
   # Note: TransferRequested needs matching bulk_payment_id in metadata or event fields.
   # For now, let's assume we pass metadata or extend TransferRequested.
-  def interested?(%TransferRequested{transfer_id: _id} = ev) do
+  def interested?(%TransferRequested{transfer_id: _id} = event) do
     # We need a way to correlate individual transfers back to the bulk batch.
     # In a real system, we'd use correlation IDs or a field in the event.
     # For this POC, let's look for a `bulk_payment_id` field in the event.
-    case Map.get(ev, :bulk_payment_id) do
+    case Map.get(event, :bulk_payment_id) do
       nil -> false
       bulk_id -> {:continue, bulk_id}
     end
   end
 
-  def interested?(_ev), do: false
+  def interested?(_event), do: false
 
   # --- Command Dispatch ---
 
-  def handle(%__MODULE__{} = _saga, %BulkPaymentInitiated{} = ev) do
+  def handle(%__MODULE__{} = _saga, %BulkPaymentInitiated{} = event) do
     # For each payment instruction, dispatch a RequestTransfer command.
     # We add the bulk_payment_id to the command so the resulting event can be correlated.
-    Enum.map(ev.payments, fn p ->
+    Enum.map(event.payments, fn p ->
       %RequestTransfer{
         transfer_id: Uniq.UUID.uuid7(),
-        org_id: ev.org_id,
-        user_id: ev.user_id,
+        org_id: event.org_id,
+        user_id: event.user_id,
         from_currency: p.currency,
         # Default target for now
         to_currency: "EUR",
@@ -48,7 +48,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
         # Default threshold
         threshold: Decimal.new(1_000_000),
         # Correlation ID for bulk batches
-        bulk_payment_id: ev.bulk_payment_id,
+        bulk_payment_id: event.bulk_payment_id,
         requested_at: DateTime.utc_now()
       }
     end)
@@ -71,17 +71,17 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   # --- State Mutators ---
 
-  def apply(%__MODULE__{} = saga, %BulkPaymentInitiated{} = ev) do
+  def apply(%__MODULE__{} = saga, %BulkPaymentInitiated{} = event) do
     %__MODULE__{
       saga
-      | bulk_payment_id: ev.bulk_payment_id,
-        org_id: ev.org_id,
-        total_items: ev.count,
+      | bulk_payment_id: event.bulk_payment_id,
+        org_id: event.org_id,
+        total_items: event.count,
         processed_items: 0
     }
   end
 
-  def apply(%__MODULE__{processed_items: processed} = saga, %TransferRequested{} = _ev) do
+  def apply(%__MODULE__{processed_items: processed} = saga, %TransferRequested{} = _event) do
     %__MODULE__{saga | processed_items: processed + 1}
   end
 end

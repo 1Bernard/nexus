@@ -92,16 +92,16 @@ defmodule Nexus.Identity.Aggregates.User do
 
   # --- State Transitions ---
 
-  def apply(%__MODULE__{} = state, %UserRegistered{} = ev) do
+  def apply(%__MODULE__{} = state, %UserRegistered{} = event) do
     %__MODULE__{
       state
-      | id: ev.user_id,
-        org_id: ev.org_id,
-        email: ev.email,
-        display_name: ev.display_name,
-        role: ev.role,
-        cose_key: ev.cose_key,
-        credential_id: ev.credential_id,
+      | id: event.user_id,
+        org_id: event.org_id,
+        email: event.email,
+        display_name: event.display_name,
+        role: event.role,
+        cose_key: event.cose_key,
+        credential_id: event.credential_id,
         status: :registered
     }
   end
@@ -116,7 +116,7 @@ defmodule Nexus.Identity.Aggregates.User do
     state
   end
 
-  def apply(%__MODULE__{} = state, %UserRoleChanged{} = ev) do
-    %__MODULE__{state | role: ev.role}
+  def apply(%__MODULE__{} = state, %UserRoleChanged{} = event) do
+    %__MODULE__{state | role: event.role}
   end
 end

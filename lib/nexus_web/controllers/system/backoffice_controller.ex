@@ -1,4 +1,9 @@
-defmodule NexusWeb.BackofficeController do
+defmodule NexusWeb.System.BackofficeController do
+  @moduledoc """
+  System-level controller for God-Mode impersonation.
+  Protected by the `require_system_admin` plug; allows system admins to take over
+  any user session for support and auditing purposes.
+  """
   use NexusWeb, :controller
 
   alias Nexus.Identity.Queries.UserQuery

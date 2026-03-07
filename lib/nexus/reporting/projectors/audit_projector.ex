@@ -1,4 +1,8 @@
 defmodule Nexus.Reporting.Projectors.AuditProjector do
+  @moduledoc """
+  Listens for organisation-lifecycle events and writes immutable audit records
+  to the reporting_audit_logs table.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     name: "Reporting.AuditProjector",

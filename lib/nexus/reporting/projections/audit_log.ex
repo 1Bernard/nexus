@@ -1,4 +1,8 @@
 defmodule Nexus.Reporting.Projections.AuditLog do
+  @moduledoc """
+  Read-model schema for the reporting_audit_logs table.
+  Records a tamper-evident trail of organisation-level events for compliance and audit purposes.
+  """
   use Nexus.Schema
 
   @primary_key {:id, :binary_id, autogenerate: false}

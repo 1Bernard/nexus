@@ -1,4 +1,8 @@
 defmodule NexusWeb.Admin.PolicyLive do
+  @moduledoc """
+  LiveView for administrators to configure treasury risk policies, transfer thresholds,
+  and policy mode settings.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Treasury
@@ -129,7 +133,7 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Multi-SIG enforced above this baseline.
                   </p>
                 </div>
-                
+
     <!-- Standard Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
@@ -156,7 +160,7 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Step-up auth / hardware key required.
                   </p>
                 </div>
-                
+
     <!-- Relaxed Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
@@ -204,7 +208,7 @@ defmodule NexusWeb.Admin.PolicyLive do
             </form>
           </.dark_card>
         </div>
-        
+
     <!-- Audit/History Side (1/3) -->
         <div class="h-full">
           <.dark_card class="p-6 h-full border-white/5 flex flex-col min-h-[500px]">

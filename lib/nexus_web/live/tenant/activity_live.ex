@@ -1,4 +1,7 @@
 defmodule NexusWeb.Tenant.ActivityLive do
+  @moduledoc """
+  LiveView displaying the full chronological activity feed for a tenant organisation.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.ERP

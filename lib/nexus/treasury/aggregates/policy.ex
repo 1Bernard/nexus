@@ -82,35 +82,35 @@ defmodule Nexus.Treasury.Aggregates.Policy do
     end
   end
 
-  def apply(%__MODULE__{} = state, %TransferThresholdSet{} = ev) do
+  def apply(%__MODULE__{} = state, %TransferThresholdSet{} = event) do
     %__MODULE__{
       state
-      | id: ev.policy_id,
-        org_id: ev.org_id,
-        transfer_threshold: ev.threshold
+      | id: event.policy_id,
+        org_id: event.org_id,
+        transfer_threshold: event.threshold
     }
   end
 
-  def apply(%__MODULE__{} = state, %PolicyModeChanged{} = ev) do
+  def apply(%__MODULE__{} = state, %PolicyModeChanged{} = event) do
     %__MODULE__{
       state
-      | id: ev.policy_id,
-        org_id: ev.org_id,
-        mode: ev.mode,
-        transfer_threshold: ev.threshold
+      | id: event.policy_id,
+        org_id: event.org_id,
+        mode: event.mode,
+        transfer_threshold: event.threshold
     }
   end
 
-  def apply(%__MODULE__{} = state, %ModeThresholdsConfigured{} = ev) do
+  def apply(%__MODULE__{} = state, %ModeThresholdsConfigured{} = event) do
     %__MODULE__{
       state
-      | id: ev.policy_id,
-        org_id: ev.org_id,
-        mode_thresholds: ev.mode_thresholds
+      | id: event.policy_id,
+        org_id: event.org_id,
+        mode_thresholds: event.mode_thresholds
     }
   end
 
-  def apply(%__MODULE__{} = state, %PolicyAlertTriggered{} = _ev) do
+  def apply(%__MODULE__{} = state, %PolicyAlertTriggered{} = _event) do
     # Alerts do not mutate policy state — they are read-side concerns
     state
   end

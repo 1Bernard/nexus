@@ -1,4 +1,8 @@
 defmodule NexusWeb.ERP.WebhookController do
+  @moduledoc """
+  Accepts SAP invoice payloads via webhook, validates rate limits, and dispatches
+  the IngestInvoice command through the ERP adapter pipeline.
+  """
   use NexusWeb, :controller
 
   alias Nexus.ERP.Adapters.RateLimiter

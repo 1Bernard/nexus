@@ -1,4 +1,7 @@
 defmodule NexusWeb.Tenant.AnalysisLive do
+  @moduledoc """
+  LiveView for browsing AI-generated anomaly and sentiment analyses for a tenant organisation.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Intelligence.Queries.AnalysisQuery

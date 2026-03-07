@@ -1,4 +1,8 @@
 defmodule Nexus.Intelligence.Projections.Analysis do
+  @moduledoc """
+  Read-model schema for the intelligence_analyses table.
+  Stores anomaly detection and sentiment scoring results produced by the Intelligence domain.
+  """
   use Nexus.Schema
 
   @primary_key {:id, :binary_id, autogenerate: false}

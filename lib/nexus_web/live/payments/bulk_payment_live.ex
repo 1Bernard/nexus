@@ -1,4 +1,7 @@
 defmodule NexusWeb.Payments.BulkPaymentLive do
+  @moduledoc """
+  LiveView for initiating and monitoring bulk payment batches.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Payments.Commands.InitiateBulkPayment

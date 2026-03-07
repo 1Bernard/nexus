@@ -1,4 +1,5 @@
 defmodule NexusWeb.Endpoint do
+  @moduledoc false
   use Phoenix.Endpoint, otp_app: :nexus
 
   # The session will be stored in the cookie and signed,

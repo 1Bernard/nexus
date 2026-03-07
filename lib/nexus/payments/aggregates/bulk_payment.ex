@@ -37,18 +37,18 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
     }
   end
 
-  def apply(%__MODULE__{} = state, %BulkPaymentInitiated{} = ev) do
+  def apply(%__MODULE__{} = state, %BulkPaymentInitiated{} = event) do
     %__MODULE__{
       state
-      | id: ev.bulk_payment_id,
-        org_id: ev.org_id,
+      | id: event.bulk_payment_id,
+        org_id: event.org_id,
         status: :initiated,
-        total_items: ev.count,
+        total_items: event.count,
         processed_items: 0
     }
   end
 
-  def apply(%__MODULE__{} = state, %BulkPaymentCompleted{} = _ev) do
+  def apply(%__MODULE__{} = state, %BulkPaymentCompleted{} = _event) do
     %__MODULE__{state | status: :completed}
   end
 end

@@ -1,4 +1,8 @@
 defmodule NexusWeb.Intelligence.WebhookController do
+  @moduledoc """
+  Accepts inbound webhook payloads representing vendor communications (email/tickets)
+  and dispatches them for AI sentiment analysis.
+  """
   use NexusWeb, :controller
   alias Nexus.Intelligence.Commands.AnalyzeSentiment
   require Logger

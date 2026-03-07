@@ -1,4 +1,8 @@
 defmodule Nexus.Treasury.Projectors.ReconciliationProjector do
+  @moduledoc """
+  Listens for reconciliation lifecycle events and updates the treasury_reconciliations
+  read-model, keeping invoice and statement line statuses in sync.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,

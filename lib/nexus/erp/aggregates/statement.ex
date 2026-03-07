@@ -42,11 +42,11 @@ defmodule Nexus.ERP.Aggregates.Statement do
     end
   end
 
-  def apply(%__MODULE__{} = state, %StatementUploaded{} = ev) do
-    %__MODULE__{state | id: ev.statement_id, org_id: ev.org_id, status: :uploaded}
+  def apply(%__MODULE__{} = state, %StatementUploaded{} = event) do
+    %__MODULE__{state | id: event.statement_id, org_id: event.org_id, status: :uploaded}
   end
 
-  def apply(%__MODULE__{} = state, %StatementRejected{} = ev) do
-    %__MODULE__{state | id: ev.statement_id, org_id: ev.org_id, status: :rejected}
+  def apply(%__MODULE__{} = state, %StatementRejected{} = event) do
+    %__MODULE__{state | id: event.statement_id, org_id: event.org_id, status: :rejected}
   end
 end

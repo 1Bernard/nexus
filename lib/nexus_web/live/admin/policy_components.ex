@@ -1,4 +1,7 @@
 defmodule NexusWeb.Admin.PolicyComponents do
+  @moduledoc """
+  Reusable HTML components for rendering treasury policy risk gauges and mode indicators.
+  """
   use NexusWeb, :html
 
   attr :modes, :map, required: true

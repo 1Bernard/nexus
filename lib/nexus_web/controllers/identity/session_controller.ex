@@ -1,4 +1,8 @@
 defmodule NexusWeb.Identity.SessionController do
+  @moduledoc """
+  Handles session creation after a successful WebAuthn authentication challenge.
+  Receives a signed Phoenix.Token from the biometric hook and sets the user session.
+  """
   use NexusWeb, :controller
 
   def create(conn, %{"token" => token}) do

@@ -1,4 +1,7 @@
 defmodule NexusWeb.Treasury.ForecastLive do
+  @moduledoc """
+  LiveView for viewing and interacting with AI-generated cash flow forecasts.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Treasury

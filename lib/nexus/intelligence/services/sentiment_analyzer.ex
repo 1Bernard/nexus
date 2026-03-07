@@ -85,7 +85,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
         sentiment =
           if String.contains?(String.downcase(text), "urgent"), do: "negative", else: "neutral"
 
-        {:ok, %{sentiment: sentiment, confidence: 0.85}}
+        {:ok, %{sentiment: sentiment, confidence: 0.85, mocked: true}}
     end
   end
 end

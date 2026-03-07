@@ -1,4 +1,7 @@
 defmodule NexusWeb.Admin.UserLive.Index do
+  @moduledoc """
+  LiveView for system administrators to list, search, and manage all platform users.
+  """
   use NexusWeb, :live_view
 
   alias Nexus.Identity.Queries.UserQuery

@@ -1,4 +1,7 @@
 defmodule NexusWeb.Organization.InvitesLive do
+  @moduledoc """
+  LiveView for accepting a tenant invitation via a signed token link.
+  """
   use NexusWeb, :live_view
 
   alias NexusWeb.NexusComponents

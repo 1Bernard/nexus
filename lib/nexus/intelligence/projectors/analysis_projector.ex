@@ -1,4 +1,8 @@
 defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
+  @moduledoc """
+  Listens for anomaly, sentiment, and settlement events and writes analysis records
+  to the intelligence_analyses table.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,

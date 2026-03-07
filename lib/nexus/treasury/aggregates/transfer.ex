@@ -35,12 +35,12 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
 
   # --- State Transitions ---
 
-  def apply(%__MODULE__{} = state, %TransferRequested{} = ev) do
+  def apply(%__MODULE__{} = state, %TransferRequested{} = event) do
     %__MODULE__{
       state
-      | id: ev.transfer_id,
-        org_id: ev.org_id,
-        amount: ev.amount,
+      | id: event.transfer_id,
+        org_id: event.org_id,
+        amount: event.amount,
         status: :requested
     }
   end
