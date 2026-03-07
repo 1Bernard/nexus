@@ -14,6 +14,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
   defoverridable update_projection: 3
 
   require Logger
+  @env Mix.env()
 
   alias Nexus.Treasury.Events.ExposureCalculated
   alias Nexus.Treasury.Projections.ExposureSnapshot
@@ -44,7 +45,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
     )
   end)
 
-  if Mix.env() == :test do
+  if @env == :test do
     # In test, the Ecto Sandbox blocks Repo.transaction from the projector process
     # (even with Sandbox.allow). Override the repo transaction to run inside
     # Sandbox.unboxed_run, giving us a real connection that can actually commit.

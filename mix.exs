@@ -99,7 +99,13 @@ defmodule Nexus.MixProject do
       # --- AI Sentinel (Intelligence Layer) ---
       {:bumblebee, "~> 0.6.3"},
       {:instructor, "~> 0.1.0"},
-      {:exla, "~> 0.10.0"},
+      # EXLA provides GPU/XLA acceleration for Nx.
+      # Excluded from prod Docker builds: its C++ NIF compilation needs 4-6GB
+      # RAM which exceeds Docker Desktop defaults and OOM-kills the builder.
+      # In production Docker, Nx uses BinaryBackend (pure Elixir, no native
+      # compilation). Set XLA_TARGET and add EXLA back to prod deps only when
+      # deploying to a machine with guaranteed high memory (e.g. a GPU server).
+      {:exla, "~> 0.10.0", only: [:dev]},
 
       # Testing & BDD ---
       # Gherkin BDD implementation

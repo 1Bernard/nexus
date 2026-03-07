@@ -4,26 +4,27 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   """
   require Logger
 
+  # Captured at compile time — Mix is not available in releases.
+  @env Mix.env()
+
   @doc """
   Returns the Bumblebee serving to be started by the application supervisor.
   """
   def serving do
     # In test, we always use a no-op mock
-    if Mix.env() == :test do
+    if @env == :test do
       mock_serving()
     else
       try do
-        # Use a model trained for Sequence Classification (Sentiment Analysis)
         repo = "finiteautomata/bertweet-base-sentiment-analysis"
 
-        # We wrap this in a timeout or just try-rescue
-        # load_model can be slow (downloads 400MB)
         {:ok, model_info} = Bumblebee.load_model({:hf, repo})
         {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, repo})
 
+        # compiler: EXLA is omitted here — EXLA is dev-only.
+        # In Docker prod, Bumblebee uses Nx.BinaryBackend (pure Elixir).
         Bumblebee.Text.text_classification(model_info, tokenizer,
-          compile: [batch_size: 1, sequence_length: 100],
-          defn_options: [compiler: EXLA]
+          compile: [batch_size: 1, sequence_length: 100]
         )
       rescue
         _e ->
@@ -53,7 +54,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   """
   def analyze(text) do
     try do
-      if Mix.env() == :test do
+      if @env == :test do
         # Deterministic results for tests
         cond do
           String.contains?(text, "urgent") ->

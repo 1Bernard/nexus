@@ -53,6 +53,38 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
+  # -------------------------------------------------------------------------
+  # EventStore (Write side — same DB as Ecto in single-DB deployments)
+  # -------------------------------------------------------------------------
+  # Both Ecto and EventStore share the same TimescaleDB instance by default.
+  # To use a dedicated EventStore database (recommended for high-traffic prod),
+  # set EVENT_STORE_URL to a separate database connection string.
+  event_store_url =
+    System.get_env("EVENT_STORE_URL") ||
+      database_url
+
+  config :nexus, Nexus.EventStore,
+    url: event_store_url,
+    schema: "event_store",
+    column_data_type: "jsonb",
+    serializer: Commanded.Serialization.JsonSerializer,
+    types: EventStore.PostgresTypes,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    socket_options: maybe_ipv6
+
+  # -------------------------------------------------------------------------
+  # FX Market Data Services (runtime injection — never compile-time)
+  # -------------------------------------------------------------------------
+  # SECURITY: These values are read at runtime from environment variables.
+  # They override the nil compile-time defaults set in config/config.exs.
+  # The MASSIVE_API_KEY has no fallback: if it's missing, the app will start
+  # but the PolygonClient will log an error on connection — it won't crash
+  # the supervision tree (it retries every 30s).
+  config :nexus,
+    massive_url: System.get_env("MASSIVE_WS_URL") || "wss://socket.massive.com/forex",
+    massive_api_key: System.get_env("MASSIVE_API_KEY"),
+    polygon_api_key: System.get_env("POLYGON_API_KEY")
+
   config :nexus, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :nexus, NexusWeb.Endpoint,

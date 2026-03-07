@@ -6,9 +6,50 @@ defmodule Nexus.Application do
   use Application
   require Logger
 
+  # Capture the Mix environment at compile time so it's available in releases
+  # where Mix itself is not loaded. Mix.env() is unavailable in prod releases.
+  @env Mix.env()
+
   @impl true
   def start(_type, _args) do
-    Logger.info("[Nexus] Application starting in #{Mix.env()} environment")
+    Logger.info("[Nexus] Application starting in #{@env} environment")
+
+    # Initialize EventStore schema BEFORE starting Commanded.
+    # EventStore.Tasks.Init.exec does NOT auto-parse the :url config key;
+    # it needs explicit hostname/database/username/password keyword params.
+    # We parse DATABASE_URL directly here to build those params.
+    # At Application.start/2 time, all OTP deps (including db_connection) are
+    # running, so this works. Idempotent: a no-op if schema already exists.
+    #
+    # IMPORTANT: EventStore.Tasks.Init.exec assumes the PostgreSQL schema named
+    # in `schema:` already exists (it sets search_path to it). We must run
+    # EventStore.Tasks.Create.exec FIRST — which creates `CREATE SCHEMA IF NOT
+    # EXISTS event_store` within the existing database. Both calls are idempotent.
+    if @env != :test do
+      url =
+        System.get_env("EVENT_STORE_URL") ||
+          System.get_env("DATABASE_URL") ||
+          "ecto://postgres:postgres@localhost/nexus_prod"
+
+      %URI{host: host, port: port, userinfo: userinfo, path: "/" <> database} = URI.parse(url)
+      [username, password] = String.split(userinfo || "postgres:postgres", ":")
+
+      event_store_config =
+        Application.get_env(:nexus, Nexus.EventStore, [])
+        |> Keyword.merge(
+          hostname: host || "localhost",
+          port: port || 5432,
+          database: database,
+          username: username,
+          password: password
+        )
+
+      # Step 1: Create the PostgreSQL schema (e.g. `event_store`) if not exists.
+      EventStore.Tasks.Create.exec(event_store_config, [])
+      # Step 2: Create tables within that schema.
+      :ok = EventStore.Tasks.Init.exec(event_store_config, [])
+      Logger.info("[Nexus] EventStore schema ready.")
+    end
 
     children = [
       # 1. Infrastructure (Database & Event Store)
@@ -27,7 +68,6 @@ defmodule Nexus.Application do
        name: Nexus.Intelligence.SentimentServing,
        batch_size: 1,
        batch_timeout: 100},
-
       # 3. Commanded Application (Command Dispatcher)
       Nexus.App,
       # --- Intelligence Domain ---
@@ -38,7 +78,7 @@ defmodule Nexus.Application do
     ]
 
     children =
-      if Mix.env() == :test do
+      if @env == :test do
         children
       else
         children ++

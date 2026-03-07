@@ -3,12 +3,13 @@ defmodule Nexus.Intelligence.Services.AnomalyDetector do
   Service for running ML models to detect invoice outliers.
   """
   require Logger
+  @env Mix.env()
 
   alias Nexus.Intelligence.Commands.AnalyzeInvoice
 
   @spec analyze(Nexus.Intelligence.Commands.AnalyzeInvoice.t()) :: {:ok, map()} | {:error, any()}
   def analyze(%AnalyzeInvoice{amount: amount, vendor_name: vendor}) do
-    if Mix.env() == :test do
+    if @env == :test do
       # Deterministic results for tests
       if vendor == "CorpTech" and Decimal.to_float(amount) > 2000.0 do
         {:ok, %{is_anomaly: true, score: 0.95, reason: "Test Anomaly"}}

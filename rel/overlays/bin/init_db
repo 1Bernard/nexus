@@ -1,0 +1,27 @@
+#!/bin/sh
+# =============================================================================
+# bin/init_db — Nexus Database Initialisation Script
+# =============================================================================
+#
+# Run this ONCE after the first `docker compose up --build` to set up:
+#   1. The EventStore schema ("event_store") and all its tables.
+#   2. Ecto migrations (all Postgres read-model tables).
+#
+# It is IDEMPOTENT — safe to run on every deployment.
+# The Docker entrypoint in docker-compose.yml calls this automatically.
+#
+# Manual invocation:
+#   docker compose exec app /app/bin/init_db
+# =============================================================================
+
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+echo "==> [init_db] Initialising EventStore schema and tables..."
+./nexus eval "Nexus.Release.init_event_store"
+
+echo "==> [init_db] Running Ecto migrations..."
+./nexus eval "Nexus.Release.migrate"
+
+echo "==> [init_db] Done."

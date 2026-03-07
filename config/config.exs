@@ -88,15 +88,23 @@ config :hammer,
   backend: {Hammer.Backend.ETS, [expiry_ms: 60_000, cleanup_interval_ms: 60_000]}
 
 # 6. FX Market Intelligence (Massive)
+# SECURITY: API key and URL are injected at runtime via environment variables.
+# They must NEVER have hardcoded fallback values here — that would bake secrets
+# into the compiled release image and any git history.
+# Configure the actual values in runtime.exs or docker-compose.yml.
 config :nexus,
-  massive_url: System.get_env("MASSIVE_WS_URL", "wss://socket.massive.com/forex"),
-  massive_api_key: System.get_env("MASSIVE_API_KEY", "MLikrlfIj9JW03esQZrpHllzEZao0Cc1")
+  massive_url: "wss://socket.massive.com/forex",
+  massive_api_key: nil
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Set EXLA as the default backend for Nx (used by Bumblebee & Scholar)
-config :nx, :default_backend, EXLA.Backend
+# Set EXLA as the Nx backend in dev for GPU/XLA acceleration.
+# In prod (Docker), EXLA is excluded from deps — Nx uses BinaryBackend by
+# default, which is pure Elixir and requires no native compilation.
+if Mix.env() == :dev do
+  config :nx, :default_backend, EXLA.Backend
+end
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

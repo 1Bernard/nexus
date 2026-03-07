@@ -1,0 +1,129 @@
+# ===========================================================================
+# docker-compose.yml — Nexus Local Development / Production Stack
+# ===========================================================================
+#
+# Starts two services:
+#   db  — TimescaleDB (PostgreSQL 15) — provides both the Ecto read model
+#          and the EventStore write model in one database instance.
+#   app — Nexus application compiled into an OTP release.
+#
+# First-time setup:
+#   1. cp .env.example .env
+#   2. Fill in SECRET_KEY_BASE (run: mix phx.gen.secret) and API keys in .env
+#   3. docker compose up --build
+#
+# Subsequent runs:
+#   docker compose up
+#
+# Run DB migrations manually (needed once after first build):
+#   docker compose exec app /app/bin/init_db
+# ===========================================================================
+
+services:
+  # -------------------------------------------------------------------------
+  # TimescaleDB — PostgreSQL 15 with time-series extensions
+  # -------------------------------------------------------------------------
+  # We use timescale/timescaledb-ha because it includes:
+  #   - TimescaleDB extension (required for hypertables in the treasury domain)
+  #   - PostGIS (not used yet, but available)
+  #   - Standard postgres tooling (pg_isready, psql)
+  #
+  # Do NOT use plain postgres:15 — it will fail when migrations try to call
+  # SELECT create_hypertable(...) because the extension won't exist.
+  db:
+    image: timescale/timescaledb-ha:pg15-latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      # Create the prod DB at startup. The EventStore schema is created by
+      # bin/init_db — not here.
+      POSTGRES_DB: ${DB_NAME:-nexus_prod}
+    ports:
+      # Mapped to 5433 on the host to avoid conflicting with any local Postgres
+      # instance running on 5432. The app container connects internally via the
+      # Docker bridge network, so this only affects direct psql access from host.
+      - "5433:5432"
+    volumes:
+      # Named volume ensures data persists across container restarts
+      - nexus_db_data:/home/postgres/pgdata/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-nexus_prod}"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - nexus_network
+
+  # -------------------------------------------------------------------------
+  # Nexus Application
+  # -------------------------------------------------------------------------
+  app:
+    # Force AMD64 build and runtime even on Apple Silicon.
+    # Prevents EXLA from compiling XLA C++ from source (needs 6GB RAM).
+    # Downloads the precompiled x86 XLA binary instead (~2 min vs ~40 min).
+    # This is also the correct target arch for any Linux production server.
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Must match the local Elixir/OTP versions from .tool-versions / asdf
+        ELIXIR_VERSION: "1.19.5"
+        OTP_VERSION: "28.1"
+        # Ensures EXLA downloads the CPU XLA binary at build time.
+        # Override with cuda118 for GPU hosts.
+        XLA_TARGET: ${XLA_TARGET:-cpu}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- Database ---
+      DATABASE_URL: ${DATABASE_URL:-ecto://postgres:postgres@db/nexus_prod}
+      EVENT_STORE_URL: ${EVENT_STORE_URL:-${DATABASE_URL:-ecto://postgres:postgres@db/nexus_prod}}
+      POOL_SIZE: ${POOL_SIZE:-10}
+
+      # --- Phoenix ---
+      PHX_HOST: ${PHX_HOST:-localhost}
+      PORT: ${PORT:-4000}
+      SECRET_KEY_BASE: "${SECRET_KEY_BASE}"
+
+      # --- FX Market Data ---
+      MASSIVE_API_KEY: ${MASSIVE_API_KEY:?MASSIVE_API_KEY must be set}
+      MASSIVE_WS_URL: ${MASSIVE_WS_URL:-wss://socket.massive.com/forex}
+      POLYGON_API_KEY: ${POLYGON_API_KEY:-}
+
+      # --- AI Backend ---
+      XLA_TARGET: ${XLA_TARGET:-cpu}
+
+      # --- Clustering (optional) ---
+      DNS_CLUSTER_QUERY: ${DNS_CLUSTER_QUERY:-}
+    ports:
+      - "${PORT:-4000}:4000"
+    networks:
+      - nexus_network
+    # Run DB + EventStore init before starting the Phoenix server.
+    # This is idempotent — safe to run on every startup.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "==> Running Ecto migrations..."
+        /app/bin/nexus eval "Nexus.Release.migrate"
+        echo "==> Starting Phoenix server..."
+        exec /app/bin/server
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  nexus_db_data:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  nexus_network:
+    driver: bridge
