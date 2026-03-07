@@ -75,7 +75,7 @@ defmodule NexusWeb.System.BackofficeLive do
         <.stat_card label="Event Store Lag" value={"#{@health.event_store_lag}ms"} icon="hero-clock" />
         <.stat_card label="System Health" value={@health.system_health} icon="hero-heart" />
       </div>
-
+      
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-6 w-full mt-4">
         <.tab_button

@@ -101,7 +101,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </div>
         </:actions>
       </.page_header>
-
+      
     <!-- Top KPIs -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 w-full">
         <.dark_card class="p-6 flex flex-col justify-between">
@@ -169,7 +169,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
           </div>
         </.dark_card>
       </div>
-
+      
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-2 w-full">
         <.tab_button
@@ -250,7 +250,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       </span>
                       {anomaly.reason}
                     </div>
-
+                    
     <!-- Actions -->
                     <div class="flex items-center gap-3 pt-4 border-t border-white/5 mt-auto">
                       <button
@@ -280,7 +280,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
             </div>
           </.dark_card>
         <% end %>
-
+        
     <!-- Sentiments List -->
         <%= if @active_tab in ["overview", "sentiment"] do %>
           <.dark_card class="p-6 relative overflow-hidden h-fit">
@@ -343,7 +343,7 @@ defmodule NexusWeb.Admin.AnalysisLive do
                       }>
                           {sent.sentiment}
                         </p>
-
+                        
     <!-- Confidence Bar -->
                         <div class="w-24 mt-2">
                           <div class="flex items-center justify-between text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
