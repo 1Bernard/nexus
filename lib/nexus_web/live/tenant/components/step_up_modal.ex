@@ -205,6 +205,21 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
 
   defp decode_base64_url!(string), do: Base.url_decode64!(string, padding: false)
 
+  defp format_amount(amount) do
+    amount = if is_binary(amount), do: Decimal.new(amount), else: amount
+
+    cond do
+      Decimal.gt?(amount, 1_000_000) ->
+        "#{Decimal.div(amount, 1_000_000) |> Decimal.round(1)}M"
+
+      Decimal.gt?(amount, 1_000) ->
+        "#{Decimal.div(amount, 1_000) |> Decimal.round(0)}K"
+
+      true ->
+        "#{Decimal.round(amount, 0)}"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -268,6 +283,21 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
               <p class="text-slate-400 text-xs mt-2 px-4 leading-relaxed">
                 A high-value action has been requested. Physical biometric verification is required.
               </p>
+
+              <%= if assigns[:transfer] do %>
+                <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 w-full animate-in slide-in-from-bottom-2 duration-500">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Transfer Amount</span>
+                    <span class="text-lg font-mono text-white">
+                      {format_amount(@transfer.amount)} {@transfer.from_currency}
+                    </span>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="text-[9px] text-indigo-400 font-bold uppercase">To</span>
+                      <span class="text-[10px] text-slate-300">{@transfer.to_currency} Global Treasury</span>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
             </div>
 
             <div
@@ -301,7 +331,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                 [ Cancel Transaction ]
               </button>
             </div>
-            
+
     <!-- Security Primitives -->
             <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
               <.security_badge />

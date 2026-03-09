@@ -2,7 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   @moduledoc """
   Aggregate to manage Fund Transfers and their authorization states.
   """
-  defstruct [:id, :org_id, :status, :amount]
+  defstruct [:id, :org_id, :status, :amount, :from_currency, :to_currency]
 
   alias Nexus.Treasury.Commands.{RequestTransfer, AuthorizeTransfer, ExecuteTransfer}
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
@@ -41,10 +41,13 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
     }
   end
 
-  def execute(%__MODULE__{status: "authorized"}, %ExecuteTransfer{} = cmd) do
+  def execute(%__MODULE__{status: "authorized"} = state, %ExecuteTransfer{} = cmd) do
     %TransferExecuted{
       transfer_id: cmd.transfer_id,
       org_id: cmd.org_id,
+      amount: state.amount,
+      from_currency: state.from_currency,
+      to_currency: state.to_currency,
       executed_at: cmd.executed_at
     }
   end
@@ -57,6 +60,8 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
       | id: event.transfer_id,
         org_id: event.org_id,
         amount: event.amount,
+        from_currency: event.from_currency,
+        to_currency: event.to_currency,
         status: event.status
     }
   end

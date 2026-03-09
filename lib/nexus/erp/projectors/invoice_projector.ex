@@ -30,6 +30,7 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
             sap_document_number: event.sap_document_number,
             sap_status: event.sap_status,
             status: "ingested",
+            due_date: Nexus.Schema.parse_datetime(event.due_date),
             created_at: Nexus.Schema.parse_datetime(event.ingested_at),
             updated_at: Nexus.Schema.parse_datetime(event.ingested_at)
           },

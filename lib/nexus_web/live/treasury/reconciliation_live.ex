@@ -36,6 +36,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       # Stats placeholder
       |> assign(:auto_matched_count, 0)
       |> assign(:auto_match_rate, 0)
+      |> assign(:matching_velocity, 0)
       |> load_unmatched()
       |> load_reconciliations_page()
 
@@ -80,9 +81,17 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
             </div>
             <div class="flex flex-col border-l border-white/5 pl-4">
               <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">
-                Daily Velocity
+                Matching Velocity
               </span>
               <span class="text-xs text-indigo-400 font-black uppercase tracking-tight">
+                {@matching_velocity}m Avg Match
+              </span>
+            </div>
+            <div class="flex flex-col border-l border-white/5 pl-4">
+              <span class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">
+                Daily Output
+              </span>
+              <span class="text-xs text-slate-300 font-black uppercase tracking-tight">
                 {@auto_matched_count} Matched
               </span>
             </div>
@@ -156,8 +165,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                     >
                       <td class="p-4">
                         <div class="flex flex-col">
-                          <span class="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
-                            {inv.sap_document_number}
+                          <span class="text-[9px] text-slate-500 font-mono italic">
+                            SAP BELNR: {inv.sap_document_number}
                           </span>
                           <span class="text-[9px] text-slate-500 font-mono italic">
                             {inv.subsidiary}
@@ -299,7 +308,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
               <div class="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                 <div class="flex flex-col">
                   <span class="text-[10px] text-indigo-400 font-mono italic">
-                    #{inv.sap_document_number}
+                    SAP BELNR: {inv.sap_document_number}
                   </span>
                   <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}</span>
                 </div>
@@ -307,7 +316,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   <span class="hero-arrows-right-left w-4 h-4 text-slate-400"></span>
                 </div>
                 <div class="flex flex-col text-right">
-                  <span class="text-[10px] text-amber-400 font-mono italic">#{line.ref}</span>
+                  <span class="text-[10px] text-amber-400 font-mono italic">BNK REF: {line.ref}</span>
                   <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(line.amount), 2)} {line.currency}</span>
                 </div>
               </div>
@@ -482,9 +491,9 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         <:col :let={recon} label="References (SAP / Bank)">
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-mono text-indigo-400">SAP:</span>
+              <span class="text-[10px] font-mono text-indigo-400">SAP BELNR:</span>
               <span class="text-xs font-bold text-slate-300" title={recon.invoice_id}>
-                {String.slice(recon.invoice_id, 0, 8)}...{String.slice(recon.invoice_id, -4, 4)}
+                {recon.invoice_id}
               </span>
             </div>
             <div class="flex items-center gap-2">
@@ -599,7 +608,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
     {:noreply,
      socket
      |> assign(:auto_matched_count, stats.auto_matched_count)
-     |> assign(:auto_match_rate, stats.match_rate)}
+     |> assign(:auto_match_rate, stats.match_rate)
+     |> assign(:matching_velocity, stats.matching_velocity_min)}
   end
 
   @impl true

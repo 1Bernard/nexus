@@ -288,7 +288,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
     <.page_container class="px-4 md:px-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
       <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization" />
-      
+
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -313,7 +313,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-shield-check"
         />
       </div>
-      
+
     <!-- High-Density Data Table Card -->
       <NexusWeb.NexusComponents.data_grid
         id="invoices-table"
@@ -369,10 +369,10 @@ defmodule NexusWeb.ERP.InvoiceLive do
           />
         </:col>
 
-        <:col :let={invoice} label="Vendor / Ref">
+        <:col :let={invoice} label="Vendor / SAP BELNR">
           <div class="text-slate-200 font-medium">{invoice.entity_id}</div>
           <div class="text-slate-500 font-mono text-[10px] mt-0.5">
-            {invoice.sap_document_number}
+            BELNR: {invoice.sap_document_number}
           </div>
         </:col>
 
@@ -445,7 +445,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </:action>
       </NexusWeb.NexusComponents.data_grid>
-      
+
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.modal
         id="manual-entry-modal"
@@ -467,7 +467,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.modal>
-      
+
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.modal
         :if={@selected_invoice}
@@ -479,7 +479,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           <div class="flex items-center justify-between border-b border-[var(--nx-border)] pb-4">
             <div>
               <h2 class="text-xl font-bold text-white">Invoice Details</h2>
-              <p class="text-sm text-slate-400 font-mono">{@selected_invoice.sap_document_number}</p>
+              <p class="text-sm text-slate-400 font-mono">SAP BELNR: {@selected_invoice.sap_document_number}</p>
             </div>
             <NexusWeb.NexusComponents.badge variant="success" label="Synced" />
           </div>

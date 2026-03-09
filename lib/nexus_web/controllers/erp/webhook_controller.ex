@@ -67,6 +67,7 @@ defmodule NexusWeb.ERP.WebhookController do
       entity_id: entity_id,
       currency: Map.get(payload, "currency", "EUR"),
       amount: Map.get(payload, "amount", "0.0"),
+      due_date: Map.get(payload, "due_date") || DateTime.add(DateTime.utc_now(), 30, :day),
       subsidiary: Map.get(payload, "subsidiary", "Unknown Subsidiary"),
       line_items: Map.get(payload, "line_items", []),
       sap_document_number: "SAP-#{invoice_id}",

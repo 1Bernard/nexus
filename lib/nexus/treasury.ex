@@ -180,24 +180,116 @@ defmodule Nexus.Treasury do
 
   @doc """
   Returns a risk summary for an organization, including Net Exposure
-  and Value at Risk (VAR).
+  and Value at Risk (VAR). Normalizes all currency exposures into the
+  org's reporting currency (default USD).
   """
   def get_risk_summary(org_id) do
-    total_exposure =
+    # 1. Fetch reporting currency
+    policy = get_treasury_policy(org_id)
+    reporting_currency = (policy && policy.reporting_currency) || "USD"
+
+    # 2. Fetch all exposures for the org (Gross Invoice Volume)
+    gross_exposures =
       ExposureQuery.base()
       |> ExposureQuery.for_org(org_id)
-      |> ExposureQuery.sum_exposure()
-      |> Repo.one() || Decimal.new(0)
+      |> Repo.all()
 
-    # In a real environment, VAR involves complex calculations.
-    # For this dashboard bridge, we calculate it as 8% of exposure.
-    var = Decimal.mult(total_exposure, Decimal.from_float(0.08))
+    # 3. Fetch all liquidity positions for the org (Liquid Cash)
+    import Ecto.Query
+
+    liquidity_positions =
+      Repo.all(from p in Nexus.Treasury.Projections.LiquidityPosition, where: p.org_id == ^org_id)
+
+    # 4. Consolidate into Net Exposure in reporting currency
+    # Map liquidity by currency for easy lookup
+    liquidity_map =
+      Enum.reduce(liquidity_positions, %{}, fn p, acc ->
+        Map.put(acc, p.currency, p.amount)
+      end)
+
+    # Collect all unique currencies from both exposures and liquidity
+    all_currencies =
+      (Enum.map(gross_exposures, & &1.currency) ++ Map.keys(liquidity_map))
+      |> Enum.uniq()
+
+    total_net_exposure =
+      Enum.reduce(all_currencies, Decimal.new(0), fn curr, acc ->
+        # We only care about foreign currency risk
+        if curr == reporting_currency do
+          acc
+        else
+          gross =
+            Enum.find(gross_exposures, &(&1.currency == curr))
+            |> case do
+              nil -> Decimal.new(0)
+              exp -> exp.exposure_amount
+            end
+
+          liquid = Map.get(liquidity_map, curr, Decimal.new(0))
+          # Net Exposure for a currency is Invoices + Cash holdings
+          # If I have 1M EUR Invoices and -400k EUR Cash, net is 600k.
+          net_in_curr = Decimal.add(gross, liquid)
+
+          converted = convert_to_reporting(net_in_curr, curr, reporting_currency)
+          Decimal.add(acc, Decimal.abs(converted))
+        end
+      end)
+
+    # 5. Calculate VAR and Max Loss (VAR is 8% of total net exposure)
+    var = Decimal.mult(Decimal.abs(total_net_exposure), Decimal.from_float(0.08))
 
     %{
-      total_exposure: format_currency(total_exposure),
-      at_risk: format_currency(var),
-      max_loss: format_currency(Decimal.mult(var, Decimal.from_float(0.25)))
+      total_exposure: format_currency(total_net_exposure, reporting_currency),
+      at_risk: format_currency(var, reporting_currency),
+      max_loss: format_currency(Decimal.mult(var, Decimal.from_float(0.25)), reporting_currency)
     }
+  end
+
+  defp convert_to_reporting(amount, currency, reporting_currency) do
+    if currency == reporting_currency do
+      amount
+    else
+      # Try to find a direct or inverse rate
+      pair = "#{currency}/#{reporting_currency}"
+      inv_pair = "#{reporting_currency}/#{currency}"
+
+      case PriceCache.get_price(pair) do
+        {:ok, price} ->
+          Decimal.mult(amount, Decimal.new(price))
+
+        _ ->
+          case PriceCache.get_price(inv_pair) do
+            {:ok, inv_price} ->
+              # amount / inv_price = amount * (1 / inv_price)
+              Decimal.div(amount, Decimal.new(inv_price))
+
+            _ ->
+              # Fallback if no rate found (return 1:1 for safety in demo)
+              amount
+          end
+      end
+    end
+  end
+
+  defp format_currency(amount, currency) do
+    symbol =
+      case currency do
+        "USD" -> "$"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        _ -> "#{currency} "
+      end
+
+    cond do
+      Decimal.gt?(amount, 1_000_000) ->
+        "#{symbol}#{Decimal.div(amount, 1_000_000) |> Decimal.round(1)}M"
+
+      Decimal.gt?(amount, 1_000) ->
+        "#{symbol}#{Decimal.div(amount, 1_000) |> Decimal.round(0)}K"
+
+      true ->
+        "#{symbol}#{Decimal.round(amount, 0)}"
+    end
   end
 
   @doc """
@@ -231,9 +323,30 @@ defmodule Nexus.Treasury do
       |> ExposureQuery.for_org(org_id)
       |> Repo.all()
 
-    # Define the set of subsidiaries and currencies we want to show
-    subsidiaries = ["Munich HQ", "Tokyo Branch", "London Ltd"]
-    currencies = ["EUR", "USD", "GBP", "JPY", "CHF"]
+    # Dynamic extraction of active subsidiaries and currencies from existing snapshots
+    # This allows new branches and currencies to appear automatically as invoices are ingested.
+    subsidiaries =
+      snapshots
+      |> Enum.map(& &1.subsidiary)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    currencies =
+      snapshots
+      |> Enum.map(& &1.currency)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    # Fallback to defaults to ensure a polished UI experience for new organizations/demo
+    subsidiaries =
+      if Enum.empty?(subsidiaries),
+        do: ["Munich HQ", "Tokyo Branch", "London Ltd"],
+        else: subsidiaries
+
+    currencies =
+      if Enum.empty?(currencies),
+        do: ["EUR", "USD", "GBP", "JPY", "CHF"],
+        else: currencies
 
     # Map into a nested structure: %{subsidiary => %{currency => amount}}
     snapshots_map =
@@ -246,19 +359,6 @@ defmodule Nexus.Treasury do
       currencies: currencies,
       data: snapshots_map
     }
-  end
-
-  defp format_currency(amount) do
-    cond do
-      Decimal.gt?(amount, 1_000_000) ->
-        "€#{Decimal.div(amount, 1_000_000) |> Decimal.round(1)}M"
-
-      Decimal.gt?(amount, 1_000) ->
-        "€#{Decimal.div(amount, 1_000) |> Decimal.round(0)}K"
-
-      true ->
-        "€#{Decimal.round(amount, 0)}"
-    end
   end
 
   @doc """
@@ -423,6 +523,16 @@ defmodule Nexus.Treasury do
   end
 
   @doc """
+  Lists all liquidity positions for an organization.
+  """
+  def list_liquidity_positions(org_id) do
+    import Ecto.Query
+
+    from(p in Nexus.Treasury.Projections.LiquidityPosition, where: p.org_id == ^org_id)
+    |> Repo.all()
+  end
+
+  @doc """
   Returns reconciliation statistics for an organization.
   """
   def get_reconciliation_stats(org_id) do
@@ -436,10 +546,25 @@ defmodule Nexus.Treasury do
 
     total_matched = Enum.count(all, &(&1.status == :matched))
 
+    # Calculate average matching velocity (time from statement upload to match)
+    # For demo, we use the difference between inserted_at and matched_at
+    velocity =
+      if total_matched > 0 do
+        m_diffs =
+          Enum.map(all, fn r ->
+            DateTime.diff(r.inserted_at, r.matched_at, :minute) |> abs()
+          end)
+
+        (Enum.sum(m_diffs) / Enum.count(m_diffs)) |> round()
+      else
+        0
+      end
+
     %{
       auto_matched_count: auto_matched,
       total_matched_count: total_matched,
-      match_rate: if(total_matched > 0, do: round(auto_matched / total_matched * 100), else: 0)
+      match_rate: if(total_matched > 0, do: round(auto_matched / total_matched * 100), else: 0),
+      matching_velocity_min: velocity
     }
   end
 

@@ -14,6 +14,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :line_items, {:array, :map}
     field :sap_document_number, :string
     field :sap_status, :string
+    field :due_date, :utc_datetime
     field :status, :string, default: "ingested"
 
     timestamps(inserted_at: :created_at)
@@ -31,7 +32,8 @@ defmodule Nexus.ERP.Projections.Invoice do
       :line_items,
       :sap_document_number,
       :sap_status,
-      :status
+      :status,
+      :due_date
     ])
     |> validate_required([
       :id,
@@ -39,7 +41,8 @@ defmodule Nexus.ERP.Projections.Invoice do
       :entity_id,
       :currency,
       :amount,
-      :sap_document_number
+      :sap_document_number,
+      :due_date
     ])
   end
 end

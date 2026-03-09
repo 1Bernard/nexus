@@ -8,6 +8,7 @@ defmodule Nexus.Treasury.Projections.TreasuryPolicy do
     field :org_id, :binary_id
     field :transfer_threshold, :decimal
     field :mode, :string, default: "standard"
+    field :reporting_currency, :string, default: "USD"
 
     field :mode_thresholds, :map,
       default: %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
@@ -17,8 +18,15 @@ defmodule Nexus.Treasury.Projections.TreasuryPolicy do
 
   def changeset(policy, attrs) do
     policy
-    |> cast(attrs, [:id, :org_id, :transfer_threshold, :mode, :mode_thresholds])
-    |> validate_required([:org_id, :transfer_threshold, :mode])
+    |> cast(attrs, [
+      :id,
+      :org_id,
+      :transfer_threshold,
+      :mode,
+      :mode_thresholds,
+      :reporting_currency
+    ])
+    |> validate_required([:org_id, :transfer_threshold, :mode, :reporting_currency])
     |> validate_inclusion(:mode, ~w[standard strict relaxed])
   end
 end

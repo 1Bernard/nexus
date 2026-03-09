@@ -38,6 +38,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
           entity_id: cmd.entity_id,
           currency: cmd.currency,
           amount: cmd.amount,
+          due_date: cmd.due_date,
           subsidiary: cmd.subsidiary,
           line_items: cmd.line_items,
           sap_document_number: cmd.sap_document_number,

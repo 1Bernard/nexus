@@ -75,7 +75,7 @@ defmodule Nexus.ERP do
           icon: activity_icon(inv.status),
           color: activity_color(inv.status),
           title: activity_title(inv),
-          subtitle: "SAP: #{inv.sap_document_number}",
+          subtitle: "SAP BELNR: #{inv.sap_document_number}",
           created_at: inv.created_at,
           time: format_time(inv.created_at)
         }

@@ -146,8 +146,6 @@ defmodule Nexus.ERP.Services.StatementParser do
   # ---------------------------------------------------------------------------
 
   defp parse_csv(content) do
-    alias Nexus.ERP.Services.StatementParser.CSV
-
     # Strip BOM and leading/trailing whitespace/newlines
     content =
       content
@@ -190,7 +188,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     e -> {:error, "CSV parse error: #{Exception.message(e)}"}
   end
 
-  defp parse_nexus_standard_csv(content, delimiter \\ ",") do
+  defp parse_nexus_standard_csv(content, delimiter) do
     parser = get_parser(delimiter)
 
     rows =
@@ -202,7 +200,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     if Enum.empty?(rows), do: {:error, "No valid data rows in standard CSV"}, else: {:ok, rows}
   end
 
-  defp parse_bank_detail_csv(content, delimiter \\ ",") do
+  defp parse_bank_detail_csv(content, delimiter) do
     parser = get_parser(delimiter)
 
     rows =
@@ -256,7 +254,7 @@ defmodule Nexus.ERP.Services.StatementParser do
 
   defp parse_bank_row(_), do: nil
 
-  defp parse_fintech_ledger_csv(content, delimiter \\ ",") do
+  defp parse_fintech_ledger_csv(content, delimiter) do
     parser = get_parser(delimiter)
 
     rows =
@@ -328,7 +326,7 @@ defmodule Nexus.ERP.Services.StatementParser do
 
   defp parse_fintech_row(_), do: nil
 
-  defp parse_global_fx_csv(content, delimiter \\ ",") do
+  defp parse_global_fx_csv(content, delimiter) do
     parser = get_parser(delimiter)
 
     rows =
@@ -380,7 +378,7 @@ defmodule Nexus.ERP.Services.StatementParser do
 
   defp parse_global_fx_row(_), do: nil
 
-  defp parse_fintech_industry_csv(content, delimiter \\ ",") do
+  defp parse_fintech_industry_csv(content, delimiter) do
     parser = get_parser(delimiter)
 
     rows =

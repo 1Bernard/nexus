@@ -99,6 +99,7 @@ defmodule Nexus.Application do
             # --- Treasury Domain ---
             Nexus.Treasury.Projectors.MarketTickProjector,
             Nexus.Treasury.Projectors.ExposureProjector,
+            Nexus.Treasury.Projectors.LiquidityProjector,
             Nexus.Treasury.Projectors.PolicyProjector,
             Nexus.Treasury.Projectors.ForecastProjector,
             Nexus.Treasury.Projectors.ReconciliationProjector,

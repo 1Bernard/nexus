@@ -8,6 +8,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
   alias Nexus.Treasury
   alias Nexus.ERP
   alias Nexus.Treasury.Gateways.PriceCache
+  alias NexusWeb.Tenant.Components.{StepUpModal, TransferModal}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -67,11 +68,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:latest_forecast, nil)
       |> assign(:historical_forecast_data, [])
       |> assign(:show_step_up, false)
+      |> assign(:show_transfer_modal, false)
       |> assign(:pending_transfer, nil)
       |> assign(:transfer_threshold, persisted_threshold)
       |> assign(:policy_mode, persisted_mode)
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
-      |> assign(:recon_stats, %{match_rate: 0, auto_matched_count: 0})
+      |> assign(:recon_stats, %{match_rate: 0, auto_matched_count: 0, matching_velocity_min: 0})
+      |> assign(:liquidity_positions, %{})
       |> assign(:host, get_host(socket))
 
     {:ok, socket}
@@ -82,12 +85,19 @@ defmodule NexusWeb.Tenant.DashboardLive do
     ~H"""
     <.page_container class="px-4 md:px-6">
       <.live_component
-        module={NexusWeb.Tenant.Components.StepUpModal}
+        module={StepUpModal}
         id="step-up-modal"
         show={@show_step_up}
         action_id={@pending_transfer && @pending_transfer.transfer_id}
+        transfer={@pending_transfer}
         current_user={@current_user}
         host={@host}
+      />
+
+      <.live_component
+        module={TransferModal}
+        id="transfer-modal"
+        show={@show_transfer_modal}
       />
 
       <.page_header
@@ -177,15 +187,20 @@ defmodule NexusWeb.Tenant.DashboardLive do
         <.link navigate={~p"/reconciliation"} class="block group">
           <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-indigo-500/5 hover:border-indigo-500/40 transition-colors border-indigo-500/20 cursor-pointer h-full">
             <div class="flex justify-between items-start">
-              <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em]">Auto-Match Rate</p>
-              <span class="hero-bolt w-4 h-4 text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
-              </span>
+              <div>
+                <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em] mb-1">Match Rate</p>
+                <p class="text-3xl font-bold tracking-tight text-white leading-none">{@recon_stats.match_rate}%</p>
+              </div>
+              <span class="hero-bolt w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform duration-500"></span>
             </div>
-            <% rate = @recon_stats.match_rate %>
-            <div class="mt-2 flex items-end justify-between">
-              <p class="text-3xl font-bold tracking-tight text-white leading-none">{rate}%</p>
+
+            <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Velocity</span>
+                <span class="text-xs font-mono text-emerald-400 font-bold">{@recon_stats.matching_velocity_min}m <span class="text-[10px] text-slate-600 font-sans font-medium uppercase tracking-tight">Avg</span></span>
+              </div>
               <span class="text-[10px] text-indigo-300 group-hover:text-white transition-colors uppercase tracking-wider font-semibold flex items-center gap-1 group-hover:translate-x-1 duration-300">
-                View All <span class="hero-arrow-right w-3 h-3"></span>
+                Match Engine <span class="hero-arrow-right w-3 h-3"></span>
               </span>
             </div>
           </.dark_card>
@@ -261,7 +276,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
                     <div>
                       <p class="text-xs font-bold text-slate-200">{tick.name}</p>
                       <p class="text-[9px] text-slate-500 uppercase tracking-widest font-bold">
-                        Liquidity: High
+                        <%= if Map.has_key?(@liquidity_positions, tick.name) do %>
+                          Balance: {format_heatmap_amount(Map.get(@liquidity_positions, tick.name), tick.name)}
+                        <% else %>
+                          Liquidity: High
+                        <% end %>
                       </p>
                     </div>
                   </div>
@@ -290,7 +309,12 @@ defmodule NexusWeb.Tenant.DashboardLive do
                 <%= for alert <- @policy_alerts do %>
                   <div class="p-3 rounded-xl bg-rose-500/5 border border-rose-500/10 flex flex-col gap-1 relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button class="text-[9px] font-bold text-rose-400 hover:text-white uppercase tracking-tighter">
+                      <button
+                        phx-click="initiate_hedge"
+                        phx-value-pair={alert.currency_pair}
+                        phx-value-amount={to_string(alert.exposure_amount)}
+                        class="text-[9px] font-bold text-rose-400 hover:text-white uppercase tracking-tighter"
+                      >
                         Hedge Now
                       </button>
                     </div>
@@ -325,7 +349,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
                 </h3>
                 <div class="space-y-4 font-mono">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] text-slate-400">Net Exposure</span>
+                    <span class="text-[11px] text-slate-400">Consolidated Exposure</span>
                     <span class="text-lg text-white">{@risk_summary.total_exposure}</span>
                   </div>
                   <div class="flex justify-between items-baseline">
@@ -591,6 +615,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:market_ticks, Treasury.list_active_currencies())
       |> assign(:risk_summary, Treasury.get_risk_summary(org_id))
       |> assign(:exposure_heatmap, Treasury.list_exposure_heatmap(org_id))
+      |> assign(
+        :liquidity_positions,
+        Treasury.list_liquidity_positions(org_id) |> Map.new(&{&1.currency, &1.amount})
+      )
       |> assign(:payment_matching, ERP.get_payment_matching_stats(org_id))
       |> assign(:recent_activity, ERP.list_recent_activity(org_id))
       |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id))
@@ -642,15 +670,53 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
+  def handle_info(:close_step_up, socket) do
+    {:noreply, assign(socket, show_step_up: false, pending_transfer: nil)}
+  end
+
+  def handle_info(:close_transfer_modal, socket) do
+    {:noreply, assign(socket, :show_transfer_modal, false)}
+  end
+
+  def handle_info({:transfer_submitted, attrs}, socket) do
+    amount = Decimal.new(attrs["amount"])
+    threshold = socket.assigns.transfer_threshold
+
+    # Convert attrs strings to atoms for the internal handle_initiate_transfer
+    transfer_attrs = %{
+      from_currency: attrs["from_currency"],
+      to_currency: attrs["to_currency"],
+      amount: amount
+    }
+
+    if Decimal.gt?(amount, threshold) do
+      # High-value: Transition to Step-Up
+      transfer_id = "TX-#{Base.encode32(:crypto.strong_rand_bytes(5), padding: false)}"
+
+      pending = %{
+        transfer_id: transfer_id,
+        amount: amount,
+        from_currency: transfer_attrs.from_currency,
+        to_currency: transfer_attrs.to_currency
+      }
+
+      {:noreply,
+       socket
+       |> assign(:show_transfer_modal, false)
+       |> assign(:pending_transfer, pending)
+       |> assign(:show_step_up, true)}
+    else
+      # Low-value: Process immediately
+      socket
+      |> assign(:show_transfer_modal, false)
+      |> handle_initiate_transfer(transfer_attrs)
+    end
+  end
+
   def handle_info({:step_up_success, _action_id}, socket) do
     # Success screen visibility before closing
     Process.send_after(self(), :close_step_up, 1500)
     {:noreply, socket}
-  end
-
-  @impl true
-  def handle_info(:close_step_up, socket) do
-    {:noreply, assign(socket, show_step_up: false, pending_transfer: nil)}
   end
 
   @impl true
@@ -680,6 +746,12 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
     {:noreply,
      socket
+     |> assign(:risk_summary, Treasury.get_risk_summary(socket.assigns.current_user.org_id))
+     |> assign(
+       :liquidity_positions,
+       Treasury.list_liquidity_positions(socket.assigns.current_user.org_id)
+       |> Map.new(&{&1.currency, &1.amount})
+     )
      |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
   end
 
@@ -717,31 +789,22 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
+  def handle_event("initiate_hedge", %{"pair" => pair, "amount" => amount}, socket) do
+    # When hedging, we flip the pair (e.g., if we have too much EUR, we sell EUR for USD)
+    [from, to] = String.split(pair, "/")
+
+    # Extract the excess amount (for demo, we simulate rebalancing 100% of the breach)
+    # In a real system, you'd calculate the Delta.
+    handle_initiate_transfer(socket, %{
+      from_currency: from,
+      to_currency: to,
+      amount: amount
+    })
+  end
+
+  @impl true
   def handle_event("initiate_transfer", _params, socket) do
-    # For demo: Attempt a High-Value transfer that triggers Step-Up
-    transfer_id = "TX-#{Base.encode32(:crypto.strong_rand_bytes(5), padding: false)}"
-
-    attrs = %{
-      transfer_id: transfer_id,
-      org_id: socket.assigns.current_user.org_id,
-      user_id: socket.assigns.current_user.id,
-      from_currency: "EUR",
-      to_currency: "USD",
-      # €5M -> High Value
-      amount: "5000000",
-      threshold: socket.assigns.transfer_threshold
-    }
-
-    case Treasury.request_transfer(attrs) do
-      :ok ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Transfer task created. Processing...")
-         |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Transfer failed: #{inspect(reason)}")}
-    end
+    {:noreply, assign(socket, :show_transfer_modal, true)}
   end
 
   def handle_event("set_cash_flow_timeframe", %{"tf" => tf}, socket) do
@@ -771,6 +834,34 @@ defmodule NexusWeb.Tenant.DashboardLive do
        content: csv_data,
        type: "text/csv"
      })}
+  end
+
+  defp handle_initiate_transfer(socket, attrs) do
+    transfer_id = "TX-#{Base.encode32(:crypto.strong_rand_bytes(5), padding: false)}"
+
+    full_attrs = %{
+      transfer_id: transfer_id,
+      org_id: socket.assigns.current_user.org_id,
+      user_id: socket.assigns.current_user.id,
+      from_currency: attrs.from_currency,
+      to_currency: attrs.to_currency,
+      amount: attrs.amount,
+      threshold: socket.assigns.transfer_threshold
+    }
+
+    case Treasury.request_transfer(full_attrs) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           "Transfer task created for #{attrs.amount} #{attrs.from_currency}. Processing..."
+         )
+         |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Transfer failed: #{inspect(reason)}")}
+    end
   end
 
   defp get_host(socket) do
