@@ -95,50 +95,21 @@ defmodule NexusWeb.Tenant.DashboardLive do
         subtitle="Real-time treasury & exposure intelligence"
       >
         <:actions>
-          <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl mr-2">
-            <button
-              id="policy-mode-standard"
-              phx-click="update_threshold"
-              phx-value-mode="standard"
-              class={[
-                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(@policy_mode == "standard",
-                  do: "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20",
-                  else: "text-slate-500 hover:text-slate-300"
-                )
-              ]}
-            >
-              Standard
-            </button>
-            <button
-              id="policy-mode-strict"
-              phx-click="update_threshold"
-              phx-value-mode="strict"
-              class={[
-                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(@policy_mode == "strict",
-                  do: "bg-rose-600 text-white shadow-lg shadow-rose-600/20",
-                  else: "text-slate-500 hover:text-slate-300"
-                )
-              ]}
-            >
-              Strict
-            </button>
-            <button
-              id="policy-mode-relaxed"
-              phx-click="update_threshold"
-              phx-value-mode="relaxed"
-              class={[
-                "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
-                if(@policy_mode == "relaxed",
-                  do: "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20",
-                  else: "text-slate-500 hover:text-slate-300"
-                )
-              ]}
-            >
-              Relaxed
-            </button>
-          </div>
+          <.link
+            navigate={~p"/admin/policy"}
+            class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border border-white/5 rounded-xl mr-3 group hover:border-indigo-500/30 transition-all"
+          >
+            <div class={[
+              "w-2 h-2 rounded-full animate-pulse",
+              @policy_mode == "strict" && "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]",
+              @policy_mode == "standard" && "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]",
+              @policy_mode == "relaxed" && "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]"
+            ]}>
+            </div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-slate-200 transition-colors">
+              {String.capitalize(@policy_mode)} Policy Active
+            </span>
+          </.link>
 
           <button
             phx-click="initiate_transfer"
@@ -726,35 +697,6 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
-  def handle_event("update_threshold", %{"mode" => mode}, socket) do
-    org_id = socket.assigns.current_user.org_id
-    policy = Treasury.get_treasury_policy(org_id)
-
-    modes =
-      (policy && policy.mode_thresholds) ||
-        %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
-
-    threshold_val = Map.get(modes, mode, "1000000")
-
-    cmd = %Nexus.Treasury.Commands.SetPolicyMode{
-      policy_id: org_id,
-      org_id: org_id,
-      mode: mode,
-      threshold: Decimal.new(threshold_val),
-      actor_email: socket.assigns.current_user.email,
-      changed_at: DateTime.utc_now()
-    }
-
-    case Nexus.App.dispatch(cmd) do
-      :ok ->
-        {:noreply, assign(socket, :policy_mode, mode)}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to update policy: #{inspect(reason)}")}
-    end
-  end
-
-  @impl true
   def handle_event("biometric_start", _params, socket) do
     {:noreply, socket}
   end
@@ -885,8 +827,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
   defp get_forecast_gap(%{data_points: []}), do: Decimal.new(0)
 
   defp get_forecast_gap(%{data_points: points}) do
-    last_point = List.last(points)
-    val = Map.get(last_point, "predicted_amount", "0.0")
-    Decimal.from_float(String.to_float(to_string(val)))
+    # Find the lowest predicted point in the horizon to trigger alerts earlier
+    points
+    |> Enum.map(fn p ->
+      val = Map.get(p, "predicted_amount", "0.0")
+      String.to_float(to_string(val))
+    end)
+    |> Enum.min()
+    |> Decimal.from_float()
   end
 end

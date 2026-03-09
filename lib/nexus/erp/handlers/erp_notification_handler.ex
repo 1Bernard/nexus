@@ -8,7 +8,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
     name: "ERP.Handlers.ERPNotificationHandler",
     consistency: :eventual
 
-  alias Nexus.ERP.Events.{InvoiceIngested, StatementUploaded}
+  alias Nexus.ERP.Events.{InvoiceIngested, StatementUploaded, StatementRejected}
 
   def handle(%InvoiceIngested{} = event, _metadata) do
     Phoenix.PubSub.broadcast(
@@ -25,6 +25,16 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
       Nexus.PubSub,
       "erp_statements:#{event.org_id}",
       {:statement_uploaded, event.statement_id}
+    )
+
+    :ok
+  end
+
+  def handle(%StatementRejected{} = event, _metadata) do
+    Phoenix.PubSub.broadcast(
+      Nexus.PubSub,
+      "erp_statements:#{event.org_id}",
+      {:statement_rejected, event.statement_id}
     )
 
     :ok

@@ -15,6 +15,7 @@ defmodule Nexus.ERP.Projections.StatementLine do
     field :narrative, :string
     field :status, :string, default: "unmatched"
     field :error_message, :string
+    field :metadata, :map, default: %{}
 
     timestamps(inserted_at: :created_at)
   end
@@ -31,7 +32,8 @@ defmodule Nexus.ERP.Projections.StatementLine do
       :currency,
       :narrative,
       :status,
-      :error_message
+      :error_message,
+      :metadata
     ])
     |> validate_required([:id, :statement_id, :org_id, :date, :amount])
   end

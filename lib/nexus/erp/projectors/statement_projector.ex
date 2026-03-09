@@ -33,9 +33,22 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
     |> insert_statement_lines(event.lines, event.statement_id, event.org_id)
   end)
 
-  project(%StatementRejected{} = _event, _metadata, fn multi ->
-    # Rejected statements are not persisted to the read model — they are audit events only.
+  project(%StatementRejected{} = event, _metadata, fn multi ->
+    statement_attrs = %{
+      id: event.statement_id,
+      org_id: event.org_id,
+      filename: event.filename,
+      format: "rejected",
+      status: "rejected",
+      error_message: event.reason,
+      uploaded_at: Nexus.Schema.parse_datetime(event.rejected_at)
+    }
+
     multi
+    |> Ecto.Multi.insert(:statement, Statement.changeset(%Statement{}, statement_attrs),
+      on_conflict: :nothing,
+      conflict_target: :id
+    )
   end)
 
   # ---------------------------------------------------------------------------
@@ -54,7 +67,8 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
         amount: line.amount,
         currency: Map.get(line, :currency, ""),
         narrative: Map.get(line, :narrative, ""),
-        status: "unmatched"
+        status: "unmatched",
+        metadata: Map.get(line, :metadata, %{})
       }
 
       Ecto.Multi.insert(

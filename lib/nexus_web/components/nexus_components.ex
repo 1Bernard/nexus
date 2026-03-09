@@ -532,6 +532,7 @@ defmodule NexusWeb.NexusComponents do
   attr :change, :string, default: nil
   attr :trend, :string, default: nil, values: ["up", "down", nil]
   attr :icon, :string, default: nil
+  attr :symbol, :string, default: nil
 
   def stat_card(assigns) do
     ~H"""
@@ -539,7 +540,20 @@ defmodule NexusWeb.NexusComponents do
       <div class="flex items-start justify-between">
         <div>
           <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{@label}</p>
-          <p class="text-2xl font-bold tracking-tight mt-1">{@value}</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <p class="text-2xl font-bold tracking-tight">{@value}</p>
+            <span
+              :if={@symbol}
+              class={[
+                "text-sm font-black",
+                @trend == "up" && "text-rose-500",
+                @trend == "down" && "text-emerald-500",
+                is_nil(@trend) && "text-slate-400"
+              ]}
+            >
+              {@symbol}
+            </span>
+          </div>
           <p
             :if={@change}
             class={[

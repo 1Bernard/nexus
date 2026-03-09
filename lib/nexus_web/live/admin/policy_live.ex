@@ -28,6 +28,7 @@ defmodule NexusWeb.Admin.PolicyLive do
         "Configure risk appetite and threshold limits for the entire organisation"
       )
       |> assign(:modes, modes)
+      |> assign(:policy_mode, (policy && policy.mode) || "standard")
       |> assign(:audits, audits)
 
     {:ok, socket}
@@ -85,6 +86,46 @@ defmodule NexusWeb.Admin.PolicyLive do
   end
 
   @impl true
+  def handle_event("set_policy_mode", %{"mode" => mode}, socket) do
+    org_id = socket.assigns.current_user.org_id
+    email = socket.assigns.current_user.email
+    policy = Treasury.get_treasury_policy(org_id)
+
+    # Use the existing threshold for the selected mode
+    modes =
+      (policy && policy.mode_thresholds) ||
+        %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
+
+    threshold_val = Map.get(modes, mode, "1000000")
+
+    cmd = %Nexus.Treasury.Commands.SetPolicyMode{
+      policy_id: org_id,
+      org_id: org_id,
+      mode: mode,
+      threshold: Decimal.new(threshold_val),
+      actor_email: email,
+      changed_at: DateTime.utc_now()
+    }
+
+    case Nexus.App.dispatch(cmd, consistency: :strong) do
+      :ok ->
+        audits = Treasury.list_policy_audit_logs(org_id)
+
+        {:noreply,
+         socket
+         |> assign(:audits, audits)
+         |> assign(:policy_mode, mode)
+         |> put_flash(
+           :info,
+           "Treasury policy mode successfully changed to #{String.capitalize(mode)}."
+         )}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to update policy mode.")}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 md:px-6">
@@ -99,9 +140,38 @@ defmodule NexusWeb.Admin.PolicyLive do
         <!-- Main Configuration Side (2/3) -->
         <div class="lg:col-span-2 space-y-6">
           <.dark_card class="p-8 border-indigo-500/10">
-            <h3 class="text-sm font-bold text-white mb-8 uppercase tracking-widest flex items-center gap-2">
-              <span class="hero-shield-check w-4 h-4 text-indigo-400"></span> Limit Tier Configuration
-            </h3>
+            <div class="flex items-center justify-between mb-8">
+              <h3 class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <span class="hero-shield-check w-4 h-4 text-indigo-400"></span> Limit Tier Configuration
+              </h3>
+
+              <%!-- Quick Mode Selector --%>
+              <div class="flex bg-slate-900/50 border border-white/5 p-1 rounded-xl">
+                <button
+                  :for={m <- ["strict", "standard", "relaxed"]}
+                  phx-click="set_policy_mode"
+                  phx-value-mode={m}
+                  class={[
+                    "px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all",
+                    cond do
+                      @policy_mode == m and m == "strict" ->
+                        "bg-rose-600 text-white shadow-lg shadow-rose-600/20"
+
+                      @policy_mode == m and m == "standard" ->
+                        "bg-amber-600 text-white shadow-lg shadow-amber-600/20"
+
+                      @policy_mode == m and m == "relaxed" ->
+                        "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+
+                      true ->
+                        "text-slate-500 hover:text-slate-300"
+                    end
+                  ]}
+                >
+                  {m}
+                </button>
+              </div>
+            </div>
 
             <.risk_gauge modes={@modes} />
 
@@ -133,7 +203,7 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Multi-SIG enforced above this baseline.
                   </p>
                 </div>
-                
+
     <!-- Standard Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
@@ -160,7 +230,7 @@ defmodule NexusWeb.Admin.PolicyLive do
                     Step-up auth / hardware key required.
                   </p>
                 </div>
-                
+
     <!-- Relaxed Mode -->
                 <div>
                   <div class="flex items-center gap-2 mb-3">
@@ -208,7 +278,7 @@ defmodule NexusWeb.Admin.PolicyLive do
             </form>
           </.dark_card>
         </div>
-        
+
     <!-- Audit/History Side (1/3) -->
         <div class="h-full">
           <.dark_card class="p-6 h-full border-white/5 flex flex-col min-h-[500px]">

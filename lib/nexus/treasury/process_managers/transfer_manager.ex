@@ -14,10 +14,10 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
   alias Nexus.Identity.Events.StepUpVerified
   alias Nexus.Treasury.Commands.{AuthorizeTransfer, ExecuteTransfer}
 
-  def interested?(%TransferInitiated{transfer_id: id}), do: {:start!, id}
-  def interested?(%StepUpVerified{action_id: id}), do: {:continue!, id}
-  def interested?(%TransferAuthorized{transfer_id: id}), do: {:continue!, id}
-  def interested?(%TransferExecuted{transfer_id: id}), do: {:stop!, id}
+  def interested?(%TransferInitiated{transfer_id: id}), do: {:start, id}
+  def interested?(%StepUpVerified{action_id: id}), do: {:continue, id}
+  def interested?(%TransferAuthorized{transfer_id: id}), do: {:continue, id}
+  def interested?(%TransferExecuted{transfer_id: id}), do: {:stop, id}
 
   # --- Handle Events (Emit Commands) ---
 

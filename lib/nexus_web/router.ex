@@ -38,6 +38,7 @@ defmodule NexusWeb.Router do
       live "/forecast", Treasury.ForecastLive, :index
       live "/payments", Payments.BulkPaymentLive
       live "/intelligence", Tenant.AnalysisLive
+      live "/intelligence/investigate/:id", Tenant.AnomalyInvestigationLive
       live "/admin/analysis", Admin.AnalysisLive
       live "/admin/analysis/investigate/:id", Admin.AnomalyInvestigationLive
     end

@@ -28,13 +28,18 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
   end)
 
   project(%SettlementUnmatched{} = event, _metadata, fn multi ->
+    amount_str =
+      event.amount
+      |> Decimal.to_float()
+      |> :erlang.float_to_binary(decimals: 2)
+
     attrs = %{
       id: event.statement_line_id,
       org_id: event.org_id,
       source_id: event.statement_line_id,
       type: "anomaly",
       score: 1.0,
-      reason: "Reconciliation Failure: #{event.reason} (#{event.amount} #{event.currency})",
+      reason: "Reconciliation Failure: #{event.reason} (#{amount_str} #{event.currency})",
       flagged_at: Nexus.Schema.parse_datetime(event.timestamp)
     }
 
@@ -42,6 +47,24 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
   end)
 
   project(%SentimentScored{} = event, _metadata, fn multi ->
+    reason =
+      cond do
+        event.sentiment == "positive" and event.confidence > 0.9 ->
+          "Strong positive alignment. Vendor communication indicates optimal operational synergy."
+
+        event.sentiment == "positive" ->
+          "Communication pattern aligns with historical trajectory. No immediate escalation needed."
+
+        event.sentiment == "negative" and event.confidence > 0.8 ->
+          "Critical sentiment deviation. Urgent tone detected in vendor stream—requires immediate oversight."
+
+        event.sentiment == "negative" ->
+          "Subtle friction detected. Sentiment profile suggests potential friction in upcoming settlement cycle."
+
+        true ->
+          "Neutral communication baseline maintained across inbound vendor streams."
+      end
+
     attrs = %{
       id: event.analysis_id,
       org_id: event.org_id,
@@ -49,6 +72,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
       type: "sentiment",
       sentiment: event.sentiment,
       confidence: event.confidence,
+      reason: reason,
       scored_at: Nexus.Schema.parse_datetime(event.scored_at)
     }
 

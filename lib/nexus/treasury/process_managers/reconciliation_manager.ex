@@ -33,8 +33,8 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   }
 
   # Route process managers by org_id so each tenant has an isolated matching engine
-  def interested?(%InvoiceIngested{org_id: org_id}), do: {:start!, org_id}
-  def interested?(%StatementUploaded{org_id: org_id}), do: {:start!, org_id}
+  def interested?(%InvoiceIngested{org_id: org_id}), do: {:start, org_id}
+  def interested?(%StatementUploaded{org_id: org_id}), do: {:start, org_id}
   def interested?(%TransactionReconciled{org_id: org_id}), do: {:continue!, org_id}
   def interested?(%ReconciliationProposed{org_id: org_id}), do: {:continue!, org_id}
   def interested?(%ReconciliationRejected{org_id: org_id}), do: {:continue!, org_id}

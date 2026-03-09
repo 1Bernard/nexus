@@ -36,6 +36,7 @@ defmodule Nexus.ERP.Aggregates.Statement do
         %StatementRejected{
           statement_id: cmd.statement_id,
           org_id: cmd.org_id,
+          filename: cmd.filename,
           reason: reason,
           rejected_at: cmd.uploaded_at
         }

@@ -166,7 +166,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                       </td>
                       <td class="p-4 text-right">
                         <span class="text-xs font-mono font-bold text-white">
-                          {inv.amount} {inv.currency}
+                          {Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}
                         </span>
                       </td>
                       <td class="p-4">
@@ -255,7 +255,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                       </td>
                       <td class="p-4 text-right">
                         <span class="text-xs font-mono font-bold text-white">
-                          {line.amount} {line.currency}
+                          {Decimal.round(Decimal.new(line.amount), 2)} {line.currency}
                         </span>
                       </td>
                       <td class="p-4">
@@ -301,14 +301,14 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   <span class="text-[10px] text-indigo-400 font-mono italic">
                     #{inv.sap_document_number}
                   </span>
-                  <span class="text-sm font-bold text-white">{inv.amount} {inv.currency}</span>
+                  <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}</span>
                 </div>
                 <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
                   <span class="hero-arrows-right-left w-4 h-4 text-slate-400"></span>
                 </div>
                 <div class="flex flex-col text-right">
                   <span class="text-[10px] text-amber-400 font-mono italic">#{line.ref}</span>
-                  <span class="text-sm font-bold text-white">{line.amount} {line.currency}</span>
+                  <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(line.amount), 2)} {line.currency}</span>
                 </div>
               </div>
             </div>
@@ -322,7 +322,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   "text-sm font-mono font-bold",
                   if(is_exact, do: "text-emerald-400", else: "text-rose-400")
                 ]}>
-                  {Decimal.to_string(variance)} {line.currency}
+                  {Decimal.round(variance, 2)} {line.currency}
                 </span>
               </div>
 
@@ -445,11 +445,9 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         </:col>
 
         <:col :let={recon} label="Match Type" class="w-32">
-          <% is_manual =
-            String.contains?(recon.reconciliation_id, "MANUAL") or
-              Enum.at(String.split(recon.reconciliation_id, "-"), 0) |> String.length() > 30 %>
+          <% is_system = recon.actor_email == "system@nexus.ai" %>
           <div class="flex items-start gap-2">
-            <%= if is_manual do %>
+            <%= if not is_system do %>
               <div
                 class="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0"
                 title="Manual Match"
@@ -485,12 +483,21 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-mono text-indigo-400">SAP:</span>
-              <span class="text-xs font-bold text-slate-300">{recon.invoice_id}</span>
+              <span class="text-xs font-bold text-slate-300" title={recon.invoice_id}>
+                {String.slice(recon.invoice_id, 0, 8)}...{String.slice(recon.invoice_id, -4, 4)}
+              </span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-mono text-amber-400">BNK:</span>
-              <span class="text-[11px] text-slate-500 font-medium truncate max-w-[150px]">
-                {recon.statement_line_id}
+              <span
+                class="text-[11px] text-slate-500 font-medium truncate max-w-[150px]"
+                title={recon.statement_line_id}
+              >
+                {String.slice(recon.statement_line_id, 0, 8)}...{String.slice(
+                  recon.statement_line_id,
+                  -4,
+                  4
+                )}
               </span>
             </div>
           </div>
@@ -498,7 +505,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
 
         <:col :let={recon} label="Matched" class="text-right">
           <span class="text-xs font-mono font-bold text-white">
-            {recon.amount} {recon.currency}
+            {Decimal.round(Decimal.new(recon.amount), 2)} {recon.currency}
           </span>
         </:col>
 
@@ -506,7 +513,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
           <%= if not Decimal.equal?(recon.variance || Decimal.new(0), Decimal.new(0)) do %>
             <div class="flex flex-col items-end">
               <span class="text-[10px] font-mono font-bold text-rose-400">
-                {recon.variance} {recon.currency}
+                {Decimal.round(recon.variance, 2)} {recon.currency}
               </span>
               <span class="text-[8px] text-slate-600 uppercase font-black">
                 {recon.variance_reason || "Reconciled Diff"}

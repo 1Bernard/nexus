@@ -12,8 +12,8 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
     ~H"""
     <div class="flex items-center gap-4 px-5 py-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors group">
       <%!-- Batch Icon --%>
-      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/20 flex items-center justify-center">
-        <span class="hero-credit-card w-6 h-6 text-indigo-400"></span>
+      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-white/10 flex items-center justify-center shadow-lg">
+        <span class="hero-bolt w-6 h-6 text-indigo-400"></span>
       </div>
 
       <%!-- ID + Date --%>
@@ -44,7 +44,7 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
             "font-mono",
             if(@batch.status == "completed", do: "text-emerald-400", else: "text-indigo-400")
           ]}>
-            {calculate_progress(@batch)}%
+            {calculate_progress(@batch)}% PROCESSED
           </span>
         </div>
         <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -81,7 +81,7 @@ defmodule NexusWeb.Payments.BulkPaymentComponents do
   # ---------------------------------------------------------------------------
 
   defp format_datetime(nil), do: "—"
-  defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%d %b, %H:%M")
+  defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y, %H:%M")
   defp format_datetime(_), do: "—"
 
   defp calculate_progress(%{total_items: 0}), do: 0

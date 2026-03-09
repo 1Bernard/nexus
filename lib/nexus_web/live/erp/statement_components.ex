@@ -13,7 +13,7 @@ defmodule NexusWeb.ERP.StatementComponents do
     <div class="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors group">
       <%!-- Format badge --%>
       <div class={[
-        "flex-shrink-0 w-14 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold tracking-widest uppercase",
+        "flex-shrink-0 w-16 h-7 rounded-md flex items-center justify-center text-[9px] font-black tracking-[0.2em] uppercase shadow-sm transition-all group-hover:scale-105",
         format_badge_class(@statement.format)
       ]}>
         {@statement.format}
@@ -22,9 +22,16 @@ defmodule NexusWeb.ERP.StatementComponents do
       <%!-- Filename + meta --%>
       <div class="flex-1 min-w-0">
         <p class="text-sm text-white font-medium truncate">{@statement.filename}</p>
-        <p class="text-[10px] text-slate-500 mt-0.5 font-mono">
-          Uploaded {format_datetime(@statement.uploaded_at)}
-        </p>
+        <%= if @statement.status == "rejected" do %>
+          <p class="text-[10px] text-rose-400 mt-0.5 font-bold flex items-center gap-1.5">
+            <span class="hero-exclamation-circle w-3 h-3"></span>
+            {@statement.error_message || "Ingestion failed"}
+          </p>
+        <% else %>
+          <p class="text-[10px] text-slate-500 mt-0.5 font-mono">
+            Uploaded {format_datetime(@statement.uploaded_at)}
+          </p>
+        <% end %>
       </div>
 
       <%!-- Line count --%>
@@ -113,30 +120,60 @@ defmodule NexusWeb.ERP.StatementComponents do
   # ---------------------------------------------------------------------------
 
   defp format_badge_class("mt940"),
-    do: "bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20"
+    do: "bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/30 font-mono"
 
-  defp format_badge_class("csv"), do: "bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20"
+  defp format_badge_class("csv"),
+    do: "bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/30 font-mono"
+
+  defp format_badge_class("rejected"),
+    do: "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30 font-mono"
+
   defp format_badge_class(_), do: "bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/20"
 
-  defp status_pill_class("uploaded"), do: "bg-emerald-500/10 text-emerald-400"
-  defp status_pill_class("rejected"), do: "bg-rose-500/10 text-rose-400"
-  defp status_pill_class(_), do: "bg-slate-500/10 text-slate-400"
+  defp status_pill_class("uploaded"),
+    do: "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+
+  defp status_pill_class("rejected"),
+    do: "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20"
+
+  defp status_pill_class(_), do: "bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/20"
 
   defp format_datetime(nil), do: "—"
-  defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y %H:%M")
+  defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y, %H:%M")
   defp format_datetime(_), do: "—"
 
-  defp format_amount(%Decimal{} = amount, currency) do
+  def format_amount(%Decimal{} = amount, currency) do
     sign = if Decimal.negative?(amount), do: "−", else: "+"
-    abs_val = Decimal.abs(amount) |> Decimal.to_string(:normal)
+    abs_val = Decimal.abs(amount) |> Decimal.round(2) |> Decimal.to_string(:normal)
+
+    # Ensure .00 if needed (Decimal.to_string might drop it if it's .0)
+    abs_val =
+      case String.split(abs_val, ".") do
+        [whole, decimal] -> whole <> "." <> String.pad_trailing(decimal, 2, "0")
+        [whole] -> whole <> ".00"
+      end
+
     "#{sign} #{abs_val} #{currency}"
   end
 
-  defp format_amount(amount, currency) when is_binary(amount) do
-    format_amount(Decimal.new(amount), currency)
+  def format_amount(amount, currency) when is_binary(amount) do
+    case parse_decimal(amount) do
+      {:ok, dec} -> format_amount(dec, currency)
+      _ -> "—"
+    end
   end
 
-  defp format_amount(_, _), do: "—"
+  def format_amount(_, _), do: "—"
+
+  defp parse_decimal(nil), do: :error
+  defp parse_decimal(val) when is_struct(val, Decimal), do: {:ok, val}
+
+  defp parse_decimal(val) when is_binary(val) do
+    case Decimal.cast(val) do
+      {:ok, dec} -> {:ok, dec}
+      :error -> :error
+    end
+  end
 
   defp calculate_match_rate(%{line_count: 0}), do: 0
 
