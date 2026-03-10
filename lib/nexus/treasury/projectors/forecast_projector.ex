@@ -13,7 +13,7 @@ defmodule Nexus.Treasury.Projectors.ForecastProjector do
 
   project(%ForecastGenerated{} = event, _metadata, fn multi ->
     # Generate a deterministic ID for this forecast version (e.g., daily per org/currency)
-    id = Ecto.UUID.generate()
+    id = Nexus.Schema.generate_uuidv7()
 
     attrs = %{
       id: id,

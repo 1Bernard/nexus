@@ -14,7 +14,7 @@ defmodule NexusWeb.System.BackofficeLive do
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Nexus.PubSub, "tenants")
 
-    tenants = Nexus.Repo.all(Nexus.Organization.Projections.Tenant)
+    tenants = Nexus.Repo.all(from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at])
     health = Nexus.System.Health.get_summary()
 
     audit_logs =
@@ -44,7 +44,7 @@ defmodule NexusWeb.System.BackofficeLive do
   end
 
   def handle_info({:tenant_updated, _tenant}, socket) do
-    tenants = Nexus.Repo.all(Nexus.Organization.Projections.Tenant)
+    tenants = Nexus.Repo.all(from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at])
     health = Nexus.System.Health.get_summary()
 
     audit_logs =
@@ -429,7 +429,7 @@ defmodule NexusWeb.System.BackofficeLive do
   end
 
   def handle_event("provision_tenant", %{"name" => name, "admin_email" => email}, socket) do
-    org_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
 
     cmd = %ProvisionTenant{
       org_id: org_id,

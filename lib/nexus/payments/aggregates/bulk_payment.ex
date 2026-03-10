@@ -37,6 +37,9 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
     }
   end
 
+  # Idempotency: If already completed, do nothing
+  def execute(%__MODULE__{status: :completed}, %FinalizeBulkPayment{}), do: []
+
   def apply(%__MODULE__{} = state, %BulkPaymentInitiated{} = event) do
     %__MODULE__{
       state

@@ -87,7 +87,8 @@ defmodule Nexus.ERP.StatementUploadTest do
       filename: "january.sta",
       format: "mt940",
       lines: parse_mt940_lines(),
-      uploaded_at: DateTime.utc_now()
+      uploaded_at: DateTime.utc_now(),
+      content_hash: "hash_mt940"
     }
 
     project_event(event, 1)
@@ -115,7 +116,8 @@ defmodule Nexus.ERP.StatementUploadTest do
       filename: "january.csv",
       format: "csv",
       lines: parse_csv_lines(),
-      uploaded_at: DateTime.utc_now()
+      uploaded_at: DateTime.utc_now(),
+      content_hash: "hash_csv"
     }
 
     project_event(event, 1)

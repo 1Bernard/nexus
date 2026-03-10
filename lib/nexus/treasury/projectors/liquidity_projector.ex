@@ -14,22 +14,25 @@ defmodule Nexus.Treasury.Projectors.LiquidityProjector do
       amount = parse_decimal(event.amount)
 
       multi
-      |> update_balance(event.org_id, event.from_currency, Decimal.negate(amount))
-      |> update_balance(event.org_id, event.to_currency, amount)
+      |> update_balance(event, event.from_currency, Decimal.negate(amount), :debit)
+      |> update_balance(event, event.to_currency, amount, :credit)
     else
       multi
     end
   end)
 
-  defp update_balance(multi, org_id, currency, delta) do
-    id = "#{org_id}-#{currency}"
+  defp update_balance(multi, event, currency, delta, side) do
+    id = "#{event.org_id}-#{currency}"
+    # Use unique name per transfer, currency, AND side
+    # This prevents collisions even when from_currency == to_currency
+    op_name = {:liquidity_position, event.transfer_id, currency, side}
 
     Ecto.Multi.insert(
       multi,
-      {:liquidity_position, id},
+      op_name,
       %LiquidityPosition{
         id: id,
-        org_id: org_id,
+        org_id: event.org_id,
         currency: currency,
         amount: delta
       },

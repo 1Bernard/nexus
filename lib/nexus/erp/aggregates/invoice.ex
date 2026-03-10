@@ -2,8 +2,8 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   @moduledoc """
   The Invoice aggregate handles ingestion and validation of external ERP invoices.
   """
-  alias Nexus.ERP.Commands.IngestInvoice
-  alias Nexus.ERP.Events.{InvoiceIngested, InvoiceRejected}
+  alias Nexus.ERP.Commands.{IngestInvoice, MatchInvoice}
+  alias Nexus.ERP.Events.{InvoiceIngested, InvoiceRejected, InvoiceMatched}
 
   defstruct [:id, :status]
 
@@ -48,6 +48,29 @@ defmodule Nexus.ERP.Aggregates.Invoice do
     end
   end
 
+  # Matching an invoice (idempotent if already matched to the same thing)
+  def execute(%__MODULE__{status: :matched, id: id}, %MatchInvoice{invoice_id: id}) do
+    []
+  end
+
+  def execute(%__MODULE__{status: :ingested}, %MatchInvoice{} = cmd) do
+    %InvoiceMatched{
+      invoice_id: cmd.invoice_id,
+      org_id: cmd.org_id,
+      matched_type: cmd.matched_type,
+      matched_id: cmd.matched_id,
+      actor_email: cmd.actor_email,
+      matched_at: cmd.matched_at || DateTime.utc_now()
+    }
+  end
+
+  # Fallback for MatchInvoice if status is nil or rejected
+  def execute(%__MODULE__{}, %MatchInvoice{}) do
+    # For now, we ignore matching if the invoice isn't in a valid state
+    # In a production system, we might raise an error or queue for retry
+    []
+  end
+
   # State Mutators
   def apply(%__MODULE__{} = state, %InvoiceIngested{} = event) do
     %{state | id: event.invoice_id, status: :ingested}
@@ -55,5 +78,9 @@ defmodule Nexus.ERP.Aggregates.Invoice do
 
   def apply(%__MODULE__{} = state, %InvoiceRejected{} = event) do
     %{state | id: event.invoice_id, status: :rejected}
+  end
+
+  def apply(%__MODULE__{} = state, %InvoiceMatched{} = event) do
+    %{state | id: event.invoice_id, status: :matched}
   end
 end

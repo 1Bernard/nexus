@@ -19,7 +19,7 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
       multi,
       :invitation,
       %Invitation{
-        id: Ecto.UUID.generate(),
+        id: Nexus.Schema.generate_uuidv7(),
         org_id: event.org_id,
         email: event.email,
         role: event.role,

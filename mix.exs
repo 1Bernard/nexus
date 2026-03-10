@@ -131,7 +131,8 @@ defmodule Nexus.MixProject do
       ],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind nexus", "esbuild nexus"],
-      "assets.deploy": ["tailwind nexus --minify", "esbuild nexus --minify", "phx.digest"]
+      "assets.deploy": ["tailwind nexus --minify", "esbuild nexus --minify", "phx.digest"],
+      precommit: ["compile --warnings-as-errors", "credo --strict", "sobelow --config", "test"]
     ]
   end
 end

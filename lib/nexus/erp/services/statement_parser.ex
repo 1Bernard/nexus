@@ -216,7 +216,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     case parse_decimal(amount_str) do
       {:ok, decimal} ->
         %{
-          date: String.trim(date),
+          date: normalize_date(date),
           ref: String.trim(ref),
           amount: decimal,
           currency: String.trim(currency),
@@ -240,7 +240,7 @@ defmodule Nexus.ERP.Services.StatementParser do
 
     if String.trim(date) != "" do
       %{
-        date: String.trim(date),
+        date: normalize_date(date),
         ref: "",
         amount: amount,
         # Default to EUR for this format unless we find a way to detect it
@@ -315,7 +315,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     }
 
     %{
-      date: timestamp |> String.split("T") |> List.first(),
+      date: timestamp |> String.split("T") |> List.first() |> normalize_date(),
       ref: ledger_id,
       amount: amount,
       currency: String.trim(acc_currency),
@@ -363,7 +363,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     amount = Decimal.sub(credit, debit)
 
     %{
-      date: String.trim(booking_date),
+      date: normalize_date(booking_date),
       ref: String.trim(tx_id),
       amount: amount,
       currency: String.trim(acc_cur),
@@ -414,7 +414,7 @@ defmodule Nexus.ERP.Services.StatementParser do
     amount = Decimal.sub(credit, debit)
 
     %{
-      date: String.trim(booking_date),
+      date: normalize_date(booking_date),
       ref: String.trim(tx_id),
       amount: amount,
       currency: String.trim(currency),
@@ -487,6 +487,18 @@ defmodule Nexus.ERP.Services.StatementParser do
     case parse_decimal(String.replace(str || "0", ~r/[^0-9.-]/, "")) do
       {:ok, decimal} -> decimal
       _ -> Decimal.new(0)
+    end
+  end
+
+  defp normalize_date(date) do
+    date = String.trim(date)
+
+    case Regex.run(~r/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, date) do
+      [_, dd, mm, yyyy] ->
+        yyyy <> "-" <> String.pad_leading(mm, 2, "0") <> "-" <> String.pad_leading(dd, 2, "0")
+
+      _ ->
+        date
     end
   end
 end

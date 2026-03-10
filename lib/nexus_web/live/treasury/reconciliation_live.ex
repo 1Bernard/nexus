@@ -889,45 +889,45 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       cursor_before ->
         records =
           query
-          |> where([r], r.reconciliation_id > ^cursor_before)
-          |> order_by([r], asc: r.reconciliation_id)
+          |> where([r], r.matched_at >= ^cursor_before)
+          |> order_by([r], asc: r.matched_at, asc: r.reconciliation_id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
           |> Enum.reverse()
 
         if length(records) > limit do
-          {tl(records), hd(records).reconciliation_id, List.last(records).reconciliation_id}
+          {tl(records), hd(records).matched_at, List.last(records).matched_at}
         else
-          {records, nil, List.last(records) && List.last(records).reconciliation_id}
+          {records, nil, List.last(records) && List.last(records).matched_at}
         end
 
       cursor_after ->
         records =
           query
-          |> where([r], r.reconciliation_id < ^cursor_after)
-          |> order_by([r], desc: r.reconciliation_id)
+          |> where([r], r.matched_at <= ^cursor_after)
+          |> order_by([r], desc: r.matched_at, desc: r.reconciliation_id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
 
         if length(records) > limit do
           has_more_records = Enum.take(records, limit)
 
-          {has_more_records, hd(has_more_records).reconciliation_id,
-           List.last(records).reconciliation_id}
+          {has_more_records, hd(has_more_records).matched_at,
+           List.last(records).matched_at}
         else
-          {records, hd(records) && hd(records).reconciliation_id, nil}
+          {records, hd(records) && hd(records).matched_at, nil}
         end
 
       true ->
         records =
           query
-          |> order_by([r], desc: r.reconciliation_id)
+          |> order_by([r], desc: r.matched_at, desc: r.reconciliation_id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
 
         if length(records) > limit do
           has_more_records = Enum.take(records, limit)
-          {has_more_records, nil, List.last(records).reconciliation_id}
+          {has_more_records, nil, List.last(records).matched_at}
         else
           {records, nil, nil}
         end

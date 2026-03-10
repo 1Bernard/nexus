@@ -39,6 +39,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   def interested?(%ReconciliationProposed{org_id: org_id}), do: {:continue!, org_id}
   def interested?(%ReconciliationRejected{org_id: org_id}), do: {:continue!, org_id}
   def interested?(%ReconciliationReversed{org_id: org_id}), do: {:continue!, org_id}
+  def interested?(_event), do: false
 
   # --- Handle Events (Emit Commands) ---
 
@@ -48,24 +49,28 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
         do: Decimal.new(event.amount),
         else: Decimal.new("#{event.amount}")
 
-    # Try to find a matching statement line
+    # Try to find a matching statement line (negative amount/debit against positive invoice)
     match =
       Enum.find(pm.statement_lines, fn {_line_id, line} ->
+        line_amt = Decimal.new(line.amount)
+
         line.currency == event.currency and
-          Decimal.eq?(Decimal.new(line.amount), evt_amt)
+          Decimal.eq?(Decimal.abs(line_amt), evt_amt) and
+          Decimal.lt?(line_amt, 0)
       end)
 
     if match do
       {line_id, line} = match
-      reconciliation_id = Ecto.UUID.generate()
+      reconciliation_id = Nexus.Schema.generate_uuidv7()
+      abs_amount = Decimal.abs(Decimal.new(event.amount))
 
       %ReconcileTransaction{
-        org_id: event.org_id,
+        org_id: to_string(event.org_id),
         reconciliation_id: reconciliation_id,
-        invoice_id: event.invoice_id,
-        statement_id: line.statement_id,
-        statement_line_id: line_id,
-        amount: event.amount,
+        invoice_id: to_string(event.invoice_id),
+        statement_id: to_string(line.statement_id),
+        statement_line_id: to_string(line_id),
+        amount: abs_amount,
         currency: event.currency,
         actor_email: "system@nexus.ai",
         timestamp: DateTime.utc_now()
@@ -81,23 +86,28 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
       Enum.reduce(event.lines || [], [], fn line, acc ->
         match =
           Enum.find(pm.invoices, fn {_inv_id, inv} ->
+            inv_amt = Decimal.new(inv.amount)
+            line_amt = Decimal.new(line.amount)
+
             inv.currency == line.currency and
-              Decimal.eq?(Decimal.new(inv.amount), Decimal.new(line.amount))
+              Decimal.eq?(inv_amt, Decimal.abs(line_amt)) and
+              Decimal.lt?(line_amt, 0)
           end)
 
         id = Map.get(line, :id)
 
         if match && id do
           {inv_id, _inv} = match
-          reconciliation_id = Ecto.UUID.generate()
+          reconciliation_id = Nexus.Schema.generate_uuidv7()
+          abs_amount = Decimal.abs(Decimal.new(line.amount))
 
           match_cmd = %ReconcileTransaction{
-            org_id: event.org_id,
+            org_id: to_string(event.org_id),
             reconciliation_id: reconciliation_id,
-            invoice_id: inv_id,
-            statement_id: event.statement_id,
-            statement_line_id: id,
-            amount: line.amount,
+            invoice_id: to_string(inv_id),
+            statement_id: to_string(event.statement_id),
+            statement_line_id: to_string(id),
+            amount: abs_amount,
             currency: line.currency,
             actor_email: "system@nexus.ai",
             timestamp: DateTime.utc_now()
@@ -116,6 +126,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   def handle(%__MODULE__{}, %ReconciliationProposed{}), do: []
   def handle(%__MODULE__{}, %ReconciliationRejected{}), do: []
   def handle(%__MODULE__{}, %ReconciliationReversed{}), do: []
+  def handle(%__MODULE__{}, _event), do: []
 
   # --- Mutate State ---
 
@@ -126,12 +137,12 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
         else: Decimal.new("#{event.amount}")
 
     updated_invoices =
-      Map.put(pm.invoices || %{}, event.invoice_id, %{
+      Map.put(pm.invoices || %{}, to_string(event.invoice_id), %{
         amount: amt,
         currency: event.currency
       })
 
-    %__MODULE__{pm | org_id: event.org_id, invoices: updated_invoices}
+    %__MODULE__{pm | org_id: to_string(event.org_id), invoices: updated_invoices}
   end
 
   def apply(%__MODULE__{} = pm, %StatementUploaded{} = event) do
@@ -144,9 +155,9 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
 
         id = Map.get(line, :id)
 
-        if id && Decimal.compare(amt, Decimal.new(0)) == :gt do
-          Map.put(acc, id, %{
-            statement_id: event.statement_id,
+        if id && !Decimal.eq?(amt, Decimal.new(0)) do
+          Map.put(acc, to_string(id), %{
+            statement_id: to_string(event.statement_id),
             amount: amt,
             currency: line.currency
           })

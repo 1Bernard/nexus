@@ -21,6 +21,7 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
       status: "uploaded",
       line_count: length(event.lines),
       matched_count: 0,
+      content_hash: event.content_hash,
       overlap_warning: exists_similar_statement?(event.org_id, event.filename),
       uploaded_at: Nexus.Schema.parse_datetime(event.uploaded_at)
     }

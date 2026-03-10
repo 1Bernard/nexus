@@ -14,7 +14,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :line_items, {:array, :map}
     field :sap_document_number, :string
     field :sap_status, :string
-    field :due_date, :utc_datetime
+    field :due_date, :utc_datetime_usec
     field :status, :string, default: "ingested"
 
     timestamps(inserted_at: :created_at)

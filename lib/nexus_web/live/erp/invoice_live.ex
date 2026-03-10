@@ -186,9 +186,21 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
     query =
       case status_filter do
-        "Synced" -> where(query, [i], i.status == "ingested")
-        "Pending" -> where(query, [i], i.status != "ingested")
-        _ -> query
+        "Synced" ->
+          where(query, [i], i.status == "ingested")
+
+        "Paid" ->
+          where(query, [i], i.status == "matched")
+
+        "Pending" ->
+          where(query, [i], i.status not in ["ingested", "matched"])
+
+        "Overdue" ->
+          now = DateTime.utc_now()
+          where(query, [i], i.status not in ["matched"] and i.due_date < ^now)
+
+        _ ->
+          query
       end
 
     {invoices, prev_cursor, next_cursor} =
@@ -205,44 +217,44 @@ defmodule NexusWeb.ERP.InvoiceLive do
       cursor_before ->
         records =
           query
-          |> where([i], i.id > ^cursor_before)
-          |> order_by([i], asc: i.id)
+          |> where([i], i.created_at >= ^cursor_before)
+          |> order_by([i], asc: i.created_at, asc: i.id)
           |> limit(^(limit + 1))
           |> Repo.all()
           |> Enum.reverse()
 
         if length(records) > limit do
-          {tl(records), hd(records).id, List.last(records).id}
+          {tl(records), hd(records).created_at, List.last(records).created_at}
         else
-          {records, nil, List.last(records) && List.last(records).id}
+          {records, nil, List.last(records) && List.last(records).created_at}
         end
 
       cursor_after ->
         records =
           query
-          |> where([i], i.id < ^cursor_after)
-          |> order_by([i], desc: i.id)
+          |> where([i], i.created_at <= ^cursor_after)
+          |> order_by([i], desc: i.created_at, desc: i.id)
           |> limit(^(limit + 1))
           |> Repo.all()
 
         if length(records) > limit do
           # taking limit items, discarding the extra one, but using it to know if we have more
           has_more_records = Enum.take(records, limit)
-          {has_more_records, hd(has_more_records).id, List.last(records).id}
+          {has_more_records, hd(has_more_records).created_at, List.last(records).created_at}
         else
-          {records, hd(records) && hd(records).id, nil}
+          {records, hd(records) && hd(records).created_at, nil}
         end
 
       true ->
         records =
           query
-          |> order_by([i], desc: i.id)
+          |> order_by([i], desc: i.created_at, desc: i.id)
           |> limit(^(limit + 1))
           |> Repo.all()
 
         if length(records) > limit do
           has_more_records = Enum.take(records, limit)
-          {has_more_records, nil, List.last(records).id}
+          {has_more_records, nil, List.last(records).created_at}
         else
           {records, nil, nil}
         end
@@ -259,7 +271,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
   defp get_pending_count(org_id) do
     Nexus.Repo.aggregate(
-      from(i in Invoice, where: i.org_id == ^org_id and i.status == "ingested"),
+      from(i in Invoice, where: i.org_id == ^org_id and i.status not in ["ingested", "matched"]),
       :count,
       :id
     )
@@ -352,7 +364,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
                 name="status"
                 class="bg-slate-900/40 border border-[var(--nx-border)] text-slate-300 text-xs font-medium uppercase tracking-wider rounded shadow-inner focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 pl-3 pr-8 appearance-none cursor-pointer focus:outline-none transition-colors hover:border-slate-500"
               >
-                <%= for option <- ["All Statuses", "Synced", "Pending"] do %>
+                <%= for option <- ["All Statuses", "Synced", "Paid", "Pending", "Overdue"] do %>
                   <option value={option} selected={@status_filter == option}>{option}</option>
                 <% end %>
               </select>
@@ -364,8 +376,20 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
         <:col :let={invoice} label="Status">
           <NexusWeb.NexusComponents.badge
-            variant={if invoice.status == "ingested", do: "success", else: "warning"}
-            label={if invoice.status == "ingested", do: "Synced", else: "Pending"}
+            variant={
+              case invoice.status do
+                "matched" -> "success"
+                "ingested" -> "info"
+                _ -> "warning"
+              end
+            }
+            label={
+              case invoice.status do
+                "matched" -> "Paid"
+                "ingested" -> "Synced"
+                _ -> "Pending"
+              end
+            }
           />
         </:col>
 
@@ -384,7 +408,23 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </:col>
 
-        <:col :let={invoice} label="Timestamp">
+        <:col :let={invoice} label="Due Date">
+          <div class={["font-medium", if(invoice.due_date && DateTime.compare(invoice.due_date, DateTime.utc_now()) == :lt, do: "text-rose-400", else: "text-slate-300")]}>
+            {if invoice.due_date, do: Calendar.strftime(invoice.due_date, "%b %d, %Y"), else: "N/A"}
+          </div>
+          <div class="text-slate-500 font-medium tracking-wide text-[10px] uppercase mt-0.5">
+            <%= cond do %>
+              <% is_nil(invoice.due_date) -> %>
+                <span>Pending Sync</span>
+              <% DateTime.compare(invoice.due_date, DateTime.utc_now()) == :lt -> %>
+                <span class="text-rose-500/80">OVERDUE</span>
+              <% true -> %>
+                In {div(DateTime.diff(invoice.due_date, DateTime.utc_now()), 86400)} Days
+            <% end %>
+          </div>
+        </:col>
+
+        <:col :let={invoice} label="Ingested">
           <div class="text-slate-300">{invoice.created_at |> Calendar.strftime("%b %d, %Y")}</div>
           <div class="text-slate-500 font-mono text-[10px] uppercase mt-0.5">
             {invoice.created_at |> Calendar.strftime("%H:%M:%S UTC")}
@@ -481,13 +521,38 @@ defmodule NexusWeb.ERP.InvoiceLive do
               <h2 class="text-xl font-bold text-white">Invoice Details</h2>
               <p class="text-sm text-slate-400 font-mono">SAP BELNR: {@selected_invoice.sap_document_number}</p>
             </div>
-            <NexusWeb.NexusComponents.badge variant="success" label="Synced" />
+            <NexusWeb.NexusComponents.badge
+              variant={
+                case @selected_invoice.status do
+                  "matched" -> "success"
+                  "ingested" -> "info"
+                  _ -> "warning"
+                end
+              }
+              label={
+                case @selected_invoice.status do
+                  "matched" -> "Paid"
+                  "ingested" -> "Synced"
+                  _ -> "Pending"
+                end
+              }
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Vendor</div>
               <div class="text-slate-200">{@selected_invoice.entity_id}</div>
+            </div>
+            <div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Due Date</div>
+              <div class={["font-mono", if(@selected_invoice.due_date && DateTime.compare(@selected_invoice.due_date, DateTime.utc_now()) == :lt, do: "text-rose-400", else: "text-slate-200")]}>
+                {if @selected_invoice.due_date, do: Calendar.strftime(@selected_invoice.due_date, "%b %d, %Y"), else: "N/A"}
+              </div>
+            </div>
+            <div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">SAP BELNR</div>
+              <div class="text-slate-200">{@selected_invoice.sap_document_number}</div>
             </div>
             <div>
               <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
@@ -498,8 +563,14 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
 
           <div class="space-y-3">
-            <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider mb-2">
-              Line Items
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                Line Items
+              </div>
+              <div class="text-slate-500 font-medium tracking-wide text-[10px] uppercase flex items-center gap-1">
+                <span class="hero-layer-group w-3 h-3"></span>
+                {length(@selected_invoice.line_items || [])} Items
+              </div>
             </div>
             <div class="border border-[var(--nx-border)] rounded-xl overflow-hidden bg-white/[0.02]">
               <table class="w-full text-left text-sm">

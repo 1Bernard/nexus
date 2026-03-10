@@ -46,7 +46,7 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
     results = consume_uploaded_entries(socket, :batch, &process_csv/2)
 
     case results do
-      [{:ok, payments, filename}] ->
+      [{payments, filename}] ->
         # Simple validation
         errors = validate_payments(payments)
 
@@ -126,17 +126,39 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
 
     payments =
       content
-      |> Parser.parse_string()
-      |> Enum.map(fn [amount_str, currency, name, account] ->
-        %{
-          amount: parse_decimal(amount_str),
-          currency: String.trim(currency) |> String.upcase(),
-          recipient_name: String.trim(name),
-          recipient_account: String.trim(account)
-        }
+      # clean mac lines
+      |> String.replace("\r", "")
+      |> Parser.parse_string(skip_headers: false)
+      |> Enum.map(fn
+        [single_col] -> String.split(single_col, ~r/[,;]/) |> Enum.map(&String.trim/1)
+        cols -> cols
+      end)
+      |> Enum.map(fn row ->
+        case row do
+          [amount_str, currency, name, account | rest] ->
+            invoice_id = List.first(rest)
+
+            %{
+              amount: parse_decimal(amount_str),
+              currency: String.trim(currency) |> String.upcase(),
+              recipient_name: String.trim(name),
+              recipient_account: String.trim(account),
+              invoice_id: if(invoice_id, do: String.trim(invoice_id))
+            }
+
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(fn p ->
+        # Skip header if 'amount' is in the first column or amount is 0 and account looks like 'account'
+        (p.amount == Decimal.new(0) and
+           String.contains?(String.downcase(p.recipient_account), "account")) or
+          (p.recipient_name == "" and p.recipient_account == "")
       end)
 
-    {:ok, payments, entry.client_name}
+    {:ok, {payments, entry.client_name}}
   end
 
   defp parse_decimal(str) do
@@ -160,9 +182,9 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
           else: ["Row #{idx}: Amount must be positive" | errors]
 
       errors =
-        if String.length(p.recipient_account) >= 8,
+        if String.length(p.recipient_account) >= 3,
           do: errors,
-          else: ["Row #{idx}: Invalid account number" | errors]
+          else: ["Row #{idx}: Invalid account number (minimum 3 chars)" | errors]
 
       errors
     end)

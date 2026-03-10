@@ -547,12 +547,12 @@ defmodule Nexus.Treasury do
     total_matched = Enum.count(all, &(&1.status == :matched))
 
     # Calculate average matching velocity (time from statement upload to match)
-    # For demo, we use the difference between inserted_at and matched_at
+    # For demo, we use the difference between created_at and matched_at
     velocity =
       if total_matched > 0 do
         m_diffs =
           Enum.map(all, fn r ->
-            DateTime.diff(r.inserted_at, r.matched_at, :minute) |> abs()
+            DateTime.diff(r.created_at, r.matched_at, :minute) |> abs()
           end)
 
         (Enum.sum(m_diffs) / Enum.count(m_diffs)) |> round()

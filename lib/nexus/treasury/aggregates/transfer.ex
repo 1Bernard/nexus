@@ -32,6 +32,9 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
     }
   end
 
+  # Idempotency: If transfer already exists, do nothing
+  def execute(%__MODULE__{}, %RequestTransfer{}), do: []
+
   def execute(%__MODULE__{status: "pending_authorization"}, %AuthorizeTransfer{} = cmd) do
     %TransferAuthorized{
       transfer_id: cmd.transfer_id,
@@ -51,6 +54,9 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
       executed_at: cmd.executed_at
     }
   end
+
+  # Idempotency: If already executed, do nothing
+  def execute(%__MODULE__{status: "executed"}, %ExecuteTransfer{}), do: []
 
   # --- State Transitions ---
 

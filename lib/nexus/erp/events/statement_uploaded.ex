@@ -4,6 +4,6 @@ defmodule Nexus.ERP.Events.StatementUploaded do
   Contains the full list of parsed transaction lines for the projector to persist.
   """
   @derive Jason.Encoder
-  @enforce_keys [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at]
-  defstruct [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at]
+  @enforce_keys [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at, :content_hash]
+  defstruct [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at, :content_hash]
 end

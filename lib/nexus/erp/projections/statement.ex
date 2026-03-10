@@ -13,6 +13,7 @@ defmodule Nexus.ERP.Projections.Statement do
     field :line_count, :integer, default: 0
     field :matched_count, :integer, default: 0
     field :overlap_warning, :boolean, default: false
+    field :content_hash, :string
     field :uploaded_at, :utc_datetime_usec
     field :error_message, :string
 
@@ -31,7 +32,8 @@ defmodule Nexus.ERP.Projections.Statement do
       :matched_count,
       :overlap_warning,
       :uploaded_at,
-      :error_message
+      :error_message,
+      :content_hash
     ])
     |> validate_required([:id, :org_id, :filename, :format, :status])
     |> validate_inclusion(:format, ~w[mt940 csv rejected])

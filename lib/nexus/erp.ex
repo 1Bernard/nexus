@@ -241,4 +241,28 @@ defmodule Nexus.ERP do
     )
     |> Repo.all()
   end
+
+  @doc """
+  Checks if a statement with the same content hash already exists for an organization.
+  """
+  def statement_exists_by_hash?(org_id, hash) do
+    from(s in Statement,
+      where: s.org_id == ^org_id and s.content_hash == ^hash,
+      select: count(s.id)
+    )
+    |> Repo.one()
+    |> Kernel.>(0)
+  end
+
+  @doc """
+  Checks if a statement with the same filename already exists for an organization.
+  """
+  def statement_exists_by_filename?(org_id, filename) do
+    from(s in Statement,
+      where: s.org_id == ^org_id and s.filename == ^filename,
+      select: count(s.id)
+    )
+    |> Repo.one()
+    |> Kernel.>(0)
+  end
 end

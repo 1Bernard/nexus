@@ -50,9 +50,10 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         assert statement.overlap_warning == false
       end)
 
-      # 2. Upload duplicate filename
+      # 2. Upload duplicate filename with DIFFERENT content (e.g. new version)
       statement_id2 = Ecto.UUID.generate()
-      cmd2 = %{cmd1 | statement_id: statement_id2}
+      content2 = content <> "\n2024-01-02,REF002,200.00,EUR,New line"
+      cmd2 = %{cmd1 | statement_id: statement_id2, raw_content: content2}
 
       assert :ok = App.dispatch(cmd2)
 
@@ -145,7 +146,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "alpha.csv",
         format: "csv",
-        raw_content: content,
+        raw_content: content <> "1",
         uploaded_at: DateTime.utc_now()
       })
 
@@ -157,7 +158,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         org_id: org_id,
         filename: "beta.csv",
         format: "csv",
-        raw_content: content,
+        raw_content: content <> "2",
         uploaded_at: DateTime.utc_now()
       })
 

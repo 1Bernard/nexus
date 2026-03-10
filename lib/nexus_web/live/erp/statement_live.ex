@@ -29,6 +29,7 @@ defmodule NexusWeb.ERP.StatementLive do
       |> assign(:expanded_lines, [])
       |> assign(:upload_error, nil)
       |> assign(:upload_status, :idle)
+      |> assign(:filename_warning, false)
       |> assign(:search_query, "")
       |> assign(:date_filter, "")
       |> allow_upload(:statement,
@@ -42,7 +43,18 @@ defmodule NexusWeb.ERP.StatementLive do
 
   @impl true
   def handle_event("validate", _params, socket) do
-    {:noreply, assign(socket, upload_error: nil)}
+    org_id = socket.assigns.current_user.org_id
+
+    filename_warning =
+      socket.assigns.uploads.statement.entries
+      |> Enum.any?(fn entry -> ERP.statement_exists_by_filename?(org_id, entry.client_name) end)
+
+    socket =
+      socket
+      |> assign(upload_error: nil)
+      |> assign(filename_warning: filename_warning)
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -54,20 +66,18 @@ defmodule NexusWeb.ERP.StatementLive do
         raw_content = File.read!(path)
         filename = entry.client_name
         format = detect_format(filename)
-        statement_id = Schema.generate_uuidv7()
+        content_hash = :crypto.hash(:sha256, raw_content) |> Base.encode16()
 
-        command = %Nexus.ERP.Commands.UploadStatement{
-          statement_id: statement_id,
-          org_id: org_id,
-          filename: filename,
-          format: format,
-          raw_content: raw_content,
-          uploaded_at: DateTime.utc_now()
-        }
+        cond do
+          ERP.statement_exists_by_hash?(org_id, content_hash) ->
+            {:error, "A statement with identical content has already been uploaded."}
 
-        case App.dispatch(command, consistency: :strong) do
-          :ok -> {:ok, :uploaded}
-          {:error, reason} -> {:error, reason}
+          ERP.statement_exists_by_filename?(org_id, filename) ->
+            # Filename exists but content is different (new version) - we allow it but it will have a warning in the UI
+            proceed_with_upload(org_id, filename, format, raw_content, content_hash)
+
+          true ->
+            proceed_with_upload(org_id, filename, format, raw_content, content_hash)
         end
       end)
 
@@ -250,6 +260,19 @@ defmodule NexusWeb.ERP.StatementLive do
           </form>
 
           <%!-- Feedback --%>
+          <%= if @filename_warning do %>
+            <div class="w-full mt-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-3 animate-in fade-in">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <span class="hero-exclamation-triangle w-6 h-6 text-amber-500"></span>
+                </div>
+                <div class="flex-1">
+                  <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest">Duplicate Name Detected</p>
+                  <p class="text-xs text-amber-200 font-medium mt-0.5">A file named "{hd(@uploads.statement.entries).client_name}" already exists. If this is a new version, proceed. If it's a duplicate, please remove it.</p>
+                </div>
+              </div>
+            </div>
+          <% end %>
           <%= if @upload_error do %>
             <div class="w-full mt-4 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col gap-3 animate-in shake-1">
               <div class="flex items-center gap-3">
@@ -450,6 +473,24 @@ defmodule NexusWeb.ERP.StatementLive do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  defp proceed_with_upload(org_id, filename, format, raw_content, _content_hash) do
+    statement_id = Schema.generate_uuidv7()
+
+    command = %Nexus.ERP.Commands.UploadStatement{
+      statement_id: statement_id,
+      org_id: org_id,
+      filename: filename,
+      format: format,
+      raw_content: raw_content,
+      uploaded_at: DateTime.utc_now()
+    }
+
+    case App.dispatch(command, consistency: :strong) do
+      :ok -> {:ok, :uploaded}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   defp detect_format(filename) do
     ext = filename |> Path.extname() |> String.downcase()

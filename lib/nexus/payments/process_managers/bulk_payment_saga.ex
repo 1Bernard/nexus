@@ -13,6 +13,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
   alias Nexus.Treasury.Events.TransferInitiated
   alias Nexus.Treasury.Commands.RequestTransfer
   alias Nexus.Payments.Commands.FinalizeBulkPayment
+  alias Nexus.ERP.Commands.MatchInvoice
 
   # 1. Start the saga when bulk payment is initiated
   def interested?(%BulkPaymentInitiated{bulk_payment_id: id}), do: {:start, id}
@@ -33,22 +34,42 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   def handle(%__MODULE__{} = _saga, %BulkPaymentInitiated{} = event) do
     # For each payment instruction, dispatch a RequestTransfer command.
-    # We add the bulk_payment_id to the command so the resulting event can be correlated.
-    Enum.map(event.payments, fn p ->
-      %RequestTransfer{
-        transfer_id: Uniq.UUID.uuid7(),
+    # We use a deterministic transfer_id based on bulk_payment_id and index to ensure
+    # that retries of this handle function result in the same IDs.
+    event.payments
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {p, index} ->
+      # Generate a stable UUID v5 using the bulk_payment_id as a "namespace"
+      # This ensures that even on Saga restart/retry, the same transfer_id is generated.
+      transfer_id = generate_deterministic_id(event.bulk_payment_id, index)
+
+      transfer_cmd = %RequestTransfer{
+        transfer_id: transfer_id,
         org_id: event.org_id,
         user_id: event.user_id,
         from_currency: p.currency,
-        # Default target for now
         to_currency: "EUR",
         amount: p.amount,
-        # Default threshold
         threshold: Decimal.new(1_000_000),
-        # Correlation ID for bulk batches
         bulk_payment_id: event.bulk_payment_id,
         requested_at: DateTime.utc_now()
       }
+
+      invoice_id = Map.get(p, :invoice_id) || Map.get(p, "invoice_id")
+
+      if invoice_id do
+        match_cmd = %MatchInvoice{
+          invoice_id: invoice_id,
+          org_id: event.org_id,
+          matched_type: "bulk_payment",
+          matched_id: event.bulk_payment_id,
+          matched_at: event.initiated_at
+        }
+
+        [transfer_cmd, match_cmd]
+      else
+        [transfer_cmd]
+      end
     end)
   end
 
@@ -65,6 +86,21 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
     else
       []
     end
+  end
+
+  defp generate_deterministic_id(bulk_id, index) do
+    # Convert bulk_id to binary if it's a string, then hash with index
+    seed = "#{bulk_id}-#{index}"
+    # Use HMAC or just hash to derive a stable UUID-like binary
+    hash = :crypto.hash(:sha256, seed)
+
+    <<part1::binary-size(4), part2::binary-size(2), part3::binary-size(2), part4::binary-size(2),
+      part5::binary-size(6), _rest::binary>> = hash
+
+    # Construct a valid UUID string from the hash parts
+    # (Simplified UUID v4-ish construction for stability)
+    "#{Base.encode16(part1)}-#{Base.encode16(part2)}-#{Base.encode16(part3)}-#{Base.encode16(part4)}-#{Base.encode16(part5)}"
+    |> String.downcase()
   end
 
   # --- State Mutators ---

@@ -23,13 +23,16 @@ defmodule Nexus.ERP.Aggregates.Statement do
             Map.put(line, :id, Nexus.Schema.generate_uuidv7())
           end)
 
+        content_hash = :crypto.hash(:sha256, cmd.raw_content) |> Base.encode16()
+
         %StatementUploaded{
           statement_id: cmd.statement_id,
           org_id: cmd.org_id,
           filename: cmd.filename,
           format: cmd.format,
           lines: lines_with_ids,
-          uploaded_at: cmd.uploaded_at
+          uploaded_at: cmd.uploaded_at,
+          content_hash: content_hash
         }
 
       {:error, reason} ->
