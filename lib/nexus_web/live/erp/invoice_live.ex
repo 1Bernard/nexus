@@ -27,6 +27,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
       |> assign(total_volume: 0.0)
       |> assign(pending_count: 0)
       |> assign(total_count: 0)
+      |> assign(aging_stats: %{current: 0.0, d30: 0.0, d60: 0.0, d90plus: 0.0})
       |> assign(selected_invoice: nil)
       # Setup datagrid state
       |> assign(datagrid_params: %{})
@@ -141,7 +142,8 @@ defmodule NexusWeb.ERP.InvoiceLive do
      socket
      |> assign(total_volume: get_total_volume(org_id))
      |> assign(pending_count: get_pending_count(org_id))
-     |> assign(total_count: get_total_count(org_id))}
+     |> assign(total_count: get_total_count(org_id))
+     |> assign(aging_stats: get_aging_stats(org_id))}
   end
 
   @impl true
@@ -285,6 +287,40 @@ defmodule NexusWeb.ERP.InvoiceLive do
     end)
   end
 
+  defp get_aging_stats(org_id) do
+    now = DateTime.utc_now()
+    day = 86400
+
+    invoices =
+      Repo.all(
+        from i in Invoice,
+          where: i.org_id == ^org_id and i.status != "matched",
+          select: %{amount: i.amount, due_date: i.due_date}
+      )
+
+    Enum.reduce(
+      invoices,
+      %{current: 0.0, d30: 0.0, d60: 0.0, d90plus: 0.0},
+      fn inv, acc ->
+        amount = parse_amount(inv.amount)
+
+        cond do
+          is_nil(inv.due_date) or DateTime.compare(inv.due_date, now) != :lt ->
+            Map.update!(acc, :current, &(&1 + amount))
+
+          DateTime.diff(now, inv.due_date) <= 30 * day ->
+            Map.update!(acc, :d30, &(&1 + amount))
+
+          DateTime.diff(now, inv.due_date) <= 60 * day ->
+            Map.update!(acc, :d60, &(&1 + amount))
+
+          true ->
+            Map.update!(acc, :d90plus, &(&1 + amount))
+        end
+      end
+    )
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -311,19 +347,54 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-banknotes"
         />
         <NexusWeb.NexusComponents.stat_card
+          label="Total Overdue"
+          value={"€" <> format_amount(to_string(@aging_stats.d30 + @aging_stats.d60 + @aging_stats.d90plus))}
+          change="Awaiting reconciliation"
+          trend="down"
+          icon="hero-clock"
+        />
+        <NexusWeb.NexusComponents.stat_card
           label="Pending Review"
           value={to_string(@pending_count)}
           change="Awaiting human approval"
           trend="down"
           icon="hero-document-magnifying-glass"
         />
-        <NexusWeb.NexusComponents.stat_card
-          label="Risk Anomalies"
-          value="0"
-          change="No breaches detected"
-          trend="up"
-          icon="hero-shield-check"
-        />
+      </div>
+
+      <!-- Aging Buckets - Visual Risk Indicator -->
+      <div class="bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl p-6 mb-8 relative overflow-hidden group">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="space-y-1">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+              <span class="hero-chart-bar w-5 h-5 text-indigo-400"></span>
+              Aging Analysis
+            </h3>
+            <p class="text-sm text-slate-400">Accounts Payable age distribution (Industry Standard)</p>
+          </div>
+
+          <div class="flex flex-1 w-full max-w-2xl gap-2 items-end h-16">
+            <%= for {label, amount, color, _key} <- [
+              {"Current", @aging_stats.current, "emerald", :current},
+              {"1-30 Days", @aging_stats.d30, "amber", :d30},
+              {"31-60 Days", @aging_stats.d60, "orange", :d60},
+              {"60+ Days", @aging_stats.d90plus, "rose", :d90plus}
+            ] do %>
+              <div class="flex-1 flex flex-col items-center justify-end group/bar">
+                <div class="text-[10px] font-bold text-slate-500 mb-1 opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                  €{format_amount(to_string(amount))}
+                </div>
+                <div
+                  class={"w-full rounded-t-lg bg-#{color}-500/20 border-t-2 border-#{color}-500/40 hover:bg-#{color}-500/40 transition-all cursor-help"}
+                  style={"height: #{max(10, min(100, if(@total_volume > 0, do: (amount / @total_volume * 100), else: 0)))}%"}
+                  title={"#{label}: €#{format_amount(to_string(amount))}"}
+                ></div>
+                <div class="text-[10px] uppercase font-bold tracking-tighter text-slate-400 mt-2">{label}</div>
+              </div>
+            <% end %>
+          </div>
+        </div>
       </div>
 
     <!-- High-Density Data Table Card -->
@@ -430,7 +501,6 @@ defmodule NexusWeb.ERP.InvoiceLive do
             {invoice.created_at |> Calendar.strftime("%H:%M:%S UTC")}
           </div>
         </:col>
-
         <:col :let={invoice} label="Amount" class="text-right">
           <div class="text-slate-200 font-medium font-mono text-sm">
             {format_currency_symbol(invoice.currency)}{format_amount(invoice.amount)}
@@ -438,6 +508,18 @@ defmodule NexusWeb.ERP.InvoiceLive do
           <div class="text-slate-500 text-[10px] font-bold tracking-widest uppercase mt-0.5">
             {invoice.currency}
           </div>
+        </:col>
+
+        <:col :let={invoice} label="Risk/Opportunity" class="min-w-[120px]">
+          <%= if discount = detect_discount(invoice) do %>
+            <div class="flex items-center gap-1.5 text-emerald-400 font-bold text-[10px] uppercase tracking-wider animate-pulse">
+              <span class="hero-sparkles w-3 h-3"></span>
+              {discount} Discount
+            </div>
+            <div class="text-slate-500 text-[9px] mt-0.5">Pay by {format_discount_date(invoice, discount)}</div>
+          <% else %>
+            <div class="text-slate-600 text-[10px] tracking-widest uppercase font-medium">Clear</div>
+          <% end %>
         </:col>
 
         <:action :let={invoice}>
@@ -521,22 +603,50 @@ defmodule NexusWeb.ERP.InvoiceLive do
               <h2 class="text-xl font-bold text-white">Invoice Details</h2>
               <p class="text-sm text-slate-400 font-mono">SAP BELNR: {@selected_invoice.sap_document_number}</p>
             </div>
-            <NexusWeb.NexusComponents.badge
-              variant={
-                case @selected_invoice.status do
-                  "matched" -> "success"
-                  "ingested" -> "info"
-                  _ -> "warning"
-                end
-              }
-              label={
-                case @selected_invoice.status do
-                  "matched" -> "Paid"
-                  "ingested" -> "Synced"
-                  _ -> "Pending"
-                end
-              }
-            />
+            <div class="flex items-center gap-3">
+              <NexusWeb.NexusComponents.badge
+                variant={
+                  case @selected_invoice.status do
+                    "matched" -> "success"
+                    "ingested" -> "info"
+                    _ -> "warning"
+                  end
+                }
+                label={
+                  case @selected_invoice.status do
+                    "matched" -> "Paid"
+                    "ingested" -> "Synced"
+                    _ -> "Pending"
+                  end
+                }
+              />
+
+              <div class="relative">
+                <button
+                  phx-click={JS.toggle(to: "#modal-action-menu", in: "fade-in", out: "fade-out")}
+                  phx-click-away={JS.hide(to: "#modal-action-menu", transition: "fade-out")}
+                  class="p-2 text-slate-500 hover:text-white bg-white/5 rounded-lg border border-white/5 transition-colors"
+                >
+                  <span class="hero-ellipsis-vertical w-5 h-5"></span>
+                </button>
+
+                <div
+                  id="modal-action-menu"
+                  class="hidden absolute right-0 top-full mt-2 w-48 bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-xl shadow-2xl overflow-hidden z-[60] py-1"
+                >
+                  <button class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04]">
+                    <span class="hero-document-text w-4 h-4"></span> View Original PDF
+                  </button>
+                  <button class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04]">
+                    <span class="hero-arrow-path w-4 h-4"></span> Retrigger Sync
+                  </button>
+                  <div class="my-1 border-t border-[var(--nx-border)]"></div>
+                  <button class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10">
+                    <span class="hero-trash w-4 h-4"></span> Void Invoice
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4 text-sm">
@@ -558,7 +668,18 @@ defmodule NexusWeb.ERP.InvoiceLive do
               <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
                 Subsidiary
               </div>
-              <div class="text-slate-200">{@selected_invoice.subsidiary}</div>
+              <div class="text-slate-200">{@selected_invoice.subsidiary || "Corporate Operations"}</div>
+            </div>
+            <div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Risk Score</div>
+              <div class="flex items-center gap-1.5">
+                <%= if detect_discount(@selected_invoice) do %>
+                  <span class="text-emerald-400 font-bold">Optimization Opportunity</span>
+                  <span class="hero-bolt w-3 h-3 text-emerald-500"></span>
+                <% else %>
+                  <span class="text-slate-300">Standard</span>
+                <% end %>
+              </div>
             </div>
           </div>
 
@@ -645,4 +766,34 @@ defmodule NexusWeb.ERP.InvoiceLive do
   end
 
   defp format_amount(amount), do: to_string(amount)
+
+  defp detect_discount(invoice) do
+    # Search for patterns like 2/10, 1/15, 3/7 in line items or document number (mock logic for demo)
+    content =
+      Enum.map(invoice.line_items || [], fn item -> item["description"] end) |> Enum.join(" ")
+
+    cond do
+      String.contains?(content, "2/10") -> "2/10"
+      String.contains?(content, "1/15") -> "1/15"
+      String.contains?(content, "3/7") -> "3/7"
+      # Mock: certain entities always provide discounts in this demo
+      String.contains?(invoice.entity_id, "Logistics") -> "2/10"
+      true -> nil
+    end
+  end
+
+  defp format_discount_date(invoice, discount_type) do
+    days =
+      case discount_type do
+        "2/10" -> 10
+        "1/15" -> 15
+        "3/7" -> 7
+        _ -> 10
+      end
+
+    invoice.created_at
+    |> DateTime.to_date()
+    |> Date.add(days)
+    |> Calendar.strftime("%b %d")
+  end
 end

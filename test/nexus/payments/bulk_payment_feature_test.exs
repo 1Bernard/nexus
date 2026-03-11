@@ -20,9 +20,9 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.delete_all(Invoice)
       Nexus.Repo.delete_all(Nexus.Payments.Projections.BulkPayment)
-      
+
       Ecto.Adapters.SQL.query!(Nexus.Repo, """
-      DELETE FROM projection_versions 
+      DELETE FROM projection_versions
       WHERE projection_name IN ('Payments.BulkPaymentProjector', 'ERP.InvoiceProjector')
       """)
     end)
@@ -38,7 +38,7 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     # For now, we use a consistent org_id for the test
     org_id = Nexus.Schema.generate_uuidv7()
     user_id = Nexus.Schema.generate_uuidv7()
-    
+
     {:ok, Map.merge(state, %{org_id: org_id, user_id: user_id, user_email: email})}
   end
 
@@ -62,12 +62,13 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     }
 
     assert :ok = App.dispatch(command)
-    
+
     # Project it manually to read model (avoiding StaleEntryError)
     {:ok, [%{data: event, event_number: _num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
+
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       %Nexus.ERP.Events.InvoiceIngested{} = event
-      
+
       Repo.insert!(%Invoice{
         id: event.invoice_id,
         org_id: event.org_id,
@@ -79,9 +80,11 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
         sap_document_number: event.sap_document_number,
         sap_status: event.sap_status,
         status: "ingested",
-        due_date: DateTime.from_naive!(NaiveDateTime.new!(Date.from_iso8601!(event.due_date), ~T[00:00:00]), "Etc/UTC"),
-        created_at: DateTime.from_iso8601(event.ingested_at) |> elem(1),
-        updated_at: DateTime.from_iso8601(event.ingested_at) |> elem(1)
+        due_date: Date.from_iso8601!(event.due_date) |> DateTime.new!(~T[00:00:00.000000]),
+        created_at:
+          DateTime.from_iso8601(event.ingested_at) |> elem(1) |> DateTime.truncate(:microsecond),
+        updated_at:
+          DateTime.from_iso8601(event.ingested_at) |> elem(1) |> DateTime.truncate(:microsecond)
       })
     end)
 
@@ -95,22 +98,23 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{n: _n, table: table},
           state do
     bulk_payment_id = Nexus.Schema.generate_uuidv7()
-    
-    payments = Enum.map(table, fn row ->
-      %{
-        amount: Decimal.new(row.amount),
-        currency: row.currency,
-        recipient_name: row.recipient_name,
-        recipient_account: row.recipient_account,
-        invoice_id: nil
-      }
-    end)
+
+    payments =
+      Enum.map(table, fn row ->
+        %{
+          amount: Decimal.new(row.amount),
+          currency: row.currency,
+          recipient_name: row.recipient_name,
+          recipient_account: row.recipient_account,
+          invoice_id: nil
+        }
+      end)
 
     # We skip the "staged" UI state and go straight to initiation command
     # mimicking what happens when the Authorized button is clicked after analyzing.
     # Note: In our current implementation, InitiateBulkPayment is what happens on 'Authorize'.
     # In BulkPaymentLive.ex, authorize_batch dispatches InitiateBulkPayment.
-    
+
     {:ok, Map.merge(state, %{bulk_payment_id: bulk_payment_id, payments: payments})}
   end
 
@@ -118,17 +122,19 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{table: table},
           state do
     bulk_payment_id = Nexus.Schema.generate_uuidv7()
-    
-    payments = Enum.map(table, fn row ->
-      invoice_id = Map.get(state.invoice_mapping, row.invoice_id)
-      %{
-        amount: Decimal.new(row.amount),
-        currency: row.currency,
-        recipient_name: row.recipient_name,
-        recipient_account: row.recipient_account,
-        invoice_id: invoice_id
-      }
-    end)
+
+    payments =
+      Enum.map(table, fn row ->
+        invoice_id = Map.get(state.invoice_mapping, row.invoice_id)
+
+        %{
+          amount: Decimal.new(row.amount),
+          currency: row.currency,
+          recipient_name: row.recipient_name,
+          recipient_account: row.recipient_account,
+          invoice_id: invoice_id
+        }
+      end)
 
     {:ok, Map.merge(state, %{bulk_payment_id: bulk_payment_id, payments: payments})}
   end
@@ -145,11 +151,13 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     assert :ok = App.dispatch(command)
 
     # Fetch the event and manually sync the saga
-    {:ok, [%{data: event, event_number: _num}]} = Nexus.EventStore.read_stream_forward(state.bulk_payment_id)
-    
+    {:ok, [%{data: event, event_number: _num}]} =
+      Nexus.EventStore.read_stream_forward(state.bulk_payment_id)
+
     # Project the bulk payment manually
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       %Nexus.Payments.Events.BulkPaymentInitiated{} = event
+
       Repo.insert!(%Nexus.Payments.Projections.BulkPayment{
         id: event.bulk_payment_id,
         org_id: event.org_id,
@@ -160,10 +168,10 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
         total_amount: Decimal.new(event.total_amount)
       })
     end)
-    
+
     # Orchestrate the saga (simulate Commanded)
     dispatched_commands = BulkPaymentSaga.handle(%BulkPaymentSaga{}, event)
-    
+
     {:ok, Map.put(state, :dispatched_commands, dispatched_commands)}
   end
 
@@ -173,14 +181,19 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{n: n_str},
           state do
     expected = String.to_integer(n_str)
-    
+
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       import Ecto.Query
-      batch = Repo.one(from b in Nexus.Payments.Projections.BulkPayment, where: b.id == ^state.bulk_payment_id)
+
+      batch =
+        Repo.one(
+          from b in Nexus.Payments.Projections.BulkPayment, where: b.id == ^state.bulk_payment_id
+        )
+
       assert batch != nil
       assert batch.total_items == expected
     end)
-    
+
     {:ok, state}
   end
 
@@ -188,10 +201,11 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{n: n_str},
           state do
     expected = String.to_integer(n_str)
-    
-    transfers = Enum.filter(state.dispatched_commands, fn cmd -> 
-      match?(%RequestTransfer{}, cmd)
-    end)
+
+    transfers =
+      Enum.filter(state.dispatched_commands, fn cmd ->
+        match?(%RequestTransfer{}, cmd)
+      end)
 
     assert length(transfers) == expected
     {:ok, state}
@@ -201,26 +215,28 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{inv_alias: inv_alias},
           state do
     invoice_id = Map.get(state.invoice_mapping, inv_alias)
-    
+
     # Verify the MatchInvoice command was dispatched
-    match_cmd = Enum.find(state.dispatched_commands, fn cmd ->
-      match?(%MatchInvoice{invoice_id: ^invoice_id}, cmd)
-    end)
-    
+    match_cmd =
+      Enum.find(state.dispatched_commands, fn cmd ->
+        match?(%MatchInvoice{invoice_id: ^invoice_id}, cmd)
+      end)
+
     assert match_cmd != nil, "Expected MatchInvoice command for #{inv_alias} to be dispatched"
-    
+
     # Manual projection to read model (bypassing Commanded wrapper for test stability)
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       import Ecto.Query
+
       Repo.update_all(
         from(i in Invoice, where: i.id == ^invoice_id),
         set: [status: "matched", updated_at: DateTime.utc_now()]
       )
-      
+
       inv = Repo.one(from i in Invoice, where: i.id == ^invoice_id)
       assert inv.status == "matched"
     end)
-    
+
     {:ok, state}
   end
 
@@ -228,15 +244,17 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
           %{amount: amount_str, currency: currency},
           state do
     amount = Decimal.new(amount_str)
-    
-    transfer = Enum.find(state.dispatched_commands, fn cmd ->
-      case cmd do
-        %RequestTransfer{from_currency: ^currency} ->
-          Decimal.equal?(cmd.amount, amount)
-        _ ->
-          false
-      end
-    end)
+
+    transfer =
+      Enum.find(state.dispatched_commands, fn cmd ->
+        case cmd do
+          %RequestTransfer{from_currency: ^currency} ->
+            Decimal.equal?(cmd.amount, amount)
+
+          _ ->
+            false
+        end
+      end)
 
     assert transfer != nil, "Expected transfer of #{amount} #{currency} to be dispatched"
     {:ok, state}
@@ -252,6 +270,7 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
         handler_name: "#{handler_name}-test-#{:erlang.unique_integer([:positive])}",
         event_number: event_number
       }
+
       projector_module.handle(event, metadata)
     end)
   end

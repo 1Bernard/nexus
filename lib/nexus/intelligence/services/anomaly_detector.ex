@@ -21,7 +21,7 @@ defmodule Nexus.Intelligence.Services.AnomalyDetector do
         "[AI Sentinel] [Detector] Analyzing vendor: #{vendor}, amount: #{inspect(amount)}"
       )
 
-      amount_f = Decimal.to_float(amount)
+      amount_float = Decimal.to_float(amount)
 
       # In a production environment, we would fetch historical invoice amounts
       # for this vendor from the ERP Domain (e.g., via a process manager or projection).
@@ -31,20 +31,22 @@ defmodule Nexus.Intelligence.Services.AnomalyDetector do
           Nx.tensor([900.0, 1100.0, 1000.0, 950.0, 1050.0])
         else
           # No history, no anomaly
-          Nx.tensor([amount_f])
+          Nx.tensor([amount_float])
         end
 
-      mean = Nx.mean(history_tensor)
-      std_dev = Nx.standard_deviation(history_tensor)
+      mean_tensor = Nx.mean(history_tensor)
+      standard_deviation_tensor = Nx.standard_deviation(history_tensor)
 
       # If std_dev is 0, we can't compute Z-score accurately, assume no anomaly
-      if Nx.to_number(std_dev) == 0.0 do
+      if Nx.to_number(standard_deviation_tensor) == 0.0 do
         {:ok, %{is_anomaly: false}}
       else
-        amount_tensor = Nx.tensor(amount_f)
+        amount_tensor = Nx.tensor(amount_float)
 
         # Z-score = (X - μ) / σ
-        z_score_tensor = Nx.divide(Nx.subtract(amount_tensor, mean), std_dev)
+        z_score_tensor =
+          Nx.divide(Nx.subtract(amount_tensor, mean_tensor), standard_deviation_tensor)
+
         z_score = Nx.to_number(z_score_tensor)
 
         # Standard 3-sigma rule for outlier detection

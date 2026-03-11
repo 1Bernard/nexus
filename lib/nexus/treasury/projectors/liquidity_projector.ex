@@ -1,4 +1,8 @@
 defmodule Nexus.Treasury.Projectors.LiquidityProjector do
+  @moduledoc """
+  Listens for TransferExecuted events and updates the global cash
+  position (liquidity) for each currency within an organization.
+  """
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,

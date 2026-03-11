@@ -33,9 +33,9 @@ defmodule Nexus.Treasury do
   def list_reconciliations(org_id) do
     import Ecto.Query
 
-    from(r in Reconciliation,
-      where: r.org_id == ^org_id,
-      order_by: [desc: r.matched_at]
+    from(reconciliation in Reconciliation,
+      where: reconciliation.org_id == ^org_id,
+      order_by: [desc: reconciliation.matched_at]
     )
     |> Repo.all()
   end
@@ -46,9 +46,9 @@ defmodule Nexus.Treasury do
   def list_unmatched_invoices(org_id) do
     import Ecto.Query
 
-    from(i in Invoice,
-      where: i.org_id == ^org_id and i.status == "ingested",
-      order_by: [desc: i.created_at]
+    from(invoice in Invoice,
+      where: invoice.org_id == ^org_id and invoice.status == "ingested",
+      order_by: [desc: invoice.created_at]
     )
     |> Repo.all()
   end
@@ -59,9 +59,9 @@ defmodule Nexus.Treasury do
   def list_unmatched_statement_lines(org_id) do
     import Ecto.Query
 
-    from(l in StatementLine,
-      where: l.org_id == ^org_id and l.status == "unmatched",
-      order_by: [desc: l.created_at]
+    from(line in StatementLine,
+      where: line.org_id == ^org_id and line.status == "unmatched",
+      order_by: [desc: line.created_at]
     )
     |> Repo.all()
   end
@@ -82,9 +82,9 @@ defmodule Nexus.Treasury do
   def list_policy_audit_logs(org_id) do
     import Ecto.Query
 
-    from(l in Nexus.Treasury.Projections.PolicyAuditLog,
-      where: l.org_id == ^org_id,
-      order_by: [desc: l.changed_at],
+    from(log in Nexus.Treasury.Projections.PolicyAuditLog,
+      where: log.org_id == ^org_id,
+      order_by: [desc: log.changed_at],
       limit: 10
     )
     |> Repo.all()
@@ -96,7 +96,7 @@ defmodule Nexus.Treasury do
   """
   def get_policy_mode(org_id) do
     import Ecto.Query
-    Repo.one(from p in TreasuryPolicy, where: p.org_id == ^org_id)
+    Repo.one(from policy in TreasuryPolicy, where: policy.org_id == ^org_id)
   end
 
   @doc """
@@ -121,18 +121,18 @@ defmodule Nexus.Treasury do
     end_date = Date.utc_today()
     start_date = Date.add(end_date, -days)
 
-    from(l in StatementLine,
-      where: l.org_id == ^org_id and l.currency == ^currency,
-      where: l.date >= ^Date.to_string(start_date) and l.date <= ^Date.to_string(end_date),
-      group_by: l.date,
-      select: %{date: l.date, amount: sum(l.amount)},
-      order_by: [asc: l.date]
+    from(line in StatementLine,
+      where: line.org_id == ^org_id and line.currency == ^currency,
+      where: line.date >= ^Date.to_string(start_date) and line.date <= ^Date.to_string(end_date),
+      group_by: line.date,
+      select: %{date: line.date, amount: sum(line.amount)},
+      order_by: [asc: line.date]
     )
     |> Repo.all()
-    |> Enum.map(fn %{date: date_str, amount: amount} ->
+    |> Enum.map(fn %{date: date_str, amount: total_amount} ->
       %{
         date: date_str,
-        amount: Decimal.to_float(amount) |> Float.round(2)
+        amount: Decimal.to_float(total_amount) |> Float.round(2)
       }
     end)
   end
@@ -150,7 +150,7 @@ defmodule Nexus.Treasury do
 
         body =
           forecast.data_points
-          |> Enum.map(fn p -> "#{p["date"]},#{p["predicted_amount"]}" end)
+          |> Enum.map(fn point -> "#{point["date"]},#{point["predicted_amount"]}" end)
           |> Enum.join("\n")
 
         header <> body
@@ -189,7 +189,7 @@ defmodule Nexus.Treasury do
     reporting_currency = (policy && policy.reporting_currency) || "USD"
 
     # 2. Fetch all exposures for the org (Gross Invoice Volume)
-    gross_exposures =
+    gross_invoice_exposures =
       ExposureQuery.base()
       |> ExposureQuery.for_org(org_id)
       |> Repo.all()
@@ -198,18 +198,21 @@ defmodule Nexus.Treasury do
     import Ecto.Query
 
     liquidity_positions =
-      Repo.all(from p in Nexus.Treasury.Projections.LiquidityPosition, where: p.org_id == ^org_id)
+      Repo.all(
+        from position in Nexus.Treasury.Projections.LiquidityPosition,
+          where: position.org_id == ^org_id
+      )
 
     # 4. Consolidate into Net Exposure in reporting currency
     # Map liquidity by currency for easy lookup
     liquidity_map =
-      Enum.reduce(liquidity_positions, %{}, fn p, acc ->
-        Map.put(acc, p.currency, p.amount)
+      Enum.reduce(liquidity_positions, %{}, fn position, acc ->
+        Map.put(acc, position.currency, position.amount)
       end)
 
     # Collect all unique currencies from both exposures and liquidity
     all_currencies =
-      (Enum.map(gross_exposures, & &1.currency) ++ Map.keys(liquidity_map))
+      (Enum.map(gross_invoice_exposures, & &1.currency) ++ Map.keys(liquidity_map))
       |> Enum.uniq()
 
     total_net_exposure =
@@ -219,16 +222,16 @@ defmodule Nexus.Treasury do
           acc
         else
           gross =
-            Enum.find(gross_exposures, &(&1.currency == curr))
+            Enum.find(gross_invoice_exposures, &(&1.currency == curr))
             |> case do
               nil -> Decimal.new(0)
               exp -> exp.exposure_amount
             end
 
           liquid = Map.get(liquidity_map, curr, Decimal.new(0))
-          # Net Exposure for a currency is Invoices + Cash holdings
-          # If I have 1M EUR Invoices and -400k EUR Cash, net is 600k.
-          net_in_curr = Decimal.add(gross, liquid)
+          # Net Exposure for a currency is Gross Exposure - Liquid balances
+          # Example: 1M EUR Liabilities - 400k EUR Cash = 600k Net Exposure
+          net_in_curr = Decimal.sub(gross, liquid)
 
           converted = convert_to_reporting(net_in_curr, curr, reporting_currency)
           Decimal.add(acc, Decimal.abs(converted))
@@ -236,12 +239,13 @@ defmodule Nexus.Treasury do
       end)
 
     # 5. Calculate VAR and Max Loss (VAR is 8% of total net exposure)
-    var = Decimal.mult(Decimal.abs(total_net_exposure), Decimal.from_float(0.08))
+    value_at_risk = Decimal.mult(Decimal.abs(total_net_exposure), Decimal.from_float(0.08))
 
     %{
       total_exposure: format_currency(total_net_exposure, reporting_currency),
-      at_risk: format_currency(var, reporting_currency),
-      max_loss: format_currency(Decimal.mult(var, Decimal.from_float(0.25)), reporting_currency)
+      at_risk: format_currency(value_at_risk, reporting_currency),
+      max_loss:
+        format_currency(Decimal.mult(value_at_risk, Decimal.from_float(0.25)), reporting_currency)
     }
   end
 
@@ -301,14 +305,14 @@ defmodule Nexus.Treasury do
       {"GBP/USD", "-0.05%"},
       {"USD/JPY", "+0.45%"}
     ]
-    |> Enum.map(fn {pair, default_change} ->
+    |> Enum.map(fn {currency_pair, default_change} ->
       price =
-        case PriceCache.get_price(pair) do
-          {:ok, p} -> p
+        case PriceCache.get_price(currency_pair) do
+          {:ok, price} -> price
           _ -> "1.0000"
         end
 
-      %{name: pair, price: to_string(price), change: default_change}
+      %{name: currency_pair, price: to_string(price), change: default_change}
     end)
   end
 
@@ -340,7 +344,7 @@ defmodule Nexus.Treasury do
     # Fallback to defaults to ensure a polished UI experience for new organizations/demo
     subsidiaries =
       if Enum.empty?(subsidiaries),
-        do: ["Munich HQ", "Tokyo Branch", "London Ltd"],
+        do: ["Munich HQ", "Tokyo Branch", "Corporate Operations"],
         else: subsidiaries
 
     currencies =
@@ -350,8 +354,12 @@ defmodule Nexus.Treasury do
 
     # Map into a nested structure: %{subsidiary => %{currency => amount}}
     snapshots_map =
-      Enum.reduce(snapshots, %{}, fn s, acc ->
-        put_in(acc, [Access.key(s.subsidiary, %{}), s.currency], s.exposure_amount)
+      Enum.reduce(snapshots, %{}, fn snapshot, acc ->
+        put_in(
+          acc,
+          [Access.key(snapshot.subsidiary, %{}), snapshot.currency],
+          snapshot.exposure_amount
+        )
       end)
 
     %{
@@ -528,7 +536,9 @@ defmodule Nexus.Treasury do
   def list_liquidity_positions(org_id) do
     import Ecto.Query
 
-    from(p in Nexus.Treasury.Projections.LiquidityPosition, where: p.org_id == ^org_id)
+    from(position in Nexus.Treasury.Projections.LiquidityPosition,
+      where: position.org_id == ^org_id
+    )
     |> Repo.all()
   end
 
@@ -538,24 +548,27 @@ defmodule Nexus.Treasury do
   def get_reconciliation_stats(org_id) do
     import Ecto.Query
 
-    query = from(r in Reconciliation, where: r.org_id == ^org_id)
-    all = Repo.all(query)
+    query = from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
+    reconciliations = Repo.all(query)
 
     auto_matched =
-      Enum.count(all, &(&1.status == :matched and &1.actor_email == "system@nexus.ai"))
+      Enum.count(
+        reconciliations,
+        &(&1.status == :matched and &1.actor_email == "system@nexus.ai")
+      )
 
-    total_matched = Enum.count(all, &(&1.status == :matched))
+    total_matched = Enum.count(reconciliations, &(&1.status == :matched))
 
     # Calculate average matching velocity (time from statement upload to match)
     # For demo, we use the difference between created_at and matched_at
     velocity =
       if total_matched > 0 do
-        m_diffs =
-          Enum.map(all, fn r ->
-            DateTime.diff(r.created_at, r.matched_at, :minute) |> abs()
+        matching_differences =
+          Enum.map(reconciliations, fn reconciliation ->
+            DateTime.diff(reconciliation.created_at, reconciliation.matched_at, :minute) |> abs()
           end)
 
-        (Enum.sum(m_diffs) / Enum.count(m_diffs)) |> round()
+        (Enum.sum(matching_differences) / Enum.count(matching_differences)) |> round()
       else
         0
       end

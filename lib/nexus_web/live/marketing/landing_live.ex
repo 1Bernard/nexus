@@ -21,41 +21,42 @@ defmodule NexusWeb.Marketing.LandingLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="relative w-full min-h-screen bg-[#0B0E14] font-serif overflow-x-hidden">
+    <div class="relative w-full min-h-screen bg-[#040609] font-sans antialiased selection:bg-indigo-500/30 overflow-x-hidden text-slate-300">
+      <%!-- Ambient Background Glows --%>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
+      <div class="absolute top-1/4 -left-64 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none opacity-40"></div>
+
       <div class={[
-        "fixed inset-0 z-[100] bg-[#0B0E14] transition-transform duration-[1500ms] cubic-bezier(0.85, 0, 0.15, 1) pointer-events-none",
+        "fixed inset-0 z-[100] bg-[#040609] transition-transform duration-[1500ms] cubic-bezier(0.85, 0, 0.15, 1) pointer-events-none flex items-center justify-center",
         @revealed && "-translate-y-full"
       ]}>
-        <div class="h-full w-full flex items-center justify-center">
-          <img
-            src="/images/nexus_logo_full.png"
-            alt="Nexus Loader"
-            class="w-8 h-8 rounded-lg object-cover shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse"
-          />
+        <div class="flex items-center gap-4">
+          <div class="w-8 h-8 rounded-lg bg-white/10 border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center">
+            <div class="w-4 h-4 rounded-sm bg-white animate-pulse"></div>
+          </div>
+          <span class="text-white font-semibold tracking-widest text-sm">NEXUS</span>
         </div>
       </div>
 
-      <.editorial_grid />
-
-      <div id="landing-main" phx-hook="ScrollReveal" class="relative z-10 font-sans tracking-tight">
+      <div id="landing-main" phx-hook="ScrollReveal" class="relative z-10 tracking-tight">
         <header class="pt-32 pb-16 px-6 lg:px-12 border-b border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-[#0B0E14]">
           <div class="max-w-4xl">
             <h1 class="text-5xl md:text-7xl lg:text-[6rem] leading-[1.05] text-white font-extrabold mb-6">
-              Institutional Financial Architecture.
+              Modern Finance,<br/>Built for Enterprise.
             </h1>
             <p class="text-xl text-slate-400 max-w-2xl leading-relaxed">
-              Nexus provides zero-trust identity, immutable event-sourced ledgers, and seamless SAP ERP integration for global enterprise.
+              Nexus empowers global financial teams with seamless SAP integration, automated reconciliation, and bank-grade security—all in one powerful platform.
             </p>
-            <div class="flex items-center gap-4 mt-10">
+            <div class="flex flex-col sm:flex-row items-center gap-4 mt-12">
               <.link
                 navigate="/auth/gate?type=register"
-                class="px-8 py-4 bg-white text-slate-900 font-bold rounded-lg hover:bg-slate-200 transition-colors shadow-lg active:scale-95"
+                class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-slate-200 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] active:scale-95 w-full sm:w-auto text-center"
               >
                 Request Demo
               </.link>
               <a
                 href="#platform"
-                class="px-8 py-4 border border-white/10 text-white font-bold rounded-lg hover:bg-white/5 transition-colors active:scale-95"
+                class="px-8 py-4 border border-white/10 bg-white/5 text-white font-medium rounded-full hover:bg-white/10 hover:border-white/20 transition-all duration-300 active:scale-95 w-full sm:w-auto text-center flex items-center justify-center gap-2"
               >
                 Explore Platform
               </a>
@@ -138,33 +139,33 @@ defmodule NexusWeb.Marketing.LandingLive do
           </div>
         </header>
 
-        <main class="border-b border-white/5 bg-[#0B0E14]">
+        <main class="relative z-10">
           <section
             id="platform"
-            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-white/5"
+            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-y border-white/5 bg-[#0A0D14]"
           >
-            <div class="lg:col-span-7 p-8 lg:p-24 border-r border-white/5">
+            <div class="lg:col-span-7 p-8 lg:p-32 border-r border-white/5 flex flex-col justify-center">
               <div class="reveal-text">
                 <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8 text-indigo-400">
                   <span class="hero-cube-transparent w-6 h-6"></span>
                 </div>
                 <h2 class="text-4xl md:text-5xl text-white font-bold mb-6">
-                  Autonomous Multi-Tenant Partitioning.
+                  Uncompromising Security & Isolation.
                 </h2>
                 <div class="max-w-xl space-y-6">
                   <p class="text-slate-400 leading-relaxed text-lg">
-                    Every organization on Nexus exists within a cryptographically unique partition. Unlike legacy multi-tenant databases, our architecture guarantees absolute data isolation at the compute layer, ensuring zero cross-tenant contamination.
+                    Your financial data deserves the highest level of protection. Nexus provides dedicated environments for every organization, ensuring your sensitive business information is completely isolated and secure by default.
                   </p>
                   <ul class="space-y-4 pt-4 text-slate-300">
                     <li class="flex items-center gap-3">
-                      <span class="text-cyan-500">✓</span> Dedicated tenant event streams
+                      <span class="text-cyan-500">✓</span> Dedicated organization workspaces
                     </li>
                     <li class="flex items-center gap-3">
                       <span class="text-cyan-500">✓</span>
-                      Hardware Security Module (HSM) key isolation
+                      Enterprise-grade encryption at rest and in transit
                     </li>
                     <li class="flex items-center gap-3">
-                      <span class="text-cyan-500">✓</span> Independent read-model projectors
+                      <span class="text-cyan-500">✓</span> Strict data residency controls
                     </li>
                   </ul>
                 </div>
@@ -172,7 +173,7 @@ defmodule NexusWeb.Marketing.LandingLive do
             </div>
 
             <div class="lg:col-span-5 p-12 lg:p-24 flex items-center justify-center bg-white/[0.01]">
-              <.exhibit_container label="ISOLATION_TOPOLOGY">
+              <.exhibit_container label="ENTERPRISE WORKSPACE">
                 <.partition_cube />
               </.exhibit_container>
             </div>
@@ -180,36 +181,36 @@ defmodule NexusWeb.Marketing.LandingLive do
 
           <section
             id="integrations"
-            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-white/5"
+            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-white/5 bg-[#040609]"
           >
-            <div class="lg:col-span-5 border-r border-white/5 bg-white/[0.01] flex items-center justify-center p-12">
-              <.exhibit_container label="EVENT_SOURCING_PULSE">
+            <div class="lg:col-span-5 border-r border-white/5 bg-white/[0.01] flex items-center justify-center p-12 lg:p-24">
+              <.exhibit_container label="REAL-TIME FINANCIAL SYNC">
                 <.ledger_stream />
               </.exhibit_container>
             </div>
-            <div class="lg:col-span-7 p-8 lg:p-24 flex flex-col justify-center">
+            <div class="lg:col-span-7 p-8 lg:p-32 flex flex-col justify-center">
               <div class="reveal-text">
                 <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-8 text-emerald-400">
                   <span class="hero-circle-stack w-6 h-6"></span>
                 </div>
                 <h2 class="text-4xl md:text-5xl text-white font-bold mb-6">
-                  Immutable Ledger Archival.
+                  Complete Financial Audit Trail.
                 </h2>
                 <p class="text-slate-400 leading-relaxed text-lg max-w-xl mb-8">
-                  Nexus doesn't just store current state; it records history. Every transaction, mutation, and ledger update is an immutable event. Replay history perfectly for audit, compliance, or real-time SAP ERP replication.
+                  Never lose track of a financial decision. Nexus automatically records a complete, tamper-proof history of every action, providing unparalleled visibility for your auditors and real-time syncing with your ERP system.
                 </p>
 
                 <div class="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
                   <div>
-                    <h4 class="text-white font-semibold mb-2">SOC 2 Compliant</h4>
+                    <h4 class="text-white font-semibold mb-2">Always Audit-Ready</h4>
                     <p class="text-slate-500 text-sm">
-                      Automated cryptographic audit trails designed for enterprise compliance boards.
+                      Automated compliance reporting and complete historical tracking out of the box.
                     </p>
                   </div>
                   <div>
-                    <h4 class="text-white font-semibold mb-2">SAP BAPI Ready</h4>
+                    <h4 class="text-white font-semibold mb-2">Seamless Integrations</h4>
                     <p class="text-slate-500 text-sm">
-                      Bi-directional event adapters to sync state directly with SAP S/4HANA instances.
+                      Bi-directional syncing guarantees alignment between Nexus and your internal systems.
                     </p>
                   </div>
                 </div>
@@ -219,24 +220,24 @@ defmodule NexusWeb.Marketing.LandingLive do
 
           <section
             id="security"
-            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-white/5"
+            class="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-white/5 bg-[#0A0D14]"
           >
-            <div class="lg:col-span-8 p-8 lg:p-24 border-r border-white/5">
+            <div class="lg:col-span-8 p-8 lg:p-32 border-r border-white/5 flex flex-col justify-center">
               <div class="reveal-text">
                 <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-8 text-rose-400">
                   <span class="hero-finger-print w-6 h-6"></span>
                 </div>
                 <h2 class="text-4xl md:text-5xl text-white font-bold mb-6">
-                  Zero-Trust Hardware Identity.
+                  Passwordless Sign-In.
                 </h2>
                 <p class="text-slate-400 leading-relaxed text-lg max-w-2xl mb-12">
-                  Passwords belong in the past. Nexus relies entirely on FIDO2 WebAuthn protocols heavily integrated with device-level secure enclaves. Verify critical financial operations via Touch ID or Windows Hello, ensuring absolute cryptographic proof of presence.
+                  Experience effortless, secure authentication with device-level biometrics. Nexus uses modern WebAuthn standards like Touch ID and Windows Hello, removing the friction of passwords while keeping your financial operations completely secure against phishing.
                 </p>
 
                 <div class="flex gap-4">
                   <.link
                     navigate="/auth/gate?type=login"
-                    class="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-lg hover:bg-white/10 transition-colors active:scale-95"
+                    class="px-8 py-4 bg-white/5 border border-white/10 text-white font-medium rounded-full hover:bg-white/10 transition-all duration-300 active:scale-95"
                   >
                     Test Corporate Login Flow
                   </.link>
@@ -244,21 +245,22 @@ defmodule NexusWeb.Marketing.LandingLive do
               </div>
             </div>
             <div class="lg:col-span-4 p-12 bg-white/[0.01] flex flex-col justify-center items-center gap-6">
-              <.exhibit_scanning_mask id="scan-03" label="WebAuthn Hardware Required">
-                <p class="text-white text-center font-semibold mb-2">Biometric Enclave</p>
+              <.exhibit_scanning_mask id="scan-03" label="Secure Device Authentication">
+                <p class="text-white text-center font-semibold mb-2">Biometric verification</p>
                 <p class="text-slate-400 text-xs text-center">
-                  Your private keys never leave the secure boundary of this device.
+                  Authentication happens securely on your device, protecting your team.
                 </p>
                 <:hidden_content>
                   <p class="text-emerald-400 font-mono text-xs text-center mt-4">
-                    VERIFIED: ES256 SIGNATURE
+                    AUTHENTICATION SUCCESSFUL
                   </p>
                 </:hidden_content>
               </.exhibit_scanning_mask>
             </div>
           </section>
 
-          <section id="pricing" class="py-24 px-6 lg:px-12">
+          <section id="pricing" class="py-32 px-6 lg:px-12 bg-[#040609] relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none"></div>
             <div class="max-w-3xl mx-auto text-center mb-16 reveal-text">
               <h2 class="text-3xl md:text-5xl text-white font-bold mb-4">
                 Enterprise Architecture, Delivered.
@@ -271,32 +273,32 @@ defmodule NexusWeb.Marketing.LandingLive do
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <!-- Tier 1 -->
               <div class="bg-[#0B0E14] border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
-                <div class="text-slate-400 font-semibold mb-2">Developer</div>
+                <div class="text-slate-400 font-semibold mb-2">Starter</div>
                 <div class="text-4xl font-bold text-white mb-6">
                   Free<span class="text-lg text-slate-500 font-normal">/forever</span>
                 </div>
                 <p class="text-sm text-slate-400 mb-8 pb-8 border-b border-white/5">
-                  Perfect for exploring the event sourcing API and testing local integrations.
+                  Perfect for exploring platform capabilities and modernizing your workflow.
                 </p>
                 <ul class="space-y-4 text-sm text-slate-300 mb-8">
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Single Organization Tenant
+                    <span class="text-indigo-400">✓</span> Single Organization
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Up to 10,000 events/month
+                    <span class="text-indigo-400">✓</span> Up to 10,000 transactions/month
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> WebAuthn Identity Gate
+                    <span class="text-indigo-400">✓</span> Passwordless Sign-In
                   </li>
                   <li class="flex items-center gap-3 text-slate-600">
-                    <span class="opacity-0">✓</span> SAP Adapter
+                    <span class="opacity-0">✓</span> SAP Integrations
                   </li>
                 </ul>
                 <button class="w-full py-3 rounded-lg border border-white/10 text-white font-semibold hover:bg-white/5 transition-all">
                   Start Building
                 </button>
               </div>
-              
+
     <!-- Tier 2 -->
               <div class="bg-gradient-to-b from-indigo-500/10 to-[#0B0E14] border border-indigo-500/30 rounded-2xl p-8 transform md:-translate-y-4 shadow-2xl relative">
                 <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
@@ -307,17 +309,17 @@ defmodule NexusWeb.Marketing.LandingLive do
                   $499<span class="text-lg text-slate-500 font-normal">/mo</span>
                 </div>
                 <p class="text-sm text-slate-400 mb-8 pb-8 border-b border-indigo-500/10">
-                  Full financial capabilities for mid-market treasury and asset management.
+                  Full financial capabilities for scaling teams and active treasuries.
                 </p>
                 <ul class="space-y-4 text-sm text-slate-300 mb-8">
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> 5 Organization Tenants
+                    <span class="text-indigo-400">✓</span> 5 Organization Branches
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> 1M events/month
+                    <span class="text-indigo-400">✓</span> 1M transactions/month
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Priority Read-Models
+                    <span class="text-indigo-400">✓</span> Priority Support
                   </li>
                   <li class="flex items-center gap-3">
                     <span class="text-indigo-400">✓</span> SOC 2 Audit Exports
@@ -327,26 +329,26 @@ defmodule NexusWeb.Marketing.LandingLive do
                   Upgrade to Pro
                 </button>
               </div>
-              
+
     <!-- Tier 3 -->
               <div class="bg-[#0B0E14] border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
                 <div class="text-slate-400 font-semibold mb-2">Enterprise</div>
                 <div class="text-4xl font-bold text-white mb-6">Custom</div>
                 <p class="text-sm text-slate-400 mb-8 pb-8 border-b border-white/5">
-                  Dedicated infrastructure with SAP adapters for global conglomerates.
+                  Dedicated infrastructure and SAP integration for global corporations.
                 </p>
                 <ul class="space-y-4 text-sm text-slate-300 mb-8">
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Unlimited Tenants
+                    <span class="text-indigo-400">✓</span> Unlimited Branches
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Dedicated HSM Enclaves
+                    <span class="text-indigo-400">✓</span> Dedicated Environments
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> SAP S/4HANA & NetWeaver Adapters
+                    <span class="text-indigo-400">✓</span> SAP S/4HANA Integrations
                   </li>
                   <li class="flex items-center gap-3">
-                    <span class="text-indigo-400">✓</span> Custom Ledger Projections
+                    <span class="text-indigo-400">✓</span> Custom Analytics & Reporting
                   </li>
                 </ul>
                 <button class="w-full py-3 rounded-lg border border-white/10 text-white font-semibold hover:bg-white/5 transition-all">

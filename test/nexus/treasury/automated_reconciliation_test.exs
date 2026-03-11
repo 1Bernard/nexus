@@ -36,6 +36,7 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       currency: "EUR",
       amount: "1500.00",
       subsidiary: "Munich HQ",
+      due_date: Date.utc_today() |> Date.add(30),
       line_items: [%{description: "Service", amount: "1500.00"}],
       sap_document_number: "SAP-101",
       sap_status: "Verified",
@@ -54,7 +55,7 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
 
     csv_content = """
     date,ref,amount,currency,narrative
-    2024-03-02,BANK-REF-101,1500.00,EUR,Payment for SAP-101
+    2024-03-02,BANK-REF-101,-1500.00,EUR,Payment for SAP-101
     """
 
     upload_cmd = %UploadStatement{
@@ -97,7 +98,7 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
 
     csv_content = """
     date,ref,amount,currency,narrative
-    2024-03-02,BANK-REF-202,2400.00,USD,Deposit 202
+    2024-03-02,BANK-REF-202,-2400.00,USD,Deposit 202
     """
 
     upload_cmd = %UploadStatement{
@@ -127,6 +128,7 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       currency: "USD",
       amount: "2400.00",
       subsidiary: "Tokyo Branch",
+      due_date: Date.utc_today() |> Date.add(30),
       line_items: [%{description: "Goods", amount: "2400.00"}],
       sap_document_number: "SAP-202",
       sap_status: "Verified",

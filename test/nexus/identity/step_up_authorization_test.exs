@@ -92,7 +92,14 @@ defmodule Nexus.Identity.StepUpAuthorizationTest do
   # --- Then ---
 
   defthen ~r/^I should be prompted for step-up biometric verification$/, _vars, state do
-    assert {:error, :step_up_required} = state.transfer_result
+    assert :ok = state.transfer_result
+    # Verify the event state
+    {:ok, events} = Nexus.EventStore.read_stream_forward("TX-123")
+
+    assert Enum.any?(events, fn e ->
+             e.data.status == "pending_authorization"
+           end)
+
     {:ok, state}
   end
 

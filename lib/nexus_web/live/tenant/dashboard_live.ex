@@ -628,6 +628,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
       |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id))
 
+    # Trigger fresh forecast generation to include recent invoice changes
+    Treasury.generate_forecast(org_id, "EUR")
+    Treasury.generate_forecast(org_id, "USD")
+
     {:noreply, socket}
   end
 

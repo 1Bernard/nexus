@@ -131,12 +131,15 @@ defmodule Nexus.ERP.Services.StatementParser do
     "20#{yy}-#{mm}-#{dd}"
   end
 
-  defp format_mt940_date(str), do: str
+  defp format_mt940_date(string), do: string
 
-  defp parse_amount(str, cd) do
-    normalised = String.replace(str, ",", ".")
+  defp parse_amount(amount_string, credit_debit_indicator) do
+    normalised = String.replace(amount_string, ",", ".")
     decimal = Decimal.new(normalised)
-    if String.starts_with?(cd, "D"), do: Decimal.negate(decimal), else: decimal
+
+    if String.starts_with?(credit_debit_indicator, "D"),
+      do: Decimal.negate(decimal),
+      else: decimal
   end
 
   # ---------------------------------------------------------------------------
@@ -212,8 +215,8 @@ defmodule Nexus.ERP.Services.StatementParser do
     if Enum.empty?(rows), do: {:error, "No valid data rows in bank detail CSV"}, else: {:ok, rows}
   end
 
-  defp parse_standard_row([date, ref, amount_str, currency, narrative]) do
-    case parse_decimal(amount_str) do
+  defp parse_standard_row([date, ref, amount_string, currency, narrative]) do
+    case parse_decimal(amount_string) do
       {:ok, decimal} ->
         %{
           date: normalize_date(date),
@@ -230,9 +233,9 @@ defmodule Nexus.ERP.Services.StatementParser do
 
   defp parse_standard_row(_), do: nil
 
-  defp parse_bank_row([date, narrative, debit_str, credit_str | _]) do
-    debit = parse_decimal_safe(debit_str)
-    credit = parse_decimal_safe(credit_str)
+  defp parse_bank_row([date, narrative, debit_string, credit_string | _]) do
+    debit = parse_decimal_safe(debit_string)
+    credit = parse_decimal_safe(credit_string)
 
     # Net amount = Credit (positive) - Debit (positive value in debit column)
     # If debit column contains positive numbers, we subtract them.
@@ -284,14 +287,14 @@ defmodule Nexus.ERP.Services.StatementParser do
       fee,
       lp,
       channel,
-      debit_str,
-      credit_str,
-      balance_str,
+      debit_string,
+      credit_string,
+      balance_string,
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_str)
-    credit = parse_decimal_safe(credit_str)
+    debit = parse_decimal_safe(debit_string)
+    credit = parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     # Elite Metadata for auditing
@@ -310,7 +313,7 @@ defmodule Nexus.ERP.Services.StatementParser do
       "fee_amount" => fee,
       "liquidity_provider" => lp,
       "execution_channel" => channel,
-      "running_balance" => balance_str,
+      "running_balance" => balance_string,
       "status" => status
     }
 
@@ -352,14 +355,14 @@ defmodule Nexus.ERP.Services.StatementParser do
       _tx_amt,
       _fx_rate,
       acc_cur,
-      debit_str,
-      credit_str,
-      balance_str,
+      debit_string,
+      credit_string,
+      balance_string,
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_str)
-    credit = parse_decimal_safe(credit_str)
+    debit = parse_decimal_safe(debit_string)
+    credit = parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     %{
@@ -370,7 +373,7 @@ defmodule Nexus.ERP.Services.StatementParser do
       narrative: "#{String.trim(merchant)} | #{String.trim(channel)} | #{String.trim(reference)}",
       metadata: %{
         "transaction_id" => tx_id,
-        "running_balance" => balance_str,
+        "running_balance" => balance_string,
         "status" => status
       }
     }
@@ -402,15 +405,15 @@ defmodule Nexus.ERP.Services.StatementParser do
       merchant,
       channel,
       reference,
-      debit_str,
-      credit_str,
+      debit_string,
+      credit_string,
       currency,
-      balance_str,
+      balance_string,
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_str)
-    credit = parse_decimal_safe(credit_str)
+    debit = parse_decimal_safe(debit_string)
+    credit = parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     %{
@@ -422,7 +425,7 @@ defmodule Nexus.ERP.Services.StatementParser do
         "#{String.trim(description)} | #{String.trim(merchant)} | #{String.trim(channel)} | #{String.trim(reference)}",
       metadata: %{
         "transaction_id" => tx_id,
-        "running_balance" => balance_str,
+        "running_balance" => balance_string,
         "status" => status
       }
     }
@@ -476,15 +479,15 @@ defmodule Nexus.ERP.Services.StatementParser do
   defp get_parser(";"), do: Nexus.ERP.Services.StatementParser.SemiCSV
   defp get_parser(_), do: Nexus.ERP.Services.StatementParser.CSV
 
-  defp parse_decimal(str) do
-    case Decimal.parse(String.trim(str || "0")) do
+  defp parse_decimal(string) do
+    case Decimal.parse(String.trim(string || "0")) do
       {decimal, ""} -> {:ok, decimal}
       _ -> :error
     end
   end
 
-  defp parse_decimal_safe(str) do
-    case parse_decimal(String.replace(str || "0", ~r/[^0-9.-]/, "")) do
+  defp parse_decimal_safe(string) do
+    case parse_decimal(String.replace(string || "0", ~r/[^0-9.-]/, "")) do
       {:ok, decimal} -> decimal
       _ -> Decimal.new(0)
     end

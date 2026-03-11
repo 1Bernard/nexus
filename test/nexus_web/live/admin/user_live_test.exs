@@ -44,8 +44,8 @@ defmodule NexusWeb.Admin.UserLiveTest do
       assert html =~ "test_admin@nexus.app"
       assert html =~ "Invite User"
 
-      # Presence check (Active Now sidebar should show the admin)
-      assert html =~ "Active Now"
+      # Presence check (Active Sessions sidebar should show the admin)
+      assert html =~ "Active Sessions"
       assert html =~ "1 LIVE"
     end
 
