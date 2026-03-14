@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
   @moduledoc """
   Aggregate for managing cash flow forecasts.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :currency, :last_forecast]
 
   alias Nexus.Treasury.Commands.GenerateForecast

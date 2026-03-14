@@ -2,6 +2,7 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
   @moduledoc """
   Aggregate to manage Bulk Payment batches.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :status, :total_items, :processed_items]
 
   alias Nexus.Payments.Commands.InitiateBulkPayment

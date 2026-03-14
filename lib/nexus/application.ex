@@ -51,6 +51,10 @@ defmodule Nexus.Application do
       Logger.info("[Nexus] EventStore schema ready.")
     end
 
+    # Initialize OpenTelemetry Tracing
+    OpentelemetryPhoenix.setup()
+    OpentelemetryEcto.setup([:nexus, :repo])
+
     children = [
       # 1. Infrastructure (Database & Event Store)
       NexusWeb.Telemetry,

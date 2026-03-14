@@ -33,10 +33,24 @@ defmodule Nexus.Treasury do
   def list_reconciliations(org_id) do
     import Ecto.Query
 
-    from(reconciliation in Reconciliation,
-      where: reconciliation.org_id == ^org_id,
-      order_by: [desc: reconciliation.matched_at]
-    )
+    query =
+      if org_id == :all do
+        from(reconciliation in Reconciliation,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: reconciliation.org_id == t.org_id,
+          select: %{reconciliation | org_name: t.name}
+        )
+      else
+        from(reconciliation in Reconciliation,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: reconciliation.org_id == t.org_id,
+          where: reconciliation.org_id == ^org_id,
+          select: %{reconciliation | org_name: t.name}
+        )
+      end
+
+    query
+    |> order_by([r], desc: r.matched_at)
     |> Repo.all()
   end
 
@@ -46,10 +60,25 @@ defmodule Nexus.Treasury do
   def list_unmatched_invoices(org_id) do
     import Ecto.Query
 
-    from(invoice in Invoice,
-      where: invoice.org_id == ^org_id and invoice.status == "ingested",
-      order_by: [desc: invoice.created_at]
-    )
+    query =
+      if org_id == :all do
+        from(invoice in Invoice,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: invoice.org_id == t.org_id,
+          where: invoice.status == "ingested",
+          select: %{invoice | org_name: t.name}
+        )
+      else
+        from(invoice in Invoice,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: invoice.org_id == t.org_id,
+          where: invoice.org_id == ^org_id and invoice.status == "ingested",
+          select: %{invoice | org_name: t.name}
+        )
+      end
+
+    query
+    |> order_by([i], desc: i.created_at)
     |> Repo.all()
   end
 
@@ -59,10 +88,25 @@ defmodule Nexus.Treasury do
   def list_unmatched_statement_lines(org_id) do
     import Ecto.Query
 
-    from(line in StatementLine,
-      where: line.org_id == ^org_id and line.status == "unmatched",
-      order_by: [desc: line.created_at]
-    )
+    query =
+      if org_id == :all do
+        from(line in StatementLine,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: line.org_id == t.org_id,
+          where: line.status == "unmatched",
+          select: %{line | org_name: t.name}
+        )
+      else
+        from(line in StatementLine,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: line.org_id == t.org_id,
+          where: line.org_id == ^org_id and line.status == "unmatched",
+          select: %{line | org_name: t.name}
+        )
+      end
+
+    query
+    |> order_by([l], desc: l.created_at)
     |> Repo.all()
   end
 
@@ -70,8 +114,20 @@ defmodule Nexus.Treasury do
   Lists recent policy alerts for an organization.
   """
   def list_policy_alerts(org_id, limit \\ 5) do
-    PolicyAlertQuery.base()
-    |> PolicyAlertQuery.for_org(org_id)
+    import Ecto.Query
+    query =
+      if org_id == :all do
+        PolicyAlertQuery.base()
+      else
+        PolicyAlertQuery.base()
+        |> PolicyAlertQuery.for_org(org_id)
+      end
+
+    from(a in query,
+      left_join: t in Nexus.Organization.Projections.Tenant,
+      on: a.org_id == t.org_id,
+      select: %{a | org_name: t.name}
+    )
     |> PolicyAlertQuery.recent(limit)
     |> Repo.all()
   end
@@ -82,11 +138,25 @@ defmodule Nexus.Treasury do
   def list_policy_audit_logs(org_id) do
     import Ecto.Query
 
-    from(log in Nexus.Treasury.Projections.PolicyAuditLog,
-      where: log.org_id == ^org_id,
-      order_by: [desc: log.changed_at],
-      limit: 10
-    )
+    query =
+      if org_id == :all do
+        from(log in Nexus.Treasury.Projections.PolicyAuditLog,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: log.org_id == t.org_id,
+          select: %{log | org_name: t.name}
+        )
+      else
+        from(log in Nexus.Treasury.Projections.PolicyAuditLog,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: log.org_id == t.org_id,
+          where: log.org_id == ^org_id,
+          select: %{log | org_name: t.name}
+        )
+      end
+
+    query
+    |> order_by([l], desc: l.changed_at)
+    |> limit(10)
     |> Repo.all()
   end
 
@@ -96,7 +166,17 @@ defmodule Nexus.Treasury do
   """
   def get_policy_mode(org_id) do
     import Ecto.Query
-    Repo.one(from policy in TreasuryPolicy, where: policy.org_id == ^org_id)
+
+    query =
+      if org_id == :all do
+        from(policy in TreasuryPolicy)
+      else
+        from(policy in TreasuryPolicy, where: policy.org_id == ^org_id)
+      end
+
+    query
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """
@@ -105,13 +185,22 @@ defmodule Nexus.Treasury do
   def get_latest_forecast(org_id, currency) do
     require Ecto.Query
 
-    ForecastQuery.base()
-    |> ForecastQuery.for_org(org_id)
+    query =
+      if org_id == :all do
+        ForecastQuery.base()
+      else
+        ForecastQuery.base()
+        |> ForecastQuery.for_org(org_id)
+      end
+
+    query
     |> ForecastQuery.for_currency(currency)
     |> ForecastQuery.newest_first()
     |> Ecto.Query.limit(1)
     |> Repo.one()
   end
+
+
 
   @doc """
   Lists historical daily net cash flow for an organization and currency.
@@ -121,13 +210,18 @@ defmodule Nexus.Treasury do
     end_date = Date.utc_today()
     start_date = Date.add(end_date, -days)
 
-    from(line in StatementLine,
-      where: line.org_id == ^org_id and line.currency == ^currency,
-      where: line.date >= ^Date.to_string(start_date) and line.date <= ^Date.to_string(end_date),
-      group_by: line.date,
-      select: %{date: line.date, amount: sum(line.amount)},
-      order_by: [asc: line.date]
-    )
+    query =
+      if org_id == :all do
+        from(line in StatementLine, where: line.currency == ^currency)
+      else
+        from(line in StatementLine, where: line.org_id == ^org_id and line.currency == ^currency)
+      end
+
+    query
+    |> where([l], l.date >= ^Date.to_string(start_date) and l.date <= ^Date.to_string(end_date))
+    |> group_by([l], l.date)
+    |> select([l], %{date: l.date, amount: sum(l.amount)})
+    |> order_by([l], asc: l.date)
     |> Repo.all()
     |> Enum.map(fn %{date: date_str, amount: total_amount} ->
       %{
@@ -189,25 +283,35 @@ defmodule Nexus.Treasury do
     reporting_currency = (policy && policy.reporting_currency) || "USD"
 
     # 2. Fetch all exposures for the org (Gross Invoice Volume)
-    gross_invoice_exposures =
-      ExposureQuery.base()
-      |> ExposureQuery.for_org(org_id)
-      |> Repo.all()
+    gross_invoice_query =
+      if org_id == :all do
+        ExposureQuery.base()
+      else
+        ExposureQuery.base()
+        |> ExposureQuery.for_org(org_id)
+      end
+
+    gross_invoice_exposures = Repo.all(gross_invoice_query)
 
     # 3. Fetch all liquidity positions for the org (Liquid Cash)
     import Ecto.Query
 
-    liquidity_positions =
-      Repo.all(
-        from position in Nexus.Treasury.Projections.LiquidityPosition,
-          where: position.org_id == ^org_id
-      )
+    liquidity_query =
+      if org_id == :all do
+        from(position in Nexus.Treasury.Projections.LiquidityPosition)
+      else
+        from(position in Nexus.Treasury.Projections.LiquidityPosition,
+          where: position.org_id == ^org_id)
+      end
+
+    liquidity_positions = Repo.all(liquidity_query)
 
     # 4. Consolidate into Net Exposure in reporting currency
     # Map liquidity by currency for easy lookup
     liquidity_map =
       Enum.reduce(liquidity_positions, %{}, fn position, acc ->
-        Map.put(acc, position.currency, position.amount)
+        existing_amount = Map.get(acc, position.currency, Decimal.new(0))
+        Map.put(acc, position.currency, Decimal.add(existing_amount, position.amount))
       end)
 
     # Collect all unique currencies from both exposures and liquidity
@@ -322,10 +426,15 @@ defmodule Nexus.Treasury do
   """
   def list_exposure_heatmap(org_id) do
     # Fetch all snapshots for the org
-    snapshots =
-      ExposureQuery.base()
-      |> ExposureQuery.for_org(org_id)
-      |> Repo.all()
+    query =
+      if org_id == :all do
+        ExposureQuery.base()
+      else
+        ExposureQuery.base()
+        |> ExposureQuery.for_org(org_id)
+      end
+
+    snapshots = Repo.all(query)
 
     # Dynamic extraction of active subsidiaries and currencies from existing snapshots
     # This allows new branches and currencies to appear automatically as invoices are ingested.
@@ -355,11 +464,9 @@ defmodule Nexus.Treasury do
     # Map into a nested structure: %{subsidiary => %{currency => amount}}
     snapshots_map =
       Enum.reduce(snapshots, %{}, fn snapshot, acc ->
-        put_in(
-          acc,
-          [Access.key(snapshot.subsidiary, %{}), snapshot.currency],
-          snapshot.exposure_amount
-        )
+        path = [Access.key(snapshot.subsidiary, %{}), snapshot.currency]
+        existing = get_in(acc, path) || Decimal.new(0)
+        put_in(acc, path, Decimal.add(existing, snapshot.exposure_amount))
       end)
 
     %{
@@ -416,8 +523,18 @@ defmodule Nexus.Treasury do
   Fetches the treasury policy for an organization.
   """
   def get_treasury_policy(org_id) do
-    TreasuryPolicyQuery.base()
-    |> TreasuryPolicyQuery.for_org(org_id)
+    import Ecto.Query
+
+    query =
+      if org_id == :all do
+        TreasuryPolicyQuery.base()
+      else
+        TreasuryPolicyQuery.base()
+        |> TreasuryPolicyQuery.for_org(org_id)
+      end
+
+    query
+    |> limit(1)
     |> Repo.one()
   end
 
@@ -536,10 +653,15 @@ defmodule Nexus.Treasury do
   def list_liquidity_positions(org_id) do
     import Ecto.Query
 
-    from(position in Nexus.Treasury.Projections.LiquidityPosition,
-      where: position.org_id == ^org_id
-    )
-    |> Repo.all()
+    query =
+      if org_id == :all do
+        from(position in Nexus.Treasury.Projections.LiquidityPosition)
+      else
+        from(position in Nexus.Treasury.Projections.LiquidityPosition,
+          where: position.org_id == ^org_id)
+      end
+
+    Repo.all(query)
   end
 
   @doc """
@@ -548,7 +670,13 @@ defmodule Nexus.Treasury do
   def get_reconciliation_stats(org_id) do
     import Ecto.Query
 
-    query = from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
+    query =
+      if org_id == :all do
+        from(reconciliation in Reconciliation)
+      else
+        from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
+      end
+
     reconciliations = Repo.all(query)
 
     auto_matched =

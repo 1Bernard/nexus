@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   @moduledoc """
   Aggregate to manage Fund Transfers and their authorization states.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :status, :amount, :from_currency, :to_currency]
 
   alias Nexus.Treasury.Commands.{RequestTransfer, AuthorizeTransfer, ExecuteTransfer}

@@ -13,6 +13,7 @@ defmodule Nexus.Identity.Projections.User do
     field :status, :string, default: "active"
     field :cose_key, :binary
     field :credential_id, :binary
+    field :org_name, :string, virtual: true
 
     timestamps()
   end

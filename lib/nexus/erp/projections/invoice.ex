@@ -16,6 +16,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :sap_status, :string
     field :due_date, :utc_datetime_usec
     field :status, :string, default: "ingested"
+    field :org_name, :string, virtual: true
 
     @timestamps_opts [type: :utc_datetime_usec]
     timestamps(inserted_at: :created_at)

@@ -34,7 +34,8 @@ defmodule NexusWeb.Identity.BiometricLive do
        host: req_host,
        action_type: action_type,
        consent_checked: false,
-       screening: %{fuzzy: :scanning, ofac: :scanning, pep: :scanning}
+       screening: %{fuzzy: :scanning, ofac: :scanning, pep: :scanning},
+       is_dev: Mix.env() == :dev
      )}
   end
 
@@ -254,6 +255,38 @@ defmodule NexusWeb.Identity.BiometricLive do
     {:noreply, assign(socket, status: "idle", progress: 0, error_message: error)}
   end
 
+  @impl true
+  def handle_event("simulate_persona", %{"email" => email}, socket) do
+    if socket.assigns.is_dev do
+      user = Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: email)
+
+      if user do
+        challenge_id = "dev_persona_bypass_#{user.id}"
+
+        command = %Nexus.Identity.Commands.VerifyBiometric{
+          user_id: user.id,
+          org_id: user.org_id,
+          challenge_id: challenge_id,
+          verified_at: DateTime.utc_now()
+        }
+
+        case App.dispatch(command) do
+          :ok ->
+            Process.send_after(self(), :advance_screening_1, 800)
+            {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+
+          {:error, reason} ->
+            {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+        end
+      else
+        {:noreply,
+         assign(socket, step: :error, error_message: "Persona user not found in database.")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   # Helper mirroring aggregate logic for bootstrap bypass
   defp bootstrap_user?(cose_key_bin, cred_id) do
     cose_key_bin in [
@@ -403,7 +436,7 @@ defmodule NexusWeb.Identity.BiometricLive do
       <!-- Museum Archive Background Elements -->
       <.editorial_grid />
       <div class="absolute inset-0 volumetric-nebula opacity-[0.15] pointer-events-none"></div>
-      
+
     <!-- Subtle Ledger Streams in Background -->
       <div class="fixed left-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block">
         <.ledger_stream />
@@ -440,6 +473,7 @@ defmodule NexusWeb.Identity.BiometricLive do
             action_type={@action_type}
             consent_checked={@consent_checked}
             screening={@screening}
+            is_dev={@is_dev}
           />
         </div>
 

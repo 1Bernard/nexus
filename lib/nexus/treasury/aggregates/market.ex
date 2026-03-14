@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Market do
   @moduledoc """
   CQRS Aggregate for tracking the latest FX market tick data for a currency pair.
   """
+  @derive Jason.Encoder
   defstruct [:id, :pair, :last_price, :last_tick_time]
 
   alias Nexus.Treasury.Commands.RecordMarketTick

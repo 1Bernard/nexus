@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Exposure do
   @moduledoc """
   CQRS Aggregate for managing calculated FX risk exposure per subsidiary.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :subsidiary, :currency, :last_exposure_amount]
 
   alias Nexus.Treasury.Commands.CalculateExposure

@@ -5,6 +5,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
   """
   require Logger
 
+  @derive Jason.Encoder
   defstruct [:id, :org_id]
 
   alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment, ResolveAnomaly}

@@ -18,6 +18,7 @@ defmodule Nexus.Treasury.Projections.Reconciliation do
     field :currency, :string
     field :status, Ecto.Enum, values: [:matched, :unmatched, :reversed, :pending, :rejected]
     field :matched_at, :utc_datetime_usec
+    field :org_name, :string, virtual: true
 
     timestamps()
   end

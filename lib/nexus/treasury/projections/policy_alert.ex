@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Projections.PolicyAlert do
     field :exposure_amount, :decimal
     field :threshold, :decimal
     field :triggered_at, :utc_datetime_usec
+    field :org_name, :string, virtual: true
 
     timestamps()
   end

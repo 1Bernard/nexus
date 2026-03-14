@@ -22,16 +22,28 @@ defmodule Nexus.ERP do
   end
 
   defp count_lines_by_status(org_id, status) do
-    from(l in StatementLine,
-      where: l.org_id == ^org_id and l.status == ^status,
-      select: count(l.id)
-    )
+    query =
+      if org_id == :all do
+        from(l in StatementLine, where: l.status == ^status)
+      else
+        from(l in StatementLine, where: l.org_id == ^org_id and l.status == ^status)
+      end
+
+    query
+    |> select([l], count(l.id))
     |> Repo.one() || 0
   end
 
   defp count_invoices_by_status(org_id, status) do
-    InvoiceQuery.base()
-    |> InvoiceQuery.for_org(org_id)
+    query =
+      if org_id == :all do
+        InvoiceQuery.base()
+      else
+        InvoiceQuery.base()
+        |> InvoiceQuery.for_org(org_id)
+      end
+
+    query
     |> InvoiceQuery.with_status(status)
     |> InvoiceQuery.count()
     |> Repo.one() || 0
@@ -41,8 +53,15 @@ defmodule Nexus.ERP do
   Calculates the total exposure amount for a subsidiary and currency.
   """
   def get_total_exposure(org_id, subsidiary, currency) do
-    InvoiceQuery.base()
-    |> InvoiceQuery.for_org(org_id)
+    query =
+      if org_id == :all do
+        InvoiceQuery.base()
+      else
+        InvoiceQuery.base()
+        |> InvoiceQuery.for_org(org_id)
+      end
+
+    query
     |> InvoiceQuery.for_subsidiary(subsidiary)
     |> InvoiceQuery.with_currency(currency)
     |> InvoiceQuery.sum_amount()
@@ -67,6 +86,8 @@ defmodule Nexus.ERP do
 
     invoices =
       invoices_query
+      |> join(:left, [inv], t in Nexus.Organization.Projections.Tenant, on: inv.org_id == t.org_id)
+      |> select([inv, t], %{inv | org_name: t.name})
       |> InvoiceQuery.newest_first()
       |> Repo.all()
       |> Enum.map(fn inv ->
@@ -91,6 +112,8 @@ defmodule Nexus.ERP do
 
     audits =
       policy_query
+      |> join(:left, [p], t in Nexus.Organization.Projections.Tenant, on: p.org_id == t.org_id)
+      |> select([p, t], %{p | org_name: t.name})
       |> order_by(desc: :changed_at)
       |> Repo.all()
       |> Enum.map(fn log ->
@@ -98,7 +121,7 @@ defmodule Nexus.ERP do
           id: log.id,
           icon: "hero-shield-check",
           color: "emerald",
-          title: "Policy: Mode changed to #{log.mode}",
+          title: "Policy: Mode changed to #{log.mode} (#{log.org_name || "Nexus"})",
           subtitle: "Actor: #{log.actor_email}",
           created_at: log.changed_at,
           time: format_time(log.changed_at)
@@ -201,10 +224,17 @@ defmodule Nexus.ERP do
   Supports filtering by filename and date.
   """
   def list_statements(org_id, query \\ "", date \\ "") do
-    from(s in Statement,
-      where: s.org_id == ^org_id,
-      order_by: [desc: s.uploaded_at]
-    )
+    base_query =
+      if org_id == :all do
+        from(s in Statement)
+      else
+        from(s in Statement, where: s.org_id == ^org_id)
+      end
+
+    base_query
+    |> join(:left, [s], t in Nexus.Organization.Projections.Tenant, on: s.org_id == t.org_id)
+    |> select([s, t], %{s | org_name: t.name})
+    |> order_by([s], desc: s.uploaded_at)
     |> filter_by_filename(query)
     |> filter_by_date(date)
     |> Repo.all()

@@ -56,6 +56,7 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
           |> assign(:staged_filename, filename)
           |> assign(:validation_errors, errors)
           |> assign(:upload_status, :staged)
+          |> assign(:idempotency_key, Uniq.UUID.uuid7())
 
         {:noreply, socket}
 
@@ -89,15 +90,27 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
       initiated_at: DateTime.utc_now()
     }
 
-    case Nexus.App.dispatch(cmd) do
+    case Nexus.App.dispatch(cmd, uuid: socket.assigns.idempotency_key) do
       :ok ->
+        optimistic_batch = %Nexus.Payments.Projections.BulkPayment{
+          id: bulk_payment_id,
+          org_id: org_id,
+          user_id: user_id,
+          status: "processing",
+          total_items: length(payments),
+          processed_items: 0,
+          total_amount:
+            Enum.reduce(payments, Decimal.new(0), fn p, acc -> Decimal.add(p.amount, acc) end),
+          created_at: DateTime.utc_now()
+        }
+
         socket =
           socket
           |> put_flash(:info, "Institutional Payment Batch Initiated")
           |> assign(:staged_payments, [])
           |> assign(:staged_filename, nil)
           |> assign(:upload_status, :idle)
-          |> assign(:batches, list_batches(org_id))
+          |> assign(:batches, [optimistic_batch | list_batches(org_id)])
 
         {:noreply, socket}
 

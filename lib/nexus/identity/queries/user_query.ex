@@ -11,9 +11,29 @@ defmodule Nexus.Identity.Queries.UserQuery do
   Lists users within an organization with support for search, role filtering, and pagination.
   """
   def list_users_by_org(org_id, params \\ %{}) do
-    query = from(u in User, where: u.org_id == ^org_id)
+    from(u in User,
+      left_join: t in Nexus.Organization.Projections.Tenant,
+      on: u.org_id == t.org_id,
+      where: u.org_id == ^org_id,
+      select: %{u | org_name: t.name}
+    )
+    |> list_users_query(params)
+  end
 
-    query
+  @doc """
+  Lists ALL users on the platform (System Admin only).
+  """
+  def list_all_users(params \\ %{}) do
+    from(u in User,
+      left_join: t in Nexus.Organization.Projections.Tenant,
+      on: u.org_id == t.org_id,
+      select: %{u | org_name: t.name}
+    )
+    |> list_users_query(params)
+  end
+
+  defp list_users_query(base_query, params) do
+    base_query
     |> filter_by_search(params["search"])
     |> filter_by_role(params["role"])
     |> paginate(params["after"], params["limit"] || 20)
@@ -31,6 +51,13 @@ defmodule Nexus.Identity.Queries.UserQuery do
   def total_users_count(org_id) do
     from(u in User, where: u.org_id == ^org_id)
     |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Returns the total count of all users on the platform.
+  """
+  def total_users_count do
+    Repo.aggregate(User, :count, :id)
   end
 
   # --- Internal Helpers ---

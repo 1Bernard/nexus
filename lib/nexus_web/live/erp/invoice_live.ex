@@ -21,7 +21,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
     socket =
       socket
       |> assign(page_title: "ERP Talk Back - Nexus")
-      |> assign(org_id: org_id)
+      |> assign(org_id: if(socket.assigns.current_user.role == "system_admin", do: :all, else: org_id))
       |> assign(show_manual_modal: false)
       # Initialize with placeholders
       |> assign(total_volume: 0.0)
@@ -170,8 +170,20 @@ defmodule NexusWeb.ERP.InvoiceLive do
     } = socket.assigns
 
     base_query =
-      Invoice
-      |> where([i], i.org_id == ^org_id)
+      if org_id == :all do
+        from(i in Invoice,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: i.org_id == t.org_id,
+          select: %{i | org_name: t.name}
+        )
+      else
+        from(i in Invoice,
+          left_join: t in Nexus.Organization.Projections.Tenant,
+          on: i.org_id == t.org_id,
+          where: i.org_id == ^org_id,
+          select: %{i | org_name: t.name}
+        )
+      end
 
     query =
       if search && String.trim(search) != "" do
@@ -264,23 +276,36 @@ defmodule NexusWeb.ERP.InvoiceLive do
   end
 
   defp get_total_count(org_id) do
-    Nexus.Repo.aggregate(
-      from(i in Invoice, where: i.org_id == ^org_id),
-      :count,
-      :id
-    )
+    query =
+      if org_id == :all do
+        from(i in Invoice)
+      else
+        from(i in Invoice, where: i.org_id == ^org_id)
+      end
+
+    Nexus.Repo.aggregate(query, :count, :id)
   end
 
   defp get_pending_count(org_id) do
-    Nexus.Repo.aggregate(
-      from(i in Invoice, where: i.org_id == ^org_id and i.status not in ["ingested", "matched"]),
-      :count,
-      :id
-    )
+    query =
+      if org_id == :all do
+        from(i in Invoice, where: i.status not in ["ingested", "matched"])
+      else
+        from(i in Invoice, where: i.org_id == ^org_id and i.status not in ["ingested", "matched"])
+      end
+
+    Nexus.Repo.aggregate(query, :count, :id)
   end
 
   defp get_total_volume(org_id) do
-    invoices = Repo.all(from i in Invoice, where: i.org_id == ^org_id, select: i.amount)
+    query =
+      if org_id == :all do
+        from(i in Invoice, select: i.amount)
+      else
+        from(i in Invoice, where: i.org_id == ^org_id, select: i.amount)
+      end
+
+    invoices = Repo.all(query)
 
     Enum.reduce(invoices, 0.0, fn amount, acc ->
       acc + parse_amount(amount)
@@ -291,12 +316,20 @@ defmodule NexusWeb.ERP.InvoiceLive do
     now = DateTime.utc_now()
     day = 86400
 
-    invoices =
-      Repo.all(
-        from i in Invoice,
+    query =
+      if org_id == :all do
+        from(i in Invoice,
+          where: i.status != "matched",
+          select: %{amount: i.amount, due_date: i.due_date}
+        )
+      else
+        from(i in Invoice,
           where: i.org_id == ^org_id and i.status != "matched",
           select: %{amount: i.amount, due_date: i.due_date}
-      )
+        )
+      end
+
+    invoices = Repo.all(query)
 
     Enum.reduce(
       invoices,
@@ -462,6 +495,10 @@ defmodule NexusWeb.ERP.InvoiceLive do
               end
             }
           />
+        </:col>
+
+        <:col :let={invoice} label="Organization" class="font-bold text-slate-400 text-[10px] uppercase tracking-wider">
+          {invoice.org_name || "Nexus Platform"}
         </:col>
 
         <:col :let={invoice} label="Vendor / SAP BELNR">

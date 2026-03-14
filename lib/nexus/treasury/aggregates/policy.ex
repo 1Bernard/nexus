@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
   @moduledoc """
   Aggregate for managing Treasury-specific policies — thresholds and named risk tolerance modes.
   """
+  @derive Jason.Encoder
   defstruct [
     :id,
     :org_id,

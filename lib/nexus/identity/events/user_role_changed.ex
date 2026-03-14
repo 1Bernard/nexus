@@ -3,6 +3,6 @@ defmodule Nexus.Identity.Events.UserRoleChanged do
   Event emitted when an administrator changes a user's role within the system.
   """
   @derive [Jason.Encoder]
-  @enforce_keys [:user_id, :role, :actor_id, :changed_at]
-  defstruct [:user_id, :role, :actor_id, :changed_at]
+  @enforce_keys [:user_id, :org_id, :role, :actor_id, :changed_at]
+  defstruct [:user_id, :org_id, :role, :actor_id, :changed_at]
 end

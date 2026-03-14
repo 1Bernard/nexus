@@ -3,6 +3,7 @@ defmodule Nexus.Identity.Aggregates.User do
   The Domain Aggregate for User Identity.
   Responsible for validating Biometric Handshakes and emitting Facts.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :email, :display_name, :role, :status, :cose_key, :credential_id]
 
   alias Nexus.Identity.Commands.{
@@ -83,6 +84,7 @@ defmodule Nexus.Identity.Aggregates.User do
   def execute(%__MODULE__{id: id}, %ChangeUserRole{} = cmd) when not is_nil(id) do
     %UserRoleChanged{
       user_id: cmd.user_id,
+      org_id: cmd.org_id,
       role: cmd.role,
       actor_id: cmd.actor_id,
       changed_at: cmd.changed_at
@@ -92,6 +94,7 @@ defmodule Nexus.Identity.Aggregates.User do
   def execute(%__MODULE__{id: id}, %ChangeUserStatus{} = cmd) when not is_nil(id) do
     %UserStatusChanged{
       user_id: cmd.user_id,
+      org_id: cmd.org_id,
       status: cmd.status,
       actor_id: cmd.actor_id,
       changed_at: cmd.changed_at

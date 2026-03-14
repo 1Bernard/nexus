@@ -135,6 +135,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
   def handle_event("update-user-role", %{"role" => role, "user_id" => user_id}, socket) do
     command = %Nexus.Identity.Commands.ChangeUserRole{
       user_id: user_id,
+      org_id: socket.assigns.current_user.org_id,
       role: role,
       actor_id: socket.assigns.current_user.id,
       changed_at: DateTime.utc_now()
@@ -157,6 +158,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
   def handle_event("update-user-status", %{"status" => status, "user_id" => user_id}, socket) do
     command = %Nexus.Identity.Commands.ChangeUserStatus{
       user_id: user_id,
+      org_id: socket.assigns.current_user.org_id,
       status: status,
       actor_id: socket.assigns.current_user.id,
       changed_at: DateTime.utc_now()
@@ -235,6 +237,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
   # --- Internal Helpers ---
 
   defp fetch_users(socket) do
+    org_id = socket.assigns.current_user.org_id
     limit = socket.assigns[:limit] || 25
 
     query_params = %{
@@ -245,11 +248,21 @@ defmodule NexusWeb.Admin.UserLive.Index do
       "cursor_before" => socket.assigns[:cursor_before]
     }
 
-    users_page = UserQuery.list_users_by_org(socket.assigns.current_user.org_id, query_params)
-    total_count = UserQuery.total_users_count(socket.assigns.current_user.org_id)
+    users_page =
+      if socket.assigns.current_user.role == "system_admin" do
+        UserQuery.list_all_users(query_params)
+      else
+        UserQuery.list_users_by_org(org_id, query_params)
+      end
 
-    # Convert the page struct into assigned values. If users_page is a list (legacy support), mock the page_meta
-    {users, page_meta} =
+    total_count =
+      if socket.assigns.current_user.role == "system_admin" do
+        UserQuery.total_users_count()
+      else
+        UserQuery.total_users_count(org_id)
+      end
+
+    {entries, page_meta} =
       if is_struct(users_page, Scrivener.Page) or
            (is_map(users_page) and Map.has_key?(users_page, :entries)) do
         {users_page.entries,
@@ -270,7 +283,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
     }
 
     socket
-    |> assign(:users, users)
+    |> assign(:users, entries)
     |> assign(:total_count, total_count)
     |> assign(:page_meta, page_meta)
     |> assign(:datagrid_params, datagrid_params)

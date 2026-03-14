@@ -28,9 +28,15 @@ defmodule NexusWeb.ERP.StatementComponents do
             {@statement.error_message || "Ingestion failed"}
           </p>
         <% else %>
-          <p class="text-[10px] text-slate-500 mt-0.5 font-mono">
-            Uploaded {format_datetime(@statement.uploaded_at)}
-          </p>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p class="text-[10px] text-slate-500 font-mono">
+              Uploaded {format_datetime(@statement.uploaded_at)}
+            </p>
+            <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded">
+              {@statement.org_name || "Nexus Platform"}
+            </p>
+          </div>
         <% end %>
       </div>
 

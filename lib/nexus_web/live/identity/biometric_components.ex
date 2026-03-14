@@ -227,6 +227,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
   attr :action_type, :string, default: "register"
   attr :consent_checked, :boolean, default: false
   attr :screening, :map, default: %{}
+  attr :is_dev, :boolean, default: false
 
   def step_content(%{step: :welcome} = assigns) do
     ~H"""
@@ -338,6 +339,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <p class="text-xs text-slate-400 mt-1 mb-4">Press and hold to verify your identity</p>
 
       <.sensor_ring status={@status} progress={@progress} />
+      <.persona_simulator is_dev={@is_dev} />
 
       <div id="biometricHint" phx-update="ignore" class="h-6 text-[10px] font-mono text-slate-500">
         <span>⬇️ press &amp; hold to verify ⬇️</span>
@@ -455,6 +457,57 @@ defmodule NexusWeb.Identity.BiometricComponents do
       >
         Retry verification
       </button>
+    </div>
+    """
+  end
+
+  attr :is_dev, :boolean, default: false
+
+  def persona_simulator(assigns) do
+    ~H"""
+    <div :if={@is_dev} class="mt-8 border-t border-white/10 pt-6 animate-fade-in-up">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="hero-beaker w-4 h-4 text-emerald-400"></span>
+        <h3 class="text-[10px] font-mono text-emerald-400 tracking-widest uppercase font-bold">Dev-Mode Persona Simulator</h3>
+      </div>
+      <div class="grid grid-cols-1 gap-3">
+        <button phx-click="simulate_persona" phx-value-email="admin@nexus-platform.io" class="flex items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-colors text-left group">
+          <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mr-3 ring-1 ring-emerald-500/30">
+            <span class="hero-command-line w-5 h-5"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-400">System Admin</span>
+            <span class="text-[10px] text-slate-500 font-mono mt-0.5">admin@nexus-platform.io</span>
+          </div>
+        </button>
+        <button phx-click="simulate_persona" phx-value-email="admin@nexus-corp.com" class="flex items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-colors text-left group">
+          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mr-3 ring-1 ring-amber-500/30">
+            <span class="hero-building-office w-5 h-5"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-slate-200 group-hover:text-amber-400">Org Admin</span>
+            <span class="text-[10px] text-slate-500 font-mono mt-0.5">admin@nexus-corp.com</span>
+          </div>
+        </button>
+        <button phx-click="simulate_persona" phx-value-email="elena@global-corp.com" class="flex items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-colors text-left group">
+          <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center mr-3 ring-1 ring-indigo-500/30">
+            <span class="hero-presentation-chart-line w-5 h-5"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-slate-200 group-hover:text-indigo-400">Treasury Analyst (Trader)</span>
+            <span class="text-[10px] text-slate-500 font-mono mt-0.5">elena@global-corp.com</span>
+          </div>
+        </button>
+        <button phx-click="simulate_persona" phx-value-email="observer@nexus-platform.io" class="flex items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-colors text-left group">
+          <div class="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center mr-3 ring-1 ring-cyan-500/30">
+            <span class="hero-eye w-5 h-5"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-slate-200 group-hover:text-cyan-400">Auditor (Viewer)</span>
+            <span class="text-[10px] text-slate-500 font-mono mt-0.5">observer@nexus-platform.io</span>
+          </div>
+        </button>
+      </div>
     </div>
     """
   end

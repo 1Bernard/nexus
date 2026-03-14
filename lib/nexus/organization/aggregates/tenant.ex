@@ -147,3 +147,13 @@ defmodule Nexus.Organization.Aggregates.Tenant do
     %{state | modules_enabled: modules}
   end
 end
+
+defimpl Jason.Encoder, for: Nexus.Organization.Aggregates.Tenant do
+  def encode(struct, opts) do
+    struct
+    |> Map.from_struct()
+    |> Map.update!(:modules_enabled, &MapSet.to_list/1)
+    |> Map.update!(:invitations, &MapSet.to_list/1)
+    |> Jason.Encode.map(opts)
+  end
+end

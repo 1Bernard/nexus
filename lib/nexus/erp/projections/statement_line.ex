@@ -16,6 +16,7 @@ defmodule Nexus.ERP.Projections.StatementLine do
     field :status, :string, default: "unmatched"
     field :error_message, :string
     field :metadata, :map, default: %{}
+    field :org_name, :string, virtual: true
 
     timestamps(inserted_at: :created_at)
   end

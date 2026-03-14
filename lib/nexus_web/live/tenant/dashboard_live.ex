@@ -40,7 +40,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
     # Load persisted policy mode from the database (survives page reloads)
     org_id = socket.assigns.current_user.org_id
-    saved_policy = Treasury.get_policy_mode(org_id)
+    org_id_for_query = if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+    saved_policy = Treasury.get_policy_mode(org_id_for_query)
 
     {persisted_threshold, persisted_mode} =
       case saved_policy do
@@ -72,10 +73,11 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:pending_transfer, nil)
       |> assign(:transfer_threshold, persisted_threshold)
       |> assign(:policy_mode, persisted_mode)
-      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
+      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id_for_query))
       |> assign(:recon_stats, %{match_rate: 0, auto_matched_count: 0, matching_velocity_min: 0})
       |> assign(:liquidity_positions, %{})
       |> assign(:host, get_host(socket))
+      |> assign(:org_id_for_query, org_id_for_query)
 
     {:ok, socket}
   end
@@ -320,7 +322,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
                     </div>
                     <div class="flex items-center justify-between">
                       <span class="text-[10px] font-bold text-slate-200">
-                        {alert.currency_pair} Limit Breached
+                        {alert.currency_pair} Limit Breached ({alert.org_name || "Nexus Platform"})
                       </span>
                       <span class="text-[9px] font-mono text-rose-400">Critical</span>
                     </div>
@@ -549,6 +551,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
                     <div class="flex flex-col gap-1">
                       <div class="flex items-center gap-1.5">
                         <span class="text-slate-300 font-bold">{log.actor_email}</span>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">({log.org_name || "Nexus Platform"})</span>
                         <%= if log.mode == "CONFIG" do %>
                           <span class="text-slate-600">updated thresholds</span>
                         <% else %>
@@ -605,7 +608,8 @@ defmodule NexusWeb.Tenant.DashboardLive do
       end
 
     # Fetch policy
-    policy = Treasury.get_treasury_policy(org_id)
+    org_id_for_query = socket.assigns.org_id_for_query
+    policy = Treasury.get_treasury_policy(org_id_for_query)
     threshold = (policy && policy.transfer_threshold) || Decimal.new(1_000_000)
 
     socket =
@@ -613,20 +617,24 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:current_price, current_price)
       |> assign(:initial_chart_data, initial_chart_data)
       |> assign(:market_ticks, Treasury.list_active_currencies())
-      |> assign(:risk_summary, Treasury.get_risk_summary(org_id))
-      |> assign(:exposure_heatmap, Treasury.list_exposure_heatmap(org_id))
+      |> assign(:risk_summary, Treasury.get_risk_summary(org_id_for_query))
+      |> assign(:exposure_heatmap, Treasury.list_exposure_heatmap(org_id_for_query))
       |> assign(
         :liquidity_positions,
-        Treasury.list_liquidity_positions(org_id) |> Map.new(&{&1.currency, &1.amount})
+        Treasury.list_liquidity_positions(org_id_for_query)
+        |> Enum.reduce(%{}, fn pos, acc ->
+          existing = Map.get(acc, pos.currency, Decimal.new(0))
+          Map.put(acc, pos.currency, Decimal.add(existing, pos.amount))
+        end)
       )
-      |> assign(:payment_matching, ERP.get_payment_matching_stats(org_id))
-      |> assign(:recent_activity, ERP.list_recent_activity(org_id))
-      |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id))
-      |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id, "EUR"))
-      |> assign(:historical_forecast_data, Treasury.list_historical_cash_flow(org_id, "EUR", 14))
+      |> assign(:payment_matching, ERP.get_payment_matching_stats(org_id_for_query))
+      |> assign(:recent_activity, ERP.list_recent_activity(org_id_for_query))
+      |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id_for_query))
+      |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id_for_query, "EUR"))
+      |> assign(:historical_forecast_data, Treasury.list_historical_cash_flow(org_id_for_query, "EUR", 14))
       |> assign(:transfer_threshold, threshold)
-      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id))
-      |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id))
+      |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id_for_query))
+      |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id_for_query))
 
     # Trigger fresh forecast generation to include recent invoice changes
     Treasury.generate_forecast(org_id, "EUR")
@@ -748,27 +756,31 @@ defmodule NexusWeb.Tenant.DashboardLive do
         socket
       end
 
+    org_id_for_query = socket.assigns.org_id_for_query
+
     {:noreply,
      socket
-     |> assign(:risk_summary, Treasury.get_risk_summary(socket.assigns.current_user.org_id))
+     |> assign(:risk_summary, Treasury.get_risk_summary(org_id_for_query))
      |> assign(
        :liquidity_positions,
-       Treasury.list_liquidity_positions(socket.assigns.current_user.org_id)
+       Treasury.list_liquidity_positions(org_id_for_query)
        |> Map.new(&{&1.currency, &1.amount})
      )
-     |> assign(:recent_activity, ERP.list_recent_activity(socket.assigns.current_user.org_id))}
+     |> assign(:recent_activity, ERP.list_recent_activity(org_id_for_query))}
   end
 
   @impl true
   def handle_info({:policy_mode_changed, event}, socket) do
     # Real-time update when another browser session changes the risk mode
+    org_id_for_query = socket.assigns.org_id_for_query
+
     {:noreply,
      socket
      |> assign(:policy_mode, event.mode)
      |> assign(:transfer_threshold, event.threshold)
      |> assign(
        :policy_audit_logs,
-       Treasury.list_policy_audit_logs(socket.assigns.current_user.org_id)
+       Treasury.list_policy_audit_logs(org_id_for_query)
      )}
   end
 

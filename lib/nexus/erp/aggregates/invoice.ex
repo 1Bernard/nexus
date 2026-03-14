@@ -5,6 +5,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   alias Nexus.ERP.Commands.{IngestInvoice, MatchInvoice}
   alias Nexus.ERP.Events.{InvoiceIngested, InvoiceRejected, InvoiceMatched}
 
+  @derive Jason.Encoder
   defstruct [:id, :status]
 
   # Idempotency: If the invoice is already ingested or rejected, we silently accept the duplicate payload

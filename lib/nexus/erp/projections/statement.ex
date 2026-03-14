@@ -16,6 +16,7 @@ defmodule Nexus.ERP.Projections.Statement do
     field :content_hash, :string
     field :uploaded_at, :utc_datetime_usec
     field :error_message, :string
+    field :org_name, :string, virtual: true
 
     timestamps()
   end

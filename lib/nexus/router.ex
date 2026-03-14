@@ -6,6 +6,7 @@ defmodule Nexus.Router do
   use Commanded.Commands.Router
 
   # Global Middleware Stack
+  middleware(Nexus.Shared.Middleware.CorrelationId)
   middleware(Nexus.Shared.Middleware.TenantGate)
 
   # --- Identity Domain ---

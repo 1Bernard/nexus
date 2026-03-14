@@ -20,11 +20,13 @@ defmodule NexusWeb.ERP.StatementLive do
       Phoenix.PubSub.subscribe(Nexus.PubSub, "erp_statements:#{org_id}")
     end
 
+    org_id_for_query = if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+
     socket =
       socket
       |> assign(:page_title, "Document Gateway")
       |> assign(:current_path, "/statements")
-      |> assign(:statements, ERP.list_statements(org_id, "", ""))
+      |> assign(:statements, ERP.list_statements(org_id_for_query, "", ""))
       |> assign(:expanded_statement_id, nil)
       |> assign(:expanded_lines, [])
       |> assign(:upload_error, nil)
@@ -53,6 +55,7 @@ defmodule NexusWeb.ERP.StatementLive do
       socket
       |> assign(upload_error: nil)
       |> assign(filename_warning: filename_warning)
+      |> assign(idempotency_key: Uniq.UUID.uuid7())
 
     {:noreply, socket}
   end
@@ -74,10 +77,22 @@ defmodule NexusWeb.ERP.StatementLive do
 
           ERP.statement_exists_by_filename?(org_id, filename) ->
             # Filename exists but content is different (new version) - we allow it but it will have a warning in the UI
-            proceed_with_upload(org_id, filename, format, raw_content, content_hash)
+            proceed_with_upload(
+              org_id,
+              filename,
+              format,
+              raw_content,
+              socket.assigns.idempotency_key
+            )
 
           true ->
-            proceed_with_upload(org_id, filename, format, raw_content, content_hash)
+            proceed_with_upload(
+              org_id,
+              filename,
+              format,
+              raw_content,
+              socket.assigns.idempotency_key
+            )
         end
       end)
 
@@ -474,7 +489,7 @@ defmodule NexusWeb.ERP.StatementLive do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  defp proceed_with_upload(org_id, filename, format, raw_content, _content_hash) do
+  defp proceed_with_upload(org_id, filename, format, raw_content, idempotency_key) do
     statement_id = Schema.generate_uuidv7()
 
     command = %Nexus.ERP.Commands.UploadStatement{
@@ -486,7 +501,7 @@ defmodule NexusWeb.ERP.StatementLive do
       uploaded_at: DateTime.utc_now()
     }
 
-    case App.dispatch(command, consistency: :strong) do
+    case App.dispatch(command, consistency: :strong, uuid: idempotency_key) do
       :ok -> {:ok, :uploaded}
       {:error, reason} -> {:error, reason}
     end

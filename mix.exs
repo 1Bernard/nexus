@@ -107,6 +107,17 @@ defmodule Nexus.MixProject do
       # deploying to a machine with guaranteed high memory (e.g. a GPU server).
       {:exla, "~> 0.10.0", only: [:dev]},
 
+      # Messaging
+      {:amqp, "~> 4.1"},
+
+      # Observability
+      {:opentelemetry, "~> 1.3"},
+      {:opentelemetry_api, "~> 1.2"},
+      {:opentelemetry_exporter, "~> 1.6"},
+      {:opentelemetry_phoenix, "~> 1.1"},
+      {:opentelemetry_ecto, "~> 1.1"},
+      {:prom_ex, "~> 1.8"},
+
       # Testing & BDD ---
       # Gherkin BDD implementation
       {:cabbage, "~> 0.4.0"},

@@ -168,8 +168,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                           <span class="text-[9px] text-slate-500 font-mono italic">
                             SAP BELNR: {inv.sap_document_number}
                           </span>
-                          <span class="text-[9px] text-slate-500 font-mono italic">
-                            {inv.subsidiary}
+                          <span class="text-[9px] text-slate-400 font-mono italic">
+                            {inv.org_name || "Nexus Platform"}
                           </span>
                         </div>
                       </td>
@@ -257,8 +257,8 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                           <span class="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
                             {line.ref}
                           </span>
-                          <span class="text-[9px] text-slate-500 line-clamp-1 truncate max-w-[150px]">
-                            {line.narrative}
+                          <span class="text-[9px] text-slate-400 line-clamp-1 truncate max-w-[150px]">
+                            {line.org_name || "Nexus Platform"}
                           </span>
                         </div>
                       </td>
@@ -507,6 +507,11 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   -4,
                   4
                 )}
+              </span>
+            </div>
+            <div class="mt-1">
+              <span class="text-[9px] font-bold text-slate-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded">
+                {recon.org_name || "Nexus Platform"}
               </span>
             </div>
           </div>

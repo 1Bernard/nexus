@@ -2,6 +2,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
   @moduledoc """
   The Reconciliation aggregate handles the matching of invoices and statements.
   """
+  @derive Jason.Encoder
   defstruct [
     :reconciliation_id,
     :invoice_id,

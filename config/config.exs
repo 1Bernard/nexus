@@ -34,7 +34,11 @@ config :nexus, Nexus.App,
   ],
   pubsub: :local,
   registry: :local,
-  router: Nexus.Router
+  router: Nexus.Router,
+  snapshotting: %{
+    Nexus.Identity.Aggregates.User => [snapshot_every: 50, snapshot_version: 1],
+    Nexus.Treasury.Aggregates.Market => [snapshot_every: 50, snapshot_version: 1]
+  }
 
 # Configures the endpoint
 config :nexus, NexusWeb.Endpoint,
@@ -113,3 +117,12 @@ config :mime, :types, %{
 }
 
 import_config "#{config_env()}.exs"
+
+# 7. Observability & Tracing (OpenTelemetry)
+config :opentelemetry,
+  span_processor: :batch,
+  traces_exporter: :otlp
+
+config :opentelemetry_exporter,
+  otlp_protocol: :http_protobuf,
+  otlp_endpoint: "http://localhost:4318"

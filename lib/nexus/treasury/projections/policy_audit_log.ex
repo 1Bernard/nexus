@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Projections.PolicyAuditLog do
     field :mode, :string
     field :threshold, :decimal
     field :changed_at, :utc_datetime_usec
+    field :org_name, :string, virtual: true
 
     timestamps()
   end

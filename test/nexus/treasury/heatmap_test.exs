@@ -8,7 +8,7 @@ defmodule Nexus.Treasury.HeatmapTest do
       org_id = Ecto.UUID.generate()
       result = Treasury.list_exposure_heatmap(org_id)
 
-      assert result.subsidiaries == ["Munich HQ", "Tokyo Branch", "London Ltd"]
+      assert result.subsidiaries == ["Munich HQ", "Tokyo Branch", "Corporate Operations"]
       assert result.currencies == ["EUR", "USD", "GBP", "JPY", "CHF"]
       assert result.data == %{}
     end

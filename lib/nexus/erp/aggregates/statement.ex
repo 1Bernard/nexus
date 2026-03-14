@@ -4,6 +4,7 @@ defmodule Nexus.ERP.Aggregates.Statement do
   Parses the raw content synchronously and emits StatementUploaded or StatementRejected.
   Idempotency: duplicate statement_id silently returns no events.
   """
+  @derive Jason.Encoder
   defstruct [:id, :org_id, :status]
 
   alias Nexus.ERP.Commands.UploadStatement
