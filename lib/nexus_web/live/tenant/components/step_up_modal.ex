@@ -95,58 +95,59 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
     challenge_id = "step_up_#{socket.assigns.current_user.id}"
     user = socket.assigns.current_user
 
-    with {:ok, challenge} <- AuthChallengeStore.pop_challenge(challenge_id) do
-      # Perform verification here in the Component
-      raw_id_bin = decode_base64_url!(raw_id)
-      auth_data_bin = decode_base64_url!(auth_data)
-      sig_bin = decode_base64_url!(sig)
-      client_bin = decode_base64_url!(client)
+    case AuthChallengeStore.pop_challenge(challenge_id) do
+      {:ok, challenge} ->
+        # Perform verification here in the Component
+        raw_id_bin = decode_base64_url!(raw_id)
+        auth_data_bin = decode_base64_url!(auth_data)
+        sig_bin = decode_base64_url!(sig)
+        client_bin = decode_base64_url!(client)
 
-      # Convert state keys back to binary if they are Base64'd
-      credential_id_bin = decode_or_raw(user.credential_id)
-      cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
+        # Convert state keys back to binary if they are Base64'd
+        credential_id_bin = decode_or_raw(user.credential_id)
+        cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
 
-      # Skip verification for bootstrap user if applicable
-      is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
+        # Skip verification for bootstrap user if applicable
+        is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
 
-      verification_result =
-        if is_bootstrap do
-          {:ok, :bootstrap}
-        else
-          WebAuthn.authenticate(
-            raw_id_bin,
-            auth_data_bin,
-            sig_bin,
-            client_bin,
-            challenge,
-            [{credential_id_bin, cose_key_bin}]
-          )
-        end
-
-      case verification_result do
-        {:ok, _} ->
-          command = %Nexus.Identity.Commands.VerifyStepUp{
-            user_id: user.id,
-            org_id: user.org_id,
-            challenge_id: challenge_id,
-            action_id: socket.assigns.action_id,
-            verified_at: DateTime.utc_now()
-          }
-
-          case App.dispatch(command) do
-            :ok ->
-              send(self(), {:step_up_success, socket.assigns.action_id})
-              {:noreply, assign(socket, status: "success", progress: 100)}
-
-            {:error, reason} ->
-              {:noreply, assign(socket, status: "idle", error_message: inspect(reason))}
+        verification_result =
+          if is_bootstrap do
+            {:ok, :bootstrap}
+          else
+            WebAuthn.authenticate(
+              raw_id_bin,
+              auth_data_bin,
+              sig_bin,
+              client_bin,
+              challenge,
+              [{credential_id_bin, cose_key_bin}]
+            )
           end
 
-        {:error, reason} ->
-          {:noreply,
-           assign(socket, status: "idle", error_message: "WebAuthn Error: #{inspect(reason)}")}
-      end
-    else
+        case verification_result do
+          {:ok, _} ->
+            command = %Nexus.Identity.Commands.VerifyStepUp{
+              user_id: user.id,
+              org_id: user.org_id,
+              challenge_id: challenge_id,
+              action_id: socket.assigns.action_id,
+              verified_at: DateTime.utc_now()
+            }
+
+            case App.dispatch(command) do
+              :ok ->
+                send(self(), {:step_up_success, socket.assigns.action_id})
+                {:noreply, assign(socket, status: "success", progress: 100)}
+
+              {:error, reason} ->
+                {:noreply, assign(socket, status: "idle", error_message: inspect(reason))}
+            end
+
+          {:error, reason} ->
+            {:noreply,
+             assign(socket, status: "idle", error_message: "WebAuthn Error: #{inspect(reason)}")}
+        end
+
       {:error, reason} ->
         {:noreply,
          assign(socket, status: "idle", error_message: "Challenge Error: #{inspect(reason)}")}
@@ -287,13 +288,17 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
               <%= if assigns[:transfer] do %>
                 <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 w-full animate-in slide-in-from-bottom-2 duration-500">
                   <div class="flex flex-col gap-1">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Transfer Amount</span>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                      Transfer Amount
+                    </span>
                     <span class="text-lg font-mono text-white">
                       {format_amount(@transfer.amount)} {@transfer.from_currency}
                     </span>
                     <div class="flex items-center gap-2 mt-1">
                       <span class="text-[9px] text-indigo-400 font-bold uppercase">To</span>
-                      <span class="text-[10px] text-slate-300">{@transfer.to_currency} Global Treasury</span>
+                      <span class="text-[10px] text-slate-300">
+                        {@transfer.to_currency} Global Treasury
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -331,7 +336,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                 [ Cancel Transaction ]
               </button>
             </div>
-
+            
     <!-- Security Primitives -->
             <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
               <.security_badge />

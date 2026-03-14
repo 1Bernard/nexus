@@ -49,7 +49,8 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
 
         <div class="w-full max-w-md bg-[#0B0E14] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
           <!-- Background Glow -->
-          <div class="absolute -top-24 -right-24 w-48 h-48 rounded-full blur-[80px] bg-indigo-500/10"></div>
+          <div class="absolute -top-24 -right-24 w-48 h-48 rounded-full blur-[80px] bg-indigo-500/10">
+          </div>
 
           <div class="relative z-10">
             <div class="flex items-center justify-between mb-8">
@@ -92,7 +93,8 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
                         <option value={c} selected={@form[:from_currency].value == c}>{c}</option>
                       <% end %>
                     </select>
-                    <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></span>
+                    <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    </span>
                   </div>
                 </div>
 
@@ -109,7 +111,8 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
                         <option value={c} selected={@form[:to_currency].value == c}>{c}</option>
                       <% end %>
                     </select>
-                    <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></span>
+                    <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    </span>
                   </div>
                 </div>
               </div>
@@ -140,19 +143,18 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
                   class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
                 >
                   Confirm Transfer
-                  <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform"></span>
+                  <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform">
+                  </span>
                 </button>
               </div>
             </.form>
 
             <div class="mt-8 flex justify-center gap-6 opacity-30 grayscale pointer-events-none scale-90">
               <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span class="hero-shield-check w-4 h-4"></span>
-                AES-256 Encrypted
+                <span class="hero-shield-check w-4 h-4"></span> AES-256 Encrypted
               </div>
               <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span class="hero-bolt w-4 h-4"></span>
-                Instant Settlement
+                <span class="hero-bolt w-4 h-4"></span> Instant Settlement
               </div>
             </div>
           </div>

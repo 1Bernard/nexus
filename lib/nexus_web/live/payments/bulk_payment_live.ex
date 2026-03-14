@@ -163,8 +163,8 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
             nil
         end
       end)
-      |> Enum.reject(&is_nil/1)
       |> Enum.reject(fn p ->
+        is_nil(p) or
         # Skip header if 'amount' is in the first column or amount is 0 and account looks like 'account'
         (p.amount == Decimal.new(0) and
            String.contains?(String.downcase(p.recipient_account), "account")) or
@@ -219,7 +219,9 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
         <div class="flex items-center gap-3">
           <div class="px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
             <div class="text-right">
-              <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Daily Liquidity</p>
+              <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                Daily Liquidity
+              </p>
               <p class="text-sm font-mono font-bold text-emerald-400">842,500.00 EUR</p>
             </div>
             <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -232,7 +234,8 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
       <%!-- Upload & Staging --%>
       <%= if @upload_status == :idle do %>
         <div class="relative group mb-8">
-          <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+          <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000">
+          </div>
           <.dark_card
             class="relative p-12 flex flex-col items-center gap-6 border-dashed border-2 border-white/10 hover:border-indigo-500/40 transition-all duration-500 bg-white/[0.02]"
             phx-drop-target={@uploads.batch.ref}
@@ -282,8 +285,7 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
                     type="submit"
                     class="w-full px-8 py-4 rounded-2xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
                   >
-                    <span class="hero-magnifying-glass w-5 h-5"></span>
-                    Analyze Batch
+                    <span class="hero-magnifying-glass w-5 h-5"></span> Analyze Batch
                   </button>
                 <% end %>
               </div>
@@ -299,7 +301,9 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
             <div class="px-8 py-6 bg-gradient-to-r from-indigo-500/10 to-transparent border-b border-white/[0.06] flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="px-2 py-0.5 rounded bg-indigo-500 text-[9px] font-black text-white uppercase tracking-widest">Review Pending</span>
+                  <span class="px-2 py-0.5 rounded bg-indigo-500 text-[9px] font-black text-white uppercase tracking-widest">
+                    Review Pending
+                  </span>
                   <p class="text-[10px] font-mono text-slate-500">File: {@staged_filename}</p>
                 </div>
                 <h2 class="text-xl font-bold text-white">Stage Payment Instructions</h2>
@@ -318,11 +322,11 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
                     "px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-lg",
                     if(Enum.empty?(@validation_errors),
                       do: "bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95",
-                      else: "bg-slate-800 text-slate-600 cursor-not-allowed")
+                      else: "bg-slate-800 text-slate-600 cursor-not-allowed"
+                    )
                   ]}
                 >
-                  <span class="hero-key w-4 h-4"></span>
-                  Authorize & Instate
+                  <span class="hero-key w-4 h-4"></span> Authorize & Instate
                 </button>
               </div>
             </div>
@@ -332,7 +336,9 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
                 <div class="flex items-start gap-3">
                   <span class="hero-no-symbol w-5 h-5 text-rose-500 mt-0.5"></span>
                   <div>
-                    <p class="text-xs font-black text-rose-400 uppercase tracking-widest mb-2">Technical Validation Failures</p>
+                    <p class="text-xs font-black text-rose-400 uppercase tracking-widest mb-2">
+                      Technical Validation Failures
+                    </p>
                     <ul class="text-[11px] text-rose-300/80 font-mono space-y-1">
                       <%= for err <- @validation_errors do %>
                         <li>• {err}</li>
@@ -348,9 +354,15 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
               <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-slate-950 z-10 border-b border-white/[0.06]">
                   <tr>
-                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Recipient</th>
-                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Account Details</th>
-                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Amount</th>
+                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Recipient
+                    </th>
+                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Account Details
+                    </th>
+                    <th class="px-8 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
+                      Amount
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/[0.04]">
@@ -375,13 +387,20 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
             <div class="px-8 py-4 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between">
               <div class="flex items-center gap-6">
                 <div class="flex flex-col">
-                  <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Instruction Count</span>
-                  <span class="text-xs font-mono font-bold text-indigo-400">{length(@staged_payments)} items</span>
+                  <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                    Instruction Count
+                  </span>
+                  <span class="text-xs font-mono font-bold text-indigo-400">
+                    {length(@staged_payments)} items
+                  </span>
                 </div>
                 <div class="flex flex-col">
-                  <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Batch Gross</span>
+                  <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                    Batch Gross
+                  </span>
                   <span class="text-xs font-mono font-bold text-emerald-400">
-                    {Enum.reduce(@staged_payments, Decimal.new(0), &Decimal.add(&1.amount, &2)) |> Decimal.round(2)} EUR (Est)
+                    {Enum.reduce(@staged_payments, Decimal.new(0), &Decimal.add(&1.amount, &2))
+                    |> Decimal.round(2)} EUR (Est)
                   </span>
                 </div>
               </div>

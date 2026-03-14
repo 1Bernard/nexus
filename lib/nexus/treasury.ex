@@ -115,6 +115,7 @@ defmodule Nexus.Treasury do
   """
   def list_policy_alerts(org_id, limit \\ 5) do
     import Ecto.Query
+
     query =
       if org_id == :all do
         PolicyAlertQuery.base()
@@ -199,8 +200,6 @@ defmodule Nexus.Treasury do
     |> Ecto.Query.limit(1)
     |> Repo.one()
   end
-
-
 
   @doc """
   Lists historical daily net cash flow for an organization and currency.
@@ -301,7 +300,8 @@ defmodule Nexus.Treasury do
         from(position in Nexus.Treasury.Projections.LiquidityPosition)
       else
         from(position in Nexus.Treasury.Projections.LiquidityPosition,
-          where: position.org_id == ^org_id)
+          where: position.org_id == ^org_id
+        )
       end
 
     liquidity_positions = Repo.all(liquidity_query)
@@ -658,7 +658,8 @@ defmodule Nexus.Treasury do
         from(position in Nexus.Treasury.Projections.LiquidityPosition)
       else
         from(position in Nexus.Treasury.Projections.LiquidityPosition,
-          where: position.org_id == ^org_id)
+          where: position.org_id == ^org_id
+        )
       end
 
     Repo.all(query)

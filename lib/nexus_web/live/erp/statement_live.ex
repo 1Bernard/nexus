@@ -20,7 +20,8 @@ defmodule NexusWeb.ERP.StatementLive do
       Phoenix.PubSub.subscribe(Nexus.PubSub, "erp_statements:#{org_id}")
     end
 
-    org_id_for_query = if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+    org_id_for_query =
+      if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
 
     socket =
       socket
@@ -179,10 +180,13 @@ defmodule NexusWeb.ERP.StatementLive do
         <div>
           <div class="flex items-center gap-2 mb-1">
             <span class="flex h-2 w-2 relative">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
+              </span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">SWIFT Network Active</span>
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+              SWIFT Network Active
+            </span>
           </div>
           <h1 class="text-3xl font-black text-white tracking-tight">Document Gateway</h1>
           <p class="text-slate-400 text-sm mt-1">
@@ -192,7 +196,9 @@ defmodule NexusWeb.ERP.StatementLive do
         <div class="flex items-center gap-3">
           <div class="px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-3">
             <div class="text-right">
-              <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Auto-Parse Rate</p>
+              <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                Auto-Parse Rate
+              </p>
               <p class="text-sm font-mono font-bold text-white">99.8%</p>
             </div>
             <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
@@ -203,7 +209,8 @@ defmodule NexusWeb.ERP.StatementLive do
       </div>
       <%!-- Upload zone --%>
       <div class="relative group mb-8">
-        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000">
+        </div>
         <.dark_card
           class="relative p-12 flex flex-col items-center gap-6 border-dashed border-2 border-white/10 hover:border-indigo-500/40 transition-all duration-500 bg-white/[0.02]"
           phx-drop-target={@uploads.statement.ref}
@@ -214,8 +221,11 @@ defmodule NexusWeb.ERP.StatementLive do
           <div class="text-center">
             <h3 class="text-xl font-bold text-white">Drag &amp; drop your statement</h3>
             <p class="text-slate-400 text-sm mt-2 max-w-sm">
-              Nexus Intelligent Parser supports <span class="font-mono text-indigo-300 font-bold">MT940</span> (.sta, .txt)
-              and <span class="font-mono text-cyan-300 font-bold">CSV</span> formats up to 5 MB.
+              Nexus Intelligent Parser supports
+              <span class="font-mono text-indigo-300 font-bold">MT940</span>
+              (.sta, .txt)
+              and <span class="font-mono text-cyan-300 font-bold">CSV</span>
+              formats up to 5 MB.
             </p>
           </div>
 
@@ -267,8 +277,7 @@ defmodule NexusWeb.ERP.StatementLive do
                   type="submit"
                   class="w-full px-8 py-4 rounded-2xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <span class="hero-cloud-arrow-up w-5 h-5"></span>
-                  Injest Statement
+                  <span class="hero-cloud-arrow-up w-5 h-5"></span> Injest Statement
                 </button>
               <% end %>
             </div>
@@ -282,8 +291,12 @@ defmodule NexusWeb.ERP.StatementLive do
                   <span class="hero-exclamation-triangle w-6 h-6 text-amber-500"></span>
                 </div>
                 <div class="flex-1">
-                  <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest">Duplicate Name Detected</p>
-                  <p class="text-xs text-amber-200 font-medium mt-0.5">A file named "{hd(@uploads.statement.entries).client_name}" already exists. If this is a new version, proceed. If it's a duplicate, please remove it.</p>
+                  <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                    Duplicate Name Detected
+                  </p>
+                  <p class="text-xs text-amber-200 font-medium mt-0.5">
+                    A file named "{hd(@uploads.statement.entries).client_name}" already exists. If this is a new version, proceed. If it's a duplicate, please remove it.
+                  </p>
                 </div>
               </div>
             </div>
@@ -295,7 +308,9 @@ defmodule NexusWeb.ERP.StatementLive do
                   <span class="hero-exclamation-triangle w-6 h-6 text-rose-500"></span>
                 </div>
                 <div class="flex-1">
-                  <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest">Ingestion Failure</p>
+                  <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                    Ingestion Failure
+                  </p>
                   <p class="text-xs text-rose-200 font-medium mt-0.5">{@upload_error}</p>
                 </div>
                 <button
@@ -308,7 +323,8 @@ defmodule NexusWeb.ERP.StatementLive do
               </div>
               <div class="p-3 rounded-xl bg-black/20 border border-white/5">
                 <p class="text-[9px] text-slate-400 leading-relaxed font-medium">
-                  <span class="text-rose-400 font-bold">Correction Tip:</span> Ensure your CSV starts with the standard headers (`ledger_entry_id` or `date,ref,amount...`) and contains no empty data rows.
+                  <span class="text-rose-400 font-bold">Correction Tip:</span>
+                  Ensure your CSV starts with the standard headers (`ledger_entry_id` or `date,ref,amount...`) and contains no empty data rows.
                 </p>
               </div>
             </div>
@@ -320,8 +336,12 @@ defmodule NexusWeb.ERP.StatementLive do
                 <span class="hero-check-circle w-6 h-6 text-emerald-500"></span>
               </div>
               <div>
-                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Protocol Success</p>
-                <p class="text-xs text-emerald-200 font-medium mt-0.5">Statement Ingested &amp; Parsed Successfully</p>
+                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                  Protocol Success
+                </p>
+                <p class="text-xs text-emerald-200 font-medium mt-0.5">
+                  Statement Ingested &amp; Parsed Successfully
+                </p>
               </div>
             </div>
           <% end %>
@@ -402,7 +422,9 @@ defmodule NexusWeb.ERP.StatementLive do
                     <%= if Enum.empty?(@expanded_lines) do %>
                       <div class="flex flex-col items-center justify-center py-12 text-slate-600">
                         <span class="hero-no-symbol w-8 h-8 mb-2 opacity-20"></span>
-                        <p class="text-xs font-medium uppercase tracking-widest">No transaction data identified</p>
+                        <p class="text-xs font-medium uppercase tracking-widest">
+                          No transaction data identified
+                        </p>
                       </div>
                     <% else %>
                       <%!-- Industry Standard Table for high volume --%>
@@ -410,9 +432,15 @@ defmodule NexusWeb.ERP.StatementLive do
                         <table class="w-full text-left border-collapse">
                           <thead class="sticky top-0 bg-slate-900/95 backdrop-blur-xl z-10">
                             <tr class="border-b border-white/[0.06]">
-                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th>
-                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Narrative & Origin</th>
-                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ledger Impact</th>
+                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Date
+                              </th>
+                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Narrative & Origin
+                              </th>
+                              <th class="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
+                                Ledger Impact
+                              </th>
                             </tr>
                           </thead>
                           <tbody class="divide-y divide-white/[0.04]">
@@ -438,7 +466,8 @@ defmodule NexusWeb.ERP.StatementLive do
                                       <%= if line.metadata && Map.has_key?(line.metadata, "liquidity_provider") do %>
                                         <div class="flex items-center gap-1.5 text-[9px] text-indigo-400 font-bold uppercase tracking-wider bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
                                           <span class="hero-building-library w-3 h-3"></span>
-                                          {line.metadata["liquidity_provider"] |> String.replace("LP_", "")}
+                                          {line.metadata["liquidity_provider"]
+                                          |> String.replace("LP_", "")}
                                         </div>
                                       <% end %>
                                       <%= if line.metadata && Map.has_key?(line.metadata, "execution_channel") do %>
@@ -459,9 +488,15 @@ defmodule NexusWeb.ERP.StatementLive do
                                 <td class="px-6 py-4 text-right whitespace-nowrap">
                                   <span class={[
                                     "text-xs font-mono font-black",
-                                    if(Decimal.lt?(Decimal.new(line.amount || 0), 0), do: "text-rose-400", else: "text-emerald-400")
+                                    if(Decimal.lt?(Decimal.new(line.amount || 0), 0),
+                                      do: "text-rose-400",
+                                      else: "text-emerald-400"
+                                    )
                                   ]}>
-                                    {NexusWeb.ERP.StatementComponents.format_amount(line.amount, line.currency)}
+                                    {NexusWeb.ERP.StatementComponents.format_amount(
+                                      line.amount,
+                                      line.currency
+                                    )}
                                   </span>
                                 </td>
                               </tr>
@@ -470,8 +505,12 @@ defmodule NexusWeb.ERP.StatementLive do
                         </table>
                       </div>
                       <div class="px-6 py-3 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between">
-                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">End of Stream</p>
-                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest italic">Encrypted Secure Ingestion</p>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                          End of Stream
+                        </p>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest italic">
+                          Encrypted Secure Ingestion
+                        </p>
                       </div>
                     <% end %>
                   </div>

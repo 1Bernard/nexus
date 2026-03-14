@@ -18,7 +18,6 @@ defmodule Nexus.Treasury.ForecastDispatchTest do
 
     IO.puts("\n=== DISPATCHING MOCK COMMAND ===")
     result = App.dispatch(cmd)
-    IO.inspect(result, label: "DISPATCH RESULT", structs: false)
 
     assert result == :ok
   end

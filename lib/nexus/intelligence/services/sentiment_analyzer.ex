@@ -53,7 +53,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   Runs synchronous sentiment inference using the globally supervised serving.
   """
   def analyze(text) do
-    try do
+
       if @env == :test do
         # Deterministic results for tests
         cond do
@@ -86,6 +86,5 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
           if String.contains?(String.downcase(text), "urgent"), do: "negative", else: "neutral"
 
         {:ok, %{sentiment: sentiment, confidence: 0.85, mocked: true}}
-    end
   end
 end

@@ -51,6 +51,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
   # --- Socket Handler Sub-module ---
 
   defmodule SocketHandler do
+    @moduledoc false
     use WebSockex
     require Logger
 

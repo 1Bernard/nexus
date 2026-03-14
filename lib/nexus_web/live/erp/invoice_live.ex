@@ -21,7 +21,9 @@ defmodule NexusWeb.ERP.InvoiceLive do
     socket =
       socket
       |> assign(page_title: "ERP Talk Back - Nexus")
-      |> assign(org_id: if(socket.assigns.current_user.role == "system_admin", do: :all, else: org_id))
+      |> assign(
+        org_id: if(socket.assigns.current_user.role == "system_admin", do: :all, else: org_id)
+      )
       |> assign(show_manual_modal: false)
       # Initialize with placeholders
       |> assign(total_volume: 0.0)
@@ -369,7 +371,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
     <.page_container class="px-4 md:px-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
       <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization" />
-
+      
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -394,17 +396,19 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-document-magnifying-glass"
         />
       </div>
-
-      <!-- Aging Buckets - Visual Risk Indicator -->
+      
+    <!-- Aging Buckets - Visual Risk Indicator -->
       <div class="bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl p-6 mb-8 relative overflow-hidden group">
-        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none">
+        </div>
         <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div class="space-y-1">
             <h3 class="text-lg font-bold flex items-center gap-2">
-              <span class="hero-chart-bar w-5 h-5 text-indigo-400"></span>
-              Aging Analysis
+              <span class="hero-chart-bar w-5 h-5 text-indigo-400"></span> Aging Analysis
             </h3>
-            <p class="text-sm text-slate-400">Accounts Payable age distribution (Industry Standard)</p>
+            <p class="text-sm text-slate-400">
+              Accounts Payable age distribution (Industry Standard)
+            </p>
           </div>
 
           <div class="flex flex-1 w-full max-w-2xl gap-2 items-end h-16">
@@ -422,14 +426,17 @@ defmodule NexusWeb.ERP.InvoiceLive do
                   class={"w-full rounded-t-lg bg-#{color}-500/20 border-t-2 border-#{color}-500/40 hover:bg-#{color}-500/40 transition-all cursor-help"}
                   style={"height: #{max(10, min(100, if(@total_volume > 0, do: (amount / @total_volume * 100), else: 0)))}%"}
                   title={"#{label}: €#{format_amount(to_string(amount))}"}
-                ></div>
-                <div class="text-[10px] uppercase font-bold tracking-tighter text-slate-400 mt-2">{label}</div>
+                >
+                </div>
+                <div class="text-[10px] uppercase font-bold tracking-tighter text-slate-400 mt-2">
+                  {label}
+                </div>
               </div>
             <% end %>
           </div>
         </div>
       </div>
-
+      
     <!-- High-Density Data Table Card -->
       <NexusWeb.NexusComponents.data_grid
         id="invoices-table"
@@ -497,7 +504,11 @@ defmodule NexusWeb.ERP.InvoiceLive do
           />
         </:col>
 
-        <:col :let={invoice} label="Organization" class="font-bold text-slate-400 text-[10px] uppercase tracking-wider">
+        <:col
+          :let={invoice}
+          label="Organization"
+          class="font-bold text-slate-400 text-[10px] uppercase tracking-wider"
+        >
           {invoice.org_name || "Nexus Platform"}
         </:col>
 
@@ -517,7 +528,13 @@ defmodule NexusWeb.ERP.InvoiceLive do
         </:col>
 
         <:col :let={invoice} label="Due Date">
-          <div class={["font-medium", if(invoice.due_date && DateTime.compare(invoice.due_date, DateTime.utc_now()) == :lt, do: "text-rose-400", else: "text-slate-300")]}>
+          <div class={[
+            "font-medium",
+            if(invoice.due_date && DateTime.compare(invoice.due_date, DateTime.utc_now()) == :lt,
+              do: "text-rose-400",
+              else: "text-slate-300"
+            )
+          ]}>
             {if invoice.due_date, do: Calendar.strftime(invoice.due_date, "%b %d, %Y"), else: "N/A"}
           </div>
           <div class="text-slate-500 font-medium tracking-wide text-[10px] uppercase mt-0.5">
@@ -553,7 +570,9 @@ defmodule NexusWeb.ERP.InvoiceLive do
               <span class="hero-sparkles w-3 h-3"></span>
               {discount} Discount
             </div>
-            <div class="text-slate-500 text-[9px] mt-0.5">Pay by {format_discount_date(invoice, discount)}</div>
+            <div class="text-slate-500 text-[9px] mt-0.5">
+              Pay by {format_discount_date(invoice, discount)}
+            </div>
           <% else %>
             <div class="text-slate-600 text-[10px] tracking-widest uppercase font-medium">Clear</div>
           <% end %>
@@ -604,7 +623,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </:action>
       </NexusWeb.NexusComponents.data_grid>
-
+      
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.modal
         id="manual-entry-modal"
@@ -626,7 +645,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.modal>
-
+      
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.modal
         :if={@selected_invoice}
@@ -638,7 +657,9 @@ defmodule NexusWeb.ERP.InvoiceLive do
           <div class="flex items-center justify-between border-b border-[var(--nx-border)] pb-4">
             <div>
               <h2 class="text-xl font-bold text-white">Invoice Details</h2>
-              <p class="text-sm text-slate-400 font-mono">SAP BELNR: {@selected_invoice.sap_document_number}</p>
+              <p class="text-sm text-slate-400 font-mono">
+                SAP BELNR: {@selected_invoice.sap_document_number}
+              </p>
             </div>
             <div class="flex items-center gap-3">
               <NexusWeb.NexusComponents.badge
@@ -692,23 +713,41 @@ defmodule NexusWeb.ERP.InvoiceLive do
               <div class="text-slate-200">{@selected_invoice.entity_id}</div>
             </div>
             <div>
-              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Due Date</div>
-              <div class={["font-mono", if(@selected_invoice.due_date && DateTime.compare(@selected_invoice.due_date, DateTime.utc_now()) == :lt, do: "text-rose-400", else: "text-slate-200")]}>
-                {if @selected_invoice.due_date, do: Calendar.strftime(@selected_invoice.due_date, "%b %d, %Y"), else: "N/A"}
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                Due Date
+              </div>
+              <div class={[
+                "font-mono",
+                if(
+                  @selected_invoice.due_date &&
+                    DateTime.compare(@selected_invoice.due_date, DateTime.utc_now()) == :lt,
+                  do: "text-rose-400",
+                  else: "text-slate-200"
+                )
+              ]}>
+                {if @selected_invoice.due_date,
+                  do: Calendar.strftime(@selected_invoice.due_date, "%b %d, %Y"),
+                  else: "N/A"}
               </div>
             </div>
             <div>
-              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">SAP BELNR</div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                SAP BELNR
+              </div>
               <div class="text-slate-200">{@selected_invoice.sap_document_number}</div>
             </div>
             <div>
               <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
                 Subsidiary
               </div>
-              <div class="text-slate-200">{@selected_invoice.subsidiary || "Corporate Operations"}</div>
+              <div class="text-slate-200">
+                {@selected_invoice.subsidiary || "Corporate Operations"}
+              </div>
             </div>
             <div>
-              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Risk Score</div>
+              <div class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                Risk Score
+              </div>
               <div class="flex items-center gap-1.5">
                 <%= if detect_discount(@selected_invoice) do %>
                   <span class="text-emerald-400 font-bold">Optimization Opportunity</span>

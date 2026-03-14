@@ -12,7 +12,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
       bulk_payment_id = "batch-1"
       org_id = "org-1"
       user_id = "user-1"
-      
+
       payments = [
         %{amount: Decimal.new("100.00"), currency: "EUR"},
         %{amount: Decimal.new("200.00"), currency: "USD"}
@@ -32,9 +32,9 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
 
       assert is_list(commands)
       assert length(commands) == 2
-      
+
       [cmd1, cmd2] = commands
-      
+
       assert %RequestTransfer{} = cmd1
       assert cmd1.bulk_payment_id == bulk_payment_id
       assert cmd1.amount == Decimal.new("100.00")
@@ -51,7 +51,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
       org_id = "org-1"
       user_id = "user-1"
       invoice_id = "inv-abc"
-      
+
       payments = [
         %{amount: Decimal.new("100.00"), currency: "EUR", invoice_id: invoice_id}
       ]
@@ -71,21 +71,27 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
       assert is_list(commands)
       # 1 RequestTransfer + 1 MatchInvoice
       assert length(commands) == 2
-      
-      assert Enum.any?(commands, fn cmd -> 
-        match?(%Nexus.Treasury.Commands.RequestTransfer{amount: %Decimal{}}, cmd) and 
-        Decimal.eq?(cmd.amount, Decimal.new("100.00"))
-      end)
 
       assert Enum.any?(commands, fn cmd ->
-        match?(%Nexus.ERP.Commands.MatchInvoice{invoice_id: ^invoice_id, matched_id: ^bulk_payment_id}, cmd)
-      end)
+               match?(%Nexus.Treasury.Commands.RequestTransfer{amount: %Decimal{}}, cmd) and
+                 Decimal.eq?(cmd.amount, Decimal.new("100.00"))
+             end)
+
+      assert Enum.any?(commands, fn cmd ->
+               match?(
+                 %Nexus.ERP.Commands.MatchInvoice{
+                   invoice_id: ^invoice_id,
+                   matched_id: ^bulk_payment_id
+                 },
+                 cmd
+               )
+             end)
     end
 
     test "dispatches FinalizeBulkPayment when all items are processed" do
       bulk_payment_id = "batch-1"
       org_id = "org-1"
-      
+
       # State shows 1 out of 2 processed
       saga = %BulkPaymentSaga{
         bulk_payment_id: bulk_payment_id,
@@ -111,7 +117,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
       assert %FinalizeBulkPayment{} = command
       assert command.bulk_payment_id == bulk_payment_id
     end
-    
+
     test "returns empty list if batch is not yet complete" do
       saga = %BulkPaymentSaga{
         bulk_payment_id: "batch-1",
@@ -157,6 +163,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSagaTest do
 
     test "increments processed_items on TransferInitiated" do
       state = %BulkPaymentSaga{processed_items: 2}
+
       event = %TransferInitiated{
         transfer_id: "tx-2",
         org_id: "org-1",

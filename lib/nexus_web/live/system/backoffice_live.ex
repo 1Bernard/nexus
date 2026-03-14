@@ -14,7 +14,11 @@ defmodule NexusWeb.System.BackofficeLive do
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Nexus.PubSub, "tenants")
 
-    tenants = Nexus.Repo.all(from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at])
+    tenants =
+      Nexus.Repo.all(
+        from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at]
+      )
+
     health = Nexus.System.Health.get_summary()
 
     audit_logs =
@@ -44,7 +48,11 @@ defmodule NexusWeb.System.BackofficeLive do
   end
 
   def handle_info({:tenant_updated, _tenant}, socket) do
-    tenants = Nexus.Repo.all(from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at])
+    tenants =
+      Nexus.Repo.all(
+        from t in Nexus.Organization.Projections.Tenant, order_by: [desc: t.created_at]
+      )
+
     health = Nexus.System.Health.get_summary()
 
     audit_logs =

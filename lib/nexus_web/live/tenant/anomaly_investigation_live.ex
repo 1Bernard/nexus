@@ -124,8 +124,8 @@ defmodule NexusWeb.Tenant.AnomalyInvestigationLive do
               </div>
             </div>
           </.dark_card>
-
-          <!-- Resolution Actions -->
+          
+    <!-- Resolution Actions -->
           <.dark_card class="p-8">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-white/5 pb-4">
               Operation Resolution
@@ -167,8 +167,8 @@ defmodule NexusWeb.Tenant.AnomalyInvestigationLive do
             </div>
           </.dark_card>
         </div>
-
-        <!-- Right Pane: Source Context -->
+        
+    <!-- Right Pane: Source Context -->
         <div>
           <.dark_card class="p-0 h-full flex flex-col min-h-[500px]">
             <div class="p-8 border-b border-white/5">

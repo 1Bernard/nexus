@@ -55,7 +55,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
 
       # 2. Trigger forecast
       result = Treasury.generate_forecast(@org_id, @currency, 30)
-      IO.inspect(result, label: "FORECAST RESULT")
+
       :ok = result
 
       # 3. Manually project the event

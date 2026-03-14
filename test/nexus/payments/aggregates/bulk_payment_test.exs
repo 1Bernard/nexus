@@ -50,6 +50,7 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
       completed_at = DateTime.utc_now()
 
       state = %BulkPayment{id: bulk_payment_id, org_id: org_id, status: :initiated}
+
       cmd = %FinalizeBulkPayment{
         bulk_payment_id: bulk_payment_id,
         org_id: org_id,
@@ -86,6 +87,7 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
 
     test "updates state after completion" do
       state = %BulkPayment{status: :initiated}
+
       event = %BulkPaymentCompleted{
         bulk_payment_id: "batch-1",
         org_id: "org-1",

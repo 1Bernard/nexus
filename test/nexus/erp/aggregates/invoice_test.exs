@@ -11,6 +11,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
   describe "MatchInvoice" do
     test "matches an ingested invoice" do
       state = %Invoice{id: @invoice_id, status: :ingested}
+
       cmd = %MatchInvoice{
         invoice_id: @invoice_id,
         org_id: @org_id,
@@ -29,6 +30,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
 
     test "is idempotent for already matched invoice" do
       state = %Invoice{id: @invoice_id, status: :matched}
+
       cmd = %MatchInvoice{
         invoice_id: @invoice_id,
         org_id: @org_id,
@@ -43,6 +45,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
   describe "apply/2" do
     test "updates state to matched" do
       state = %Invoice{status: :ingested}
+
       event = %InvoiceMatched{
         invoice_id: @invoice_id,
         org_id: @org_id,

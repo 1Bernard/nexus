@@ -3,6 +3,6 @@ defmodule NexusWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Institutional Financial Architecture"
+    assert html_response(conn, 200) =~ "Modern Finance"
   end
 end

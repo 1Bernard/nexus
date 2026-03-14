@@ -183,57 +183,57 @@ defmodule NexusWeb.Identity.BiometricLive do
         Nexus.Repo.get_by(Nexus.Identity.Projections.User, email: "elena@global-corp.com")
 
     if user do
-      with {:ok, challenge} <- AuthChallengeStore.pop_challenge(challenge_id) do
-        # Perform verification here in the LiveView
-        raw_id_bin = decode_base64_url!(raw_id)
-        auth_data_bin = decode_base64_url!(auth_data)
-        sig_bin = decode_base64_url!(sig)
-        client_bin = decode_base64_url!(client)
+      case AuthChallengeStore.pop_challenge(challenge_id) do
+        {:ok, challenge} ->
+          # Perform verification here in the LiveView
+          raw_id_bin = decode_base64_url!(raw_id)
+          auth_data_bin = decode_base64_url!(auth_data)
+          sig_bin = decode_base64_url!(sig)
+          client_bin = decode_base64_url!(client)
 
-        # Convert state keys back to binary if they are Base64'd in the projection
-        credential_id_bin = decode_or_raw(user.credential_id)
-        cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
+          # Convert state keys back to binary if they are Base64'd in the projection
+          credential_id_bin = decode_or_raw(user.credential_id)
+          cose_key_bin = decode_and_unmarshal_cose(user.cose_key)
 
-        # Skip verification for bootstrap user if applicable
-        is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
+          # Skip verification for bootstrap user if applicable
+          is_bootstrap = bootstrap_user?(user.cose_key, user.credential_id)
 
-        verification_result =
-          if is_bootstrap do
-            {:ok, :bootstrap}
-          else
-            WebAuthn.authenticate(
-              raw_id_bin,
-              auth_data_bin,
-              sig_bin,
-              client_bin,
-              challenge,
-              [{credential_id_bin, cose_key_bin}]
-            )
-          end
-
-        case verification_result do
-          {:ok, _} ->
-            command = %Nexus.Identity.Commands.VerifyBiometric{
-              user_id: user.id,
-              org_id: user.org_id,
-              challenge_id: challenge_id,
-              verified_at: DateTime.utc_now()
-            }
-
-            case App.dispatch(command) do
-              :ok ->
-                Process.send_after(self(), :advance_screening_1, 800)
-                {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
-
-              {:error, reason} ->
-                {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+          verification_result =
+            if is_bootstrap do
+              {:ok, :bootstrap}
+            else
+              WebAuthn.authenticate(
+                raw_id_bin,
+                auth_data_bin,
+                sig_bin,
+                client_bin,
+                challenge,
+                [{credential_id_bin, cose_key_bin}]
+              )
             end
 
-          {:error, reason} ->
-            {:noreply,
-             assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
-        end
-      else
+          case verification_result do
+            {:ok, _} ->
+              command = %Nexus.Identity.Commands.VerifyBiometric{
+                user_id: user.id,
+                org_id: user.org_id,
+                challenge_id: challenge_id,
+                verified_at: DateTime.utc_now()
+              }
+
+              case App.dispatch(command) do
+                :ok ->
+                  Process.send_after(self(), :advance_screening_1, 800)
+                  {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+
+                {:error, reason} ->
+                  {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
+              end
+
+            {:error, reason} ->
+              {:noreply,
+               assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
+          end
         {:error, reason} ->
           {:noreply,
            assign(socket, step: :error, error_message: "Challenge Error: #{inspect(reason)}")}
@@ -436,7 +436,7 @@ defmodule NexusWeb.Identity.BiometricLive do
       <!-- Museum Archive Background Elements -->
       <.editorial_grid />
       <div class="absolute inset-0 volumetric-nebula opacity-[0.15] pointer-events-none"></div>
-
+      
     <!-- Subtle Ledger Streams in Background -->
       <div class="fixed left-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block">
         <.ledger_stream />

@@ -310,14 +310,18 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   <span class="text-[10px] text-indigo-400 font-mono italic">
                     SAP BELNR: {inv.sap_document_number}
                   </span>
-                  <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}</span>
+                  <span class="text-sm font-bold text-white">
+                    {Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}
+                  </span>
                 </div>
                 <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
                   <span class="hero-arrows-right-left w-4 h-4 text-slate-400"></span>
                 </div>
                 <div class="flex flex-col text-right">
                   <span class="text-[10px] text-amber-400 font-mono italic">BNK REF: {line.ref}</span>
-                  <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(line.amount), 2)} {line.currency}</span>
+                  <span class="text-sm font-bold text-white">
+                    {Decimal.round(Decimal.new(line.amount), 2)} {line.currency}
+                  </span>
                 </div>
               </div>
             </div>
@@ -917,8 +921,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         if length(records) > limit do
           has_more_records = Enum.take(records, limit)
 
-          {has_more_records, hd(has_more_records).matched_at,
-           List.last(records).matched_at}
+          {has_more_records, hd(has_more_records).matched_at, List.last(records).matched_at}
         else
           {records, hd(records) && hd(records).matched_at, nil}
         end

@@ -23,8 +23,10 @@ defmodule NexusWeb.Marketing.LandingLive do
     ~H"""
     <div class="relative w-full min-h-screen bg-[#040609] font-sans antialiased selection:bg-indigo-500/30 overflow-x-hidden text-slate-300">
       <%!-- Ambient Background Glows --%>
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
-      <div class="absolute top-1/4 -left-64 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none opacity-40"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none opacity-50">
+      </div>
+      <div class="absolute top-1/4 -left-64 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none opacity-40">
+      </div>
 
       <div class={[
         "fixed inset-0 z-[100] bg-[#040609] transition-transform duration-[1500ms] cubic-bezier(0.85, 0, 0.15, 1) pointer-events-none flex items-center justify-center",
@@ -42,7 +44,7 @@ defmodule NexusWeb.Marketing.LandingLive do
         <header class="pt-32 pb-16 px-6 lg:px-12 border-b border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-[#0B0E14]">
           <div class="max-w-4xl">
             <h1 class="text-5xl md:text-7xl lg:text-[6rem] leading-[1.05] text-white font-extrabold mb-6">
-              Modern Finance,<br/>Built for Enterprise.
+              Modern Finance,<br />Built for Enterprise.
             </h1>
             <p class="text-xl text-slate-400 max-w-2xl leading-relaxed">
               Nexus empowers global financial teams with seamless SAP integration, automated reconciliation, and bank-grade security—all in one powerful platform.
@@ -260,7 +262,8 @@ defmodule NexusWeb.Marketing.LandingLive do
           </section>
 
           <section id="pricing" class="py-32 px-6 lg:px-12 bg-[#040609] relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none">
+            </div>
             <div class="max-w-3xl mx-auto text-center mb-16 reveal-text">
               <h2 class="text-3xl md:text-5xl text-white font-bold mb-4">
                 Enterprise Architecture, Delivered.
@@ -298,7 +301,7 @@ defmodule NexusWeb.Marketing.LandingLive do
                   Start Building
                 </button>
               </div>
-
+              
     <!-- Tier 2 -->
               <div class="bg-gradient-to-b from-indigo-500/10 to-[#0B0E14] border border-indigo-500/30 rounded-2xl p-8 transform md:-translate-y-4 shadow-2xl relative">
                 <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
@@ -329,7 +332,7 @@ defmodule NexusWeb.Marketing.LandingLive do
                   Upgrade to Pro
                 </button>
               </div>
-
+              
     <!-- Tier 3 -->
               <div class="bg-[#0B0E14] border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
                 <div class="text-slate-400 font-semibold mb-2">Enterprise</div>

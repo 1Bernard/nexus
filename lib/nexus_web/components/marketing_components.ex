@@ -100,7 +100,8 @@ defmodule NexusWeb.MarketingComponents do
     ~H"""
     <div class="relative rounded-2xl border border-white/10 bg-[#1A1F2B]/60 backdrop-blur-2xl overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-500">
       <%!-- Subtle top glow --%>
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent">
+      </div>
 
       <div class="p-8 lg:p-12 relative z-10">
         <%= if @label do %>
@@ -131,21 +132,28 @@ defmodule NexusWeb.MarketingComponents do
       <%!-- Layer 3: Application / Identity --%>
       <div class="absolute w-48 h-48 bg-indigo-500/10 border border-indigo-500/30 rounded-3xl transform rotate-12 rotate-x-[60deg] shadow-[0_20px_50px_rgba(99,102,241,0.15)] transition-all duration-700 ease-out flex items-center justify-center backdrop-blur-md z-30 group-hover:-translate-y-8 group-hover:border-indigo-400/50">
         <div class="w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse"></div>
-        <div class="absolute text-indigo-400 font-semibold text-[10px] bottom-4 left-4 tracking-wider">IDENTITY LAYER</div>
+        <div class="absolute text-indigo-400 font-semibold text-[10px] bottom-4 left-4 tracking-wider">
+          IDENTITY LAYER
+        </div>
       </div>
 
       <%!-- Layer 2: Compute / Event Store --%>
       <div class="absolute w-56 h-56 bg-cyan-500/5 border border-cyan-500/20 rounded-3xl transform rotate-12 rotate-x-[60deg] translate-y-6 shadow-[0_20px_50px_rgba(6,182,212,0.1)] transition-all duration-700 ease-out flex items-center justify-center backdrop-blur-md z-20 group-hover:translate-y-2 group-hover:border-cyan-400/40">
-        <div class="absolute text-cyan-500/50 font-semibold text-[10px] bottom-4 right-4 tracking-wider">EVENT STORE</div>
+        <div class="absolute text-cyan-500/50 font-semibold text-[10px] bottom-4 right-4 tracking-wider">
+          EVENT STORE
+        </div>
       </div>
 
       <%!-- Layer 1: Hardware/Storage --%>
       <div class="absolute w-64 h-64 bg-slate-800/30 border border-white/5 rounded-3xl transform rotate-12 rotate-x-[60deg] translate-y-12 shadow-2xl flex items-center justify-center backdrop-blur-md z-10 group-hover:translate-y-16">
-         <div class="absolute text-slate-500 font-semibold text-[10px] top-4 left-4 tracking-wider">SECURE ENCLAVE</div>
+        <div class="absolute text-slate-500 font-semibold text-[10px] top-4 left-4 tracking-wider">
+          SECURE ENCLAVE
+        </div>
       </div>
 
       <%!-- Connecting Beam --%>
-      <div class="absolute w-[1px] h-32 bg-gradient-to-b from-indigo-400 via-cyan-400 to-transparent left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+      <div class="absolute w-[1px] h-32 bg-gradient-to-b from-indigo-400 via-cyan-400 to-transparent left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+      </div>
     </div>
     """
   end
@@ -158,11 +166,13 @@ defmodule NexusWeb.MarketingComponents do
     ~H"""
     <div class="w-full h-[400px] overflow-hidden relative flex items-center justify-center bg-transparent">
       <%!-- Clean gradient bg --%>
-      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent">
+      </div>
 
       <%!-- Sleek Pipeline Track --%>
       <div class="absolute top-1/2 left-0 w-full h-[1px] bg-white/5"></div>
-      <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent scale-x-75 blur-sm"></div>
+      <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent scale-x-75 blur-sm">
+      </div>
 
       <%!-- Pipeline Track --%>
       <div class="relative w-full h-full flex items-center">
@@ -206,13 +216,16 @@ defmodule NexusWeb.MarketingComponents do
             <%= for tx <- transactions do %>
               <%!-- Premium Dark Mode Cards --%>
               <div class="mx-4 w-60 bg-[#1A1F2B]/80 border border-white/10 rounded-2xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col gap-4 group hover:-translate-y-2 hover:border-indigo-500/30 hover:shadow-[0_20px_40px_rgba(99,102,241,0.15)] transition-all duration-500 relative overflow-hidden backdrop-blur-xl">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-indigo-400/50 transition-colors"></div>
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-indigo-400/50 transition-colors">
+                </div>
 
                 <div class="flex justify-between items-center">
                   <div class={"w-10 h-10 rounded-xl bg-#{tx.color}-500/10 flex items-center justify-center text-#{tx.color}-400 text-lg border border-#{tx.color}-500/20 shadow-[inset_0_0_15px_rgba(255,255,255,0.02)]"}>
                     {tx.icon}
                   </div>
-                  <div class="text-[11px] font-semibold text-slate-400 tracking-wider uppercase bg-white/5 border border-white/5 px-2 py-1 rounded-md">{tx.ref}</div>
+                  <div class="text-[11px] font-semibold text-slate-400 tracking-wider uppercase bg-white/5 border border-white/5 px-2 py-1 rounded-md">
+                    {tx.ref}
+                  </div>
                 </div>
                 <div>
                   <div class="text-white font-bold text-xl mb-1">{tx.amount}</div>
@@ -223,7 +236,8 @@ defmodule NexusWeb.MarketingComponents do
                     {tx.status}
                   </div>
                   <div class={"w-2 h-2 rounded-full bg-#{tx.color}-500 shadow-[0_0_8px_rgba(0,0,0,0.1)] relative"}>
-                    <div class={"absolute inset-0 rounded-full bg-#{tx.color}-400 animate-ping opacity-75"}></div>
+                    <div class={"absolute inset-0 rounded-full bg-#{tx.color}-400 animate-ping opacity-75"}>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -233,8 +247,10 @@ defmodule NexusWeb.MarketingComponents do
       </div>
 
       <%!-- Edge Fades matching the container bg --%>
-      <div class="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#0B0E14] to-transparent z-10 pointer-events-none"></div>
-      <div class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#0B0E14] to-transparent z-10 pointer-events-none"></div>
+      <div class="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#0B0E14] to-transparent z-10 pointer-events-none">
+      </div>
+      <div class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#0B0E14] to-transparent z-10 pointer-events-none">
+      </div>
     </div>
     """
   end
@@ -250,15 +266,21 @@ defmodule NexusWeb.MarketingComponents do
 
   def exhibit_scanning_mask(assigns) do
     ~H"""
-    <div id={@id} class={["relative w-full max-w-sm mx-auto group cursor-pointer", @class]} data-scan="true">
+    <div
+      id={@id}
+      class={["relative w-full max-w-sm mx-auto group cursor-pointer", @class]}
+      data-scan="true"
+    >
       <div class="relative z-10 p-8 rounded-2xl border border-white/10 bg-[#1A1F2B]/80 backdrop-blur-xl shadow-2xl transition-all duration-500 group-hover:border-indigo-500/30 group-hover:shadow-[0_20px_50px_rgba(99,102,241,0.15)]">
         <div class="flex flex-col items-center text-center">
           <%!-- Biometric Icon Container --%>
           <div class="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6 relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
             <%!-- Shimmer effect --%>
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-400/30 to-transparent -translate-y-full hover:translate-y-full transition-all duration-[2s] ease-in-out"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-400/30 to-transparent -translate-y-full hover:translate-y-full transition-all duration-[2s] ease-in-out">
+            </div>
             <%!-- Minimalist Face/Touch ID icon representation --%>
-            <div class="w-10 h-10 flex items-center justify-center border border-indigo-400/50 rounded-xl rounded-tr-3xl rotate-45 transform group-hover:border-indigo-400 transition-colors"></div>
+            <div class="w-10 h-10 flex items-center justify-center border border-indigo-400/50 rounded-xl rounded-tr-3xl rotate-45 transform group-hover:border-indigo-400 transition-colors">
+            </div>
             <%!-- Inner pulsing dot --%>
             <div class="absolute w-2 h-2 bg-indigo-400 rounded-full opacity-50 animate-ping"></div>
           </div>
@@ -268,13 +290,18 @@ defmodule NexusWeb.MarketingComponents do
 
           <%!-- Success State (simulating scanner success via group hover for the landing page) --%>
           <div class="w-full mt-6 pt-6 border-t border-white/10 opacity-0 transform translate-y-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
-             <div class="flex items-center justify-center gap-2 text-emerald-400 mb-2">
-               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-               </svg>
-               <span class="font-bold text-sm">Authenticated</span>
-             </div>
-             {render_slot(@hidden_content)}
+            <div class="flex items-center justify-center gap-2 text-emerald-400 mb-2">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span class="font-bold text-sm">Authenticated</span>
+            </div>
+            {render_slot(@hidden_content)}
           </div>
         </div>
       </div>

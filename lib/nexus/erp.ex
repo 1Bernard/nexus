@@ -86,7 +86,9 @@ defmodule Nexus.ERP do
 
     invoices =
       invoices_query
-      |> join(:left, [inv], t in Nexus.Organization.Projections.Tenant, on: inv.org_id == t.org_id)
+      |> join(:left, [inv], t in Nexus.Organization.Projections.Tenant,
+        on: inv.org_id == t.org_id
+      )
       |> select([inv, t], %{inv | org_name: t.name})
       |> InvoiceQuery.newest_first()
       |> Repo.all()
@@ -129,15 +131,15 @@ defmodule Nexus.ERP do
       end)
 
     # Fetch Platform Audit Logs
+    base_query =
+      if org_id == :all do
+        AuditLog
+      else
+        from(a in AuditLog, where: a.org_id == ^org_id)
+      end
+
     audit_logs =
-      AuditLog
-      |> (fn query ->
-            if org_id == :all do
-              query
-            else
-              from(a in query, where: a.org_id == ^org_id)
-            end
-          end).()
+      base_query
       |> order_by(desc: :recorded_at)
       |> Repo.all()
       |> Enum.map(fn log ->

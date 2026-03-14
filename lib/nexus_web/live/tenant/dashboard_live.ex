@@ -40,7 +40,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
     # Load persisted policy mode from the database (survives page reloads)
     org_id = socket.assigns.current_user.org_id
-    org_id_for_query = if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+
+    org_id_for_query =
+      if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+
     saved_policy = Treasury.get_policy_mode(org_id_for_query)
 
     {persisted_threshold, persisted_mode} =
@@ -96,11 +99,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
         host={@host}
       />
 
-      <.live_component
-        module={TransferModal}
-        id="transfer-modal"
-        show={@show_transfer_modal}
-      />
+      <.live_component module={TransferModal} id="transfer-modal" show={@show_transfer_modal} />
 
       <.page_header
         title="Institutional Dashboard"
@@ -191,15 +190,25 @@ defmodule NexusWeb.Tenant.DashboardLive do
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em] mb-1">Match Rate</p>
-                <p class="text-3xl font-bold tracking-tight text-white leading-none">{@recon_stats.match_rate}%</p>
+                <p class="text-3xl font-bold tracking-tight text-white leading-none">
+                  {@recon_stats.match_rate}%
+                </p>
               </div>
-              <span class="hero-bolt w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform duration-500"></span>
+              <span class="hero-bolt w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform duration-500">
+              </span>
             </div>
 
             <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
               <div class="flex flex-col">
-                <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">Velocity</span>
-                <span class="text-xs font-mono text-emerald-400 font-bold">{@recon_stats.matching_velocity_min}m <span class="text-[10px] text-slate-600 font-sans font-medium uppercase tracking-tight">Avg</span></span>
+                <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">
+                  Velocity
+                </span>
+                <span class="text-xs font-mono text-emerald-400 font-bold">
+                  {@recon_stats.matching_velocity_min}m
+                  <span class="text-[10px] text-slate-600 font-sans font-medium uppercase tracking-tight">
+                    Avg
+                  </span>
+                </span>
               </div>
               <span class="text-[10px] text-indigo-300 group-hover:text-white transition-colors uppercase tracking-wider font-semibold flex items-center gap-1 group-hover:translate-x-1 duration-300">
                 Match Engine <span class="hero-arrow-right w-3 h-3"></span>
@@ -279,7 +288,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
                       <p class="text-xs font-bold text-slate-200">{tick.name}</p>
                       <p class="text-[9px] text-slate-500 uppercase tracking-widest font-bold">
                         <%= if Map.has_key?(@liquidity_positions, tick.name) do %>
-                          Balance: {format_heatmap_amount(Map.get(@liquidity_positions, tick.name), tick.name)}
+                          Balance: {format_heatmap_amount(
+                            Map.get(@liquidity_positions, tick.name),
+                            tick.name
+                          )}
                         <% else %>
                           Liquidity: High
                         <% end %>
@@ -551,7 +563,9 @@ defmodule NexusWeb.Tenant.DashboardLive do
                     <div class="flex flex-col gap-1">
                       <div class="flex items-center gap-1.5">
                         <span class="text-slate-300 font-bold">{log.actor_email}</span>
-                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">({log.org_name || "Nexus Platform"})</span>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+                          ({log.org_name || "Nexus Platform"})
+                        </span>
                         <%= if log.mode == "CONFIG" do %>
                           <span class="text-slate-600">updated thresholds</span>
                         <% else %>
@@ -631,7 +645,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
       |> assign(:recent_activity, ERP.list_recent_activity(org_id_for_query))
       |> assign(:policy_alerts, Treasury.list_policy_alerts(org_id_for_query))
       |> assign(:latest_forecast, Treasury.get_latest_forecast(org_id_for_query, "EUR"))
-      |> assign(:historical_forecast_data, Treasury.list_historical_cash_flow(org_id_for_query, "EUR", 14))
+      |> assign(
+        :historical_forecast_data,
+        Treasury.list_historical_cash_flow(org_id_for_query, "EUR", 14)
+      )
       |> assign(:transfer_threshold, threshold)
       |> assign(:policy_audit_logs, Treasury.list_policy_audit_logs(org_id_for_query))
       |> assign(:recon_stats, Treasury.get_reconciliation_stats(org_id_for_query))
