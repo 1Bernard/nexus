@@ -27,9 +27,31 @@ defmodule Nexus.Treasury do
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
   alias Nexus.Treasury.Services.ForecastEngine
 
+  alias Nexus.Types
+
+  @type risk_summary :: %{
+          total_exposure: String.t(),
+          at_risk: String.t(),
+          max_loss: String.t()
+        }
+
+  @type exposure_heatmap :: %{
+          subsidiaries: [String.t()],
+          currencies: [Types.currency()],
+          data: %{String.t() => %{Types.currency() => Types.money()}}
+        }
+
+  @type reconciliation_stats :: %{
+          auto_matched_count: integer(),
+          total_matched_count: integer(),
+          match_rate: integer(),
+          matching_velocity_min: integer()
+        }
+
   @doc """
   Lists all successful reconciliations for an organization.
   """
+  @spec list_reconciliations(Types.org_id()) :: [Reconciliation.t()]
   def list_reconciliations(org_id) do
     import Ecto.Query
 
@@ -57,6 +79,7 @@ defmodule Nexus.Treasury do
   @doc """
   Lists all invoices that are currently unmatched.
   """
+  @spec list_unmatched_invoices(Types.org_id()) :: [Invoice.t()]
   def list_unmatched_invoices(org_id) do
     import Ecto.Query
 
@@ -276,6 +299,7 @@ defmodule Nexus.Treasury do
   and Value at Risk (VAR). Normalizes all currency exposures into the
   org's reporting currency (default USD).
   """
+  @spec get_risk_summary(Types.org_id()) :: risk_summary()
   def get_risk_summary(org_id) do
     # 1. Fetch reporting currency
     policy = get_treasury_policy(org_id)
@@ -424,6 +448,7 @@ defmodule Nexus.Treasury do
   Lists exposure snapshots for the heatmap view.
   Returns data structured by subsidiary and currency.
   """
+  @spec list_exposure_heatmap(Types.org_id()) :: exposure_heatmap()
   def list_exposure_heatmap(org_id) do
     # Fetch all snapshots for the org
     query =

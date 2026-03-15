@@ -9,9 +9,29 @@ defmodule Nexus.ERP do
   alias Nexus.ERP.Queries.InvoiceQuery
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 
+  alias Nexus.Types
+
+  @type matching_stats :: %{
+          matched: integer(),
+          partial: integer(),
+          unmatched: integer(),
+          unmatched_lines: integer()
+        }
+
+  @type activity_item :: %{
+          id: Types.binary_id(),
+          icon: String.t(),
+          color: String.t(),
+          title: String.t(),
+          subtitle: String.t(),
+          created_at: Types.datetime(),
+          time: String.t()
+        }
+
   @doc """
   Returns payment matching statistics for an organization.
   """
+  @spec get_payment_matching_stats(Types.org_id()) :: matching_stats()
   def get_payment_matching_stats(org_id) do
     %{
       matched: count_invoices_by_status(org_id, "matched"),
@@ -52,6 +72,7 @@ defmodule Nexus.ERP do
   @doc """
   Calculates the total exposure amount for a subsidiary and currency.
   """
+  @spec get_total_exposure(Types.org_id(), String.t(), Types.currency()) :: Types.money()
   def get_total_exposure(org_id, subsidiary, currency) do
     query =
       if org_id == :all do
@@ -71,6 +92,7 @@ defmodule Nexus.ERP do
   @doc """
   Lists activities related to invoices with support for pagination.
   """
+  @spec list_activity(Types.org_id(), Keyword.t()) :: [activity_item()]
   def list_activity(org_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)

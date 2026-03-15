@@ -7,11 +7,13 @@ defmodule Nexus.ERP.Services.StatementParser do
   NimbleCSV.define(Nexus.ERP.Services.StatementParser.CSV, separator: ",", escape: "\"")
   NimbleCSV.define(Nexus.ERP.Services.StatementParser.SemiCSV, separator: ";", escape: "\"")
 
+  alias Nexus.Types
+
   @type line :: %{
           date: String.t(),
           ref: String.t(),
-          amount: Decimal.t(),
-          currency: String.t(),
+          amount: Types.money(),
+          currency: Types.currency(),
           narrative: String.t()
         }
 
