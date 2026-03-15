@@ -3,8 +3,6 @@ defmodule Nexus.Treasury.Projections.ForecastSnapshot do
   Read model for liquidity forecasts.
   """
   use Nexus.Schema
-
-  @primary_key {:id, :binary_id, autogenerate: false}
   schema "treasury_forecast_snapshots" do
     field :org_id, :binary_id
     field :currency, :string

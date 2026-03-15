@@ -4,7 +4,6 @@ defmodule Nexus.ERP.Projections.Statement do
   """
   use Nexus.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: false}
   schema "erp_statements" do
     field :org_id, :binary_id
     field :filename, :string

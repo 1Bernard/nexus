@@ -4,7 +4,6 @@ defmodule Nexus.ERP.Projections.StatementLine do
   """
   use Nexus.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: false}
   schema "erp_statement_lines" do
     field :statement_id, :binary_id
     field :org_id, :binary_id

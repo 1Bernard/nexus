@@ -5,7 +5,6 @@ defmodule Nexus.Reporting.Projections.AuditLog do
   """
   use Nexus.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: false}
   schema "reporting_audit_logs" do
     field :event_type, :string
     field :actor_email, :string

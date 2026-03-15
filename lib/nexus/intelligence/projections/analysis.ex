@@ -5,7 +5,6 @@ defmodule Nexus.Intelligence.Projections.Analysis do
   """
   use Nexus.Schema
 
-  @primary_key {:id, :binary_id, autogenerate: false}
   @derive {Jason.Encoder,
            only: [
              :id,
