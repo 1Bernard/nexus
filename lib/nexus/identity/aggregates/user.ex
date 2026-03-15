@@ -139,6 +139,14 @@ defmodule Nexus.Identity.Aggregates.User do
   end
 
   def apply(%__MODULE__{} = state, %UserStatusChanged{} = event) do
-    %__MODULE__{state | status: String.to_atom(event.status)}
+    status =
+      case event.status do
+        "active" -> :active
+        "pending" -> :pending
+        "suspended" -> :suspended
+        _ -> :pending
+      end
+
+    %__MODULE__{state | status: status}
   end
 end

@@ -19,7 +19,8 @@ defmodule Nexus.MixProject do
     [
       preferred_envs: [
         test: :test,
-        "test.features": :test
+        "test.features": :test,
+        precommit: :test
       ]
     ]
   end

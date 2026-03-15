@@ -321,7 +321,7 @@ defmodule NexusWeb.Identity.BiometricLive do
     raw = decode_or_raw(binary)
 
     try do
-      :erlang.binary_to_term(raw)
+      Plug.Crypto.non_executable_binary_to_term(raw)
     rescue
       ArgumentError -> raw
     end
