@@ -21,7 +21,10 @@ defmodule Nexus.ERP.Aggregates.Statement do
       {:ok, lines} ->
         lines_with_ids =
           Enum.map(lines, fn line ->
-            Map.put(line, :id, Nexus.Schema.generate_uuidv7())
+            line
+            |> Map.put(:id, Nexus.Schema.generate_uuidv7())
+            |> Map.put_new(:status, "unmatched")
+            |> Map.put_new(:metadata, %{})
           end)
 
         content_hash = :crypto.hash(:sha256, cmd.raw_content) |> Base.encode16()

@@ -68,7 +68,7 @@ defmodule Nexus.ERP.Projectors.StatementProjector do
         amount: line.amount,
         currency: Map.get(line, :currency, ""),
         narrative: Map.get(line, :narrative, ""),
-        status: "unmatched",
+        status: Map.get(line, :status, "unmatched"),
         metadata: Map.get(line, :metadata, %{})
       }
 

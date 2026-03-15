@@ -5,7 +5,7 @@ defmodule Nexus.Repo.Migrations.CreateMarketTicks do
     execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
 
     create table(:treasury_market_ticks, primary_key: false) do
-      add :id, :uuid, default: fragment("gen_random_uuid()"), null: false
+      add :id, :uuid, null: false
       add :pair, :string, null: false
       add :price, :decimal, null: false
       add :tick_time, :utc_datetime_usec, null: false

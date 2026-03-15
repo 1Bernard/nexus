@@ -34,7 +34,8 @@ defmodule Nexus.Identity.Aggregates.User do
       role: "system_admin",
       cose_key: Base.encode64("bootstrap_cose_key"),
       credential_id: Base.encode64("bootstrap_credential_id"),
-      registered_at: cmd.registered_at
+      registered_at: cmd.registered_at,
+      status: "active"
     }
   end
 
@@ -51,7 +52,8 @@ defmodule Nexus.Identity.Aggregates.User do
       role: cmd.role,
       cose_key: cmd.cose_key,
       credential_id: cmd.credential_id,
-      registered_at: cmd.registered_at
+      registered_at: cmd.registered_at,
+      status: "active"
     }
   end
 

@@ -22,7 +22,7 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
           email: event.email,
           display_name: event.display_name,
           role: event.role,
-          status: "active",
+          status: event.status,
           cose_key: safe_decode64(event.cose_key),
           credential_id: safe_decode64(event.credential_id)
         }

@@ -21,6 +21,7 @@ defmodule Nexus.Treasury.Projectors.MarketTickProjector do
       end
 
     Ecto.Multi.insert(multi, :market_tick, %MarketTick{
+      id: Nexus.Schema.generate_uuidv7(),
       pair: event.pair,
       price: price,
       tick_time: Nexus.Schema.parse_datetime(event.timestamp)
