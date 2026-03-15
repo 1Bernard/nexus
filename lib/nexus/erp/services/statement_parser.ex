@@ -216,8 +216,8 @@ defmodule Nexus.ERP.Services.StatementParser do
   end
 
   defp parse_standard_row([date, ref, amount_string, currency, narrative]) do
-    case parse_decimal(amount_string) do
-      {:ok, decimal} ->
+    case Nexus.Schema.parse_decimal(amount_string) do
+      decimal ->
         %{
           date: normalize_date(date),
           ref: String.trim(ref),
@@ -225,17 +225,14 @@ defmodule Nexus.ERP.Services.StatementParser do
           currency: String.trim(currency),
           narrative: String.trim(narrative)
         }
-
-      _ ->
-        nil
     end
   end
 
   defp parse_standard_row(_), do: nil
 
   defp parse_bank_row([date, narrative, debit_string, credit_string | _]) do
-    debit = parse_decimal_safe(debit_string)
-    credit = parse_decimal_safe(credit_string)
+    debit = Nexus.Schema.parse_decimal_safe(debit_string)
+    credit = Nexus.Schema.parse_decimal_safe(credit_string)
 
     # Net amount = Credit (positive) - Debit (positive value in debit column)
     # If debit column contains positive numbers, we subtract them.
@@ -293,8 +290,8 @@ defmodule Nexus.ERP.Services.StatementParser do
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_string)
-    credit = parse_decimal_safe(credit_string)
+    debit = Nexus.Schema.parse_decimal_safe(debit_string)
+    credit = Nexus.Schema.parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     # Elite Metadata for auditing
@@ -361,8 +358,8 @@ defmodule Nexus.ERP.Services.StatementParser do
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_string)
-    credit = parse_decimal_safe(credit_string)
+    debit = Nexus.Schema.parse_decimal_safe(debit_string)
+    credit = Nexus.Schema.parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     %{
@@ -412,8 +409,8 @@ defmodule Nexus.ERP.Services.StatementParser do
       status | _rest
     ] = columns
 
-    debit = parse_decimal_safe(debit_string)
-    credit = parse_decimal_safe(credit_string)
+    debit = Nexus.Schema.parse_decimal_safe(debit_string)
+    credit = Nexus.Schema.parse_decimal_safe(credit_string)
     amount = Decimal.sub(credit, debit)
 
     %{
@@ -478,20 +475,6 @@ defmodule Nexus.ERP.Services.StatementParser do
 
   defp get_parser(";"), do: Nexus.ERP.Services.StatementParser.SemiCSV
   defp get_parser(_), do: Nexus.ERP.Services.StatementParser.CSV
-
-  defp parse_decimal(string) do
-    case Decimal.parse(String.trim(string || "0")) do
-      {decimal, ""} -> {:ok, decimal}
-      _ -> :error
-    end
-  end
-
-  defp parse_decimal_safe(string) do
-    case parse_decimal(String.replace(string || "0", ~r/[^0-9.-]/, "")) do
-      {:ok, decimal} -> decimal
-      _ -> Decimal.new(0)
-    end
-  end
 
   defp normalize_date(date) do
     date = String.trim(date)

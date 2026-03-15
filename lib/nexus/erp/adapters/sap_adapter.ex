@@ -32,7 +32,7 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
 
   defp call_sap_api(_entity_id, "INV-BRIDGE-" <> _rest = invoice_id) do
     Logger.info("[ERP] [DEMO-BYPASS] Auto-verifying bridge test invoice: #{invoice_id}")
-    {:ok, %{sap_status: "Verified_Via_Bypass", enriched_at: DateTime.utc_now()}}
+    {:ok, %{sap_status: "Verified_Via_Bypass", enriched_at: Nexus.Schema.utc_now()}}
   end
 
   defp call_sap_api(_entity_id, invoice_id) do
@@ -48,7 +48,7 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
       {:ok, %Finch.Response{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, _parsed_payload} ->
-            {:ok, %{sap_status: "Verified_Via_Network", enriched_at: DateTime.utc_now()}}
+            {:ok, %{sap_status: "Verified_Via_Network", enriched_at: Nexus.Schema.utc_now()}}
 
           {:error, _reason} ->
             Logger.error("[ERP] Failed to parse SAP JSON response for #{invoice_id}")

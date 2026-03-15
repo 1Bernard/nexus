@@ -83,7 +83,5 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
 
   # --- Private Helpers ---
 
-  defp parse_decimal(val) when is_struct(val, Decimal), do: val
-  defp parse_decimal(val) when is_binary(val), do: Decimal.new(val)
-  defp parse_decimal(val) when is_number(val), do: Decimal.from_float(val * 1.0)
+  defp parse_decimal(val), do: Nexus.Schema.parse_decimal(val)
 end

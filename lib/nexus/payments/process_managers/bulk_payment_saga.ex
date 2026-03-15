@@ -52,7 +52,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
         amount: p.amount,
         threshold: Decimal.new(1_000_000),
         bulk_payment_id: event.bulk_payment_id,
-        requested_at: DateTime.utc_now()
+        requested_at: Nexus.Schema.utc_now()
       }
 
       invoice_id = Map.get(p, :invoice_id) || Map.get(p, "invoice_id")
@@ -81,7 +81,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
       %FinalizeBulkPayment{
         bulk_payment_id: saga.bulk_payment_id,
         org_id: saga.org_id,
-        completed_at: DateTime.utc_now()
+        completed_at: Nexus.Schema.utc_now()
       }
     else
       []

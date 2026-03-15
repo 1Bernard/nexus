@@ -170,7 +170,7 @@ defmodule Nexus.ERP do
   end
 
   defp format_time(dt) do
-    diff = DateTime.diff(DateTime.utc_now(), dt)
+    diff = DateTime.diff(Nexus.Schema.utc_now(), dt)
 
     cond do
       diff < 60 -> "Just now"

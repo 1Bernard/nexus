@@ -27,7 +27,7 @@ defmodule Nexus.Intelligence.Handlers.InvoiceAnalyzer do
       vendor_name: event.subsidiary,
       amount: Decimal.new(event.amount),
       currency: event.currency,
-      flagged_at: DateTime.utc_now()
+      flagged_at: Nexus.Schema.utc_now()
     }
 
     case Nexus.App.dispatch(command) do

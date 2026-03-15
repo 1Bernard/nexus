@@ -15,7 +15,7 @@ defmodule Nexus.Treasury.Gateways.PriceCache do
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   def update_price(pair, price, source \\ :unknown) do
-    :ets.insert(@table, {pair, price, DateTime.utc_now(), source})
+    :ets.insert(@table, {pair, price, Nexus.Schema.utc_now(), source})
   end
 
   def get_last_tick(pair) do

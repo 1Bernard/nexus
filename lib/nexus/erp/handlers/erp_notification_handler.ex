@@ -35,7 +35,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
         org_id: event.org_id,
         invoice_id: event.invoice_id,
         entity_id: event.entity_id,
-        timestamp: DateTime.utc_now()
+        timestamp: Nexus.Schema.utc_now()
       })
 
     publish_to_rabbitmq(payload)
@@ -56,7 +56,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
         org_id: event.org_id,
         statement_id: event.statement_id,
         filename: event.filename,
-        timestamp: DateTime.utc_now()
+        timestamp: Nexus.Schema.utc_now()
       })
 
     publish_to_rabbitmq(payload)

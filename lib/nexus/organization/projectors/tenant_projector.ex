@@ -25,8 +25,8 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
             name: event.name,
             status: "active",
             initial_admin_email: event.initial_admin_email,
-            created_at: DateTime.utc_now(),
-            updated_at: DateTime.utc_now()
+            created_at: Nexus.Schema.utc_now(),
+            updated_at: Nexus.Schema.utc_now()
           },
           on_conflict: :nothing,
           conflict_target: :id
@@ -47,7 +47,7 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
       set: [
         status: "SUSPENDED",
         suspended_at: event.suspended_at,
-        updated_at: DateTime.utc_now()
+        updated_at: Nexus.Schema.utc_now()
       ]
     )
   end)

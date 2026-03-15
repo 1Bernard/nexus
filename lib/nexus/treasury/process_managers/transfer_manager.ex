@@ -25,7 +25,7 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
     %ExecuteTransfer{
       transfer_id: event.transfer_id,
       org_id: event.org_id,
-      executed_at: DateTime.utc_now()
+      executed_at: Nexus.Schema.utc_now()
     }
   end
 
@@ -44,7 +44,7 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
     %ExecuteTransfer{
       transfer_id: event.transfer_id,
       org_id: event.org_id,
-      executed_at: DateTime.utc_now()
+      executed_at: Nexus.Schema.utc_now()
     }
   end
 

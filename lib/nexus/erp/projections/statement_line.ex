@@ -17,7 +17,7 @@ defmodule Nexus.ERP.Projections.StatementLine do
     field :metadata, :map, default: %{}
     field :org_name, :string, virtual: true
 
-    timestamps(inserted_at: :created_at)
+    timestamps()
   end
 
   def changeset(line, attrs) do

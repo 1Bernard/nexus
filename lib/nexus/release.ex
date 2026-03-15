@@ -71,7 +71,7 @@ defmodule Nexus.Release do
 
     org_id = "00000000-0000-0000-0000-000000000000"
 
-    now = DateTime.utc_now()
+    now = Nexus.Schema.utc_now()
 
     users = [
       {Nexus.Schema.generate_uuidv7(), "admin@nexus-platform.io", "Nexus System Admin"},

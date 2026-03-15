@@ -73,7 +73,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
         amount: abs_amount,
         currency: event.currency,
         actor_email: "system@nexus.ai",
-        timestamp: DateTime.utc_now()
+        timestamp: Nexus.Schema.utc_now()
       }
     else
       []
@@ -110,7 +110,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
             amount: abs_amount,
             currency: line.currency,
             actor_email: "system@nexus.ai",
-            timestamp: DateTime.utc_now()
+            timestamp: Nexus.Schema.utc_now()
           }
 
           [match_cmd | acc]

@@ -25,17 +25,49 @@ defmodule Nexus.Schema do
   def generate_uuidv7, do: Uniq.UUID.uuid7()
 
   @doc """
+  Returns the current DateTime truncated to microseconds.
+  Essential for financial audit precision.
+  """
+  def utc_now, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+  @doc """
   Safely parses a datetime from a binary or returns the DateTime if already parsed.
-  Returns DateTime.utc_now() (truncated to seconds) if input is nil or invalid.
+  Returns `utc_now()` if input is nil or invalid.
   """
   def parse_datetime(%DateTime{} = dt), do: dt |> DateTime.truncate(:microsecond)
 
   def parse_datetime(iso8601) when is_binary(iso8601) do
     case DateTime.from_iso8601(iso8601) do
       {:ok, dt, _offset} -> dt |> DateTime.truncate(:microsecond)
-      {:error, _reason} -> DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      {:error, _reason} -> utc_now()
     end
   end
 
-  def parse_datetime(_), do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
+  def parse_datetime(_), do: utc_now()
+
+  @doc """
+  Centralized decimal parsing for financial precision.
+  Handles Decimal structs, strings, and numbers.
+  """
+  def parse_decimal(val) when is_struct(val, Decimal), do: val
+  def parse_decimal(val) when is_binary(val), do: Decimal.new(String.trim(val))
+  def parse_decimal(val) when is_number(val), do: Decimal.from_float(val * 1.0)
+  def parse_decimal(nil), do: Decimal.new("0")
+
+  @doc """
+  Safely parses a decimal by stripping non-numeric characters (except . and -).
+  Returns 0 if input is nil or invalid.
+  """
+  def parse_decimal_safe(nil), do: Decimal.new("0")
+
+  def parse_decimal_safe(val) when is_binary(val) do
+    normalised = String.replace(val, ~r/[^0-9.-]/, "")
+
+    case Decimal.parse(normalised) do
+      {decimal, ""} -> decimal
+      _ -> Decimal.new("0")
+    end
+  end
+
+  def parse_decimal_safe(val), do: parse_decimal(val)
 end

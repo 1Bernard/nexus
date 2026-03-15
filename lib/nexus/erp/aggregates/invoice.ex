@@ -61,7 +61,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
       matched_type: cmd.matched_type,
       matched_id: cmd.matched_id,
       actor_email: cmd.actor_email,
-      matched_at: cmd.matched_at || DateTime.utc_now()
+      matched_at: cmd.matched_at || Nexus.Schema.utc_now()
     }
   end
 

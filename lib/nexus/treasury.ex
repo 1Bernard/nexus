@@ -225,7 +225,7 @@ defmodule Nexus.Treasury do
     |> Enum.map(fn %{date: date_str, amount: total_amount} ->
       %{
         date: date_str,
-        amount: Decimal.to_float(total_amount) |> Float.round(2)
+        amount: Decimal.round(total_amount, 2)
       }
     end)
   end
@@ -261,7 +261,7 @@ defmodule Nexus.Treasury do
           currency: currency,
           horizon_days: horizon_days,
           predictions: predictions,
-          generated_at: DateTime.utc_now()
+          generated_at: Nexus.Schema.utc_now()
         }
 
         Nexus.App.dispatch(command, consistency: :strong)
@@ -343,13 +343,13 @@ defmodule Nexus.Treasury do
       end)
 
     # 5. Calculate VAR and Max Loss (VAR is 8% of total net exposure)
-    value_at_risk = Decimal.mult(Decimal.abs(total_net_exposure), Decimal.from_float(0.08))
+    value_at_risk = Decimal.mult(Decimal.abs(total_net_exposure), Decimal.new("0.08"))
 
     %{
       total_exposure: format_currency(total_net_exposure, reporting_currency),
       at_risk: format_currency(value_at_risk, reporting_currency),
       max_loss:
-        format_currency(Decimal.mult(value_at_risk, Decimal.from_float(0.25)), reporting_currency)
+        format_currency(Decimal.mult(value_at_risk, Decimal.new("0.25")), reporting_currency)
     }
   end
 
@@ -546,7 +546,7 @@ defmodule Nexus.Treasury do
       policy_id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
       threshold: threshold,
-      set_at: DateTime.utc_now()
+      set_at: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -584,7 +584,7 @@ defmodule Nexus.Treasury do
           variance_reason: reason,
           actor_email: actor_email,
           currency: line.currency,
-          timestamp: DateTime.utc_now()
+          timestamp: Nexus.Schema.utc_now()
         }
       else
         %Nexus.Treasury.Commands.ReconcileTransaction{
@@ -598,7 +598,7 @@ defmodule Nexus.Treasury do
           variance_reason: reason,
           actor_email: actor_email,
           currency: line.currency,
-          timestamp: DateTime.utc_now()
+          timestamp: Nexus.Schema.utc_now()
         }
       end
 
@@ -613,7 +613,7 @@ defmodule Nexus.Treasury do
       org_id: org_id,
       reconciliation_id: reconciliation_id,
       approver_email: approver_email,
-      timestamp: DateTime.utc_now()
+      timestamp: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -627,7 +627,7 @@ defmodule Nexus.Treasury do
       org_id: org_id,
       reconciliation_id: reconciliation_id,
       rejector_email: rejector_email,
-      timestamp: DateTime.utc_now()
+      timestamp: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -641,7 +641,7 @@ defmodule Nexus.Treasury do
       org_id: org_id,
       reconciliation_id: reconciliation_id,
       actor_email: actor_email,
-      timestamp: DateTime.utc_now()
+      timestamp: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -723,7 +723,7 @@ defmodule Nexus.Treasury do
       amount: attrs.amount,
       threshold: attrs.threshold,
       bulk_payment_id: Map.get(attrs, :bulk_payment_id),
-      requested_at: DateTime.utc_now()
+      requested_at: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -737,7 +737,7 @@ defmodule Nexus.Treasury do
       transfer_id: transfer_id,
       org_id: org_id,
       actor_email: actor_email,
-      authorized_at: DateTime.utc_now()
+      authorized_at: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)
@@ -750,7 +750,7 @@ defmodule Nexus.Treasury do
     command = %ExecuteTransfer{
       transfer_id: transfer_id,
       org_id: org_id,
-      executed_at: DateTime.utc_now()
+      executed_at: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)

@@ -18,7 +18,7 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     |> Ecto.Multi.update_all(
       :update_role,
       from(u in User, where: u.id == ^event.user_id),
-      set: [role: event.role, updated_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      set: [role: event.role, updated_at: Nexus.Schema.utc_now() |> DateTime.truncate(:second)]
     )
   end)
 
@@ -27,7 +27,7 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     |> Ecto.Multi.update_all(
       :update_status,
       from(u in User, where: u.id == ^event.user_id),
-      set: [status: event.status, updated_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      set: [status: event.status, updated_at: Nexus.Schema.utc_now() |> DateTime.truncate(:second)]
     )
   end)
 end

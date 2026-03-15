@@ -20,11 +20,11 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
   @impl true
   def init(_opts) do
     Logger.info("[Treasury] [SIMULATOR] Starting FX Market Simulator...")
-    # Seed base prices
+    # Seed base prices as Decimals
     prices = %{
-      "EUR/USD" => 1.0854,
-      "GBP/USD" => 1.2642,
-      "USD/JPY" => 150.12
+      "EUR/USD" => Decimal.new("1.0854"),
+      "GBP/USD" => Decimal.new("1.2642"),
+      "USD/JPY" => Decimal.new("150.12")
     }
 
     schedule_tick()
@@ -37,24 +37,26 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     pair = Enum.random(@pairs)
     old_price = Map.get(state.prices, pair)
 
-    # Generate a realistic fluctuation (0.01% - 0.05%)
-    change = :rand.uniform() * 0.0005 * if :rand.uniform() > 0.5, do: 1, else: -1
-    new_price = old_price * (1 + change)
+    # Generate a realistic fluctuation (0.01% - 0.05%) using Decimal
+    # fluctuation_factor = 1 + (random_value * 0.0005 * direction)
+    direction = if :rand.uniform() > 0.5, do: 1, else: -1
+    random_factor = :rand.uniform() |> Decimal.from_float() |> Decimal.mult(Decimal.new("0.0005")) |> Decimal.mult(Decimal.new(direction))
+
+    # new_price = old_price * (1 + random_factor)
+    new_price = Decimal.mult(old_price, Decimal.add(Decimal.new(1), random_factor)) |> Decimal.round(4)
 
     # Smart Yielding: Only skip if a LIVE tick was received within the last 5 seconds.
-    # We do NOT yield to our own :simulated ticks.
     case PriceCache.get_last_tick(pair) do
       {:ok, {_any_price, %DateTime{} = at, :live}} ->
-        if DateTime.diff(DateTime.utc_now(), at) > 5 do
+        if DateTime.diff(Nexus.Schema.utc_now(), at) > 5 do
           process_simulated_tick(pair, new_price)
         else
           Logger.info(
-            "[Treasury] [SIMULATOR] Yielding to live feed for #{pair} (Last live tick #{DateTime.diff(DateTime.utc_now(), at)}s ago)"
+            "[Treasury] [SIMULATOR] Yielding to live feed for #{pair} (Last live tick #{DateTime.diff(Nexus.Schema.utc_now(), at)}s ago)"
           )
         end
 
       _ ->
-        # No live tick recently, or it was just us. Proceed.
         process_simulated_tick(pair, new_price)
     end
 
@@ -64,10 +66,8 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     {:noreply, new_state}
   end
 
-  defp process_simulated_tick(pair, price) do
-    timestamp = DateTime.utc_now()
-    # Ensure price is a Decimal for Ecto/Commanded projections
-    decimal_price = Decimal.from_float(price)
+  defp process_simulated_tick(pair, %Decimal{} = decimal_price) do
+    timestamp = Nexus.Schema.utc_now()
     # Format for UI/Logging
     formatted_price = Decimal.to_string(decimal_price, :normal)
 

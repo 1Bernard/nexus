@@ -18,8 +18,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :status, :string, default: "ingested"
     field :org_name, :string, virtual: true
 
-    @timestamps_opts [type: :utc_datetime_usec]
-    timestamps(inserted_at: :created_at)
+    timestamps()
   end
 
   def changeset(struct, attrs) do

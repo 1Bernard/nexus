@@ -48,7 +48,7 @@ defmodule Nexus.ERP.Projectors.InvoiceProjector do
     query = from(i in Invoice, where: i.id == ^event.invoice_id)
 
     Ecto.Multi.update_all(multi, :match_invoice, query,
-      set: [status: "matched", updated_at: DateTime.utc_now()]
+      set: [status: "matched", updated_at: Nexus.Schema.utc_now()]
     )
   end)
 

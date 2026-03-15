@@ -38,7 +38,7 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
           %BulkPaymentProcessedTransfer{
             bulk_payment_id: bulk_id,
             transfer_id: transfer_id,
-            created_at: DateTime.utc_now() |> DateTime.truncate(:microsecond)
+            created_at: Nexus.Schema.utc_now() |> DateTime.truncate(:microsecond)
           },
           on_conflict: :nothing,
           conflict_target: [:bulk_payment_id, :transfer_id]

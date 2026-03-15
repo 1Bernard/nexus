@@ -12,6 +12,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
   alias Nexus.Organization.Events.TenantProvisioned
   alias Nexus.Organization.Events.TenantSuspended
   alias Nexus.Organization.Events.TenantModuleToggled
+  alias Nexus.Treasury.Events.TransferThresholdSet
   alias Nexus.Reporting.Projections.AuditLog
   alias Nexus.Schema
 
@@ -46,6 +47,17 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       org_id: event.org_id,
       details: %{module_name: event.module_name, enabled: event.enabled},
       recorded_at: Nexus.Schema.parse_datetime(event.toggled_at)
+    })
+  end)
+
+  project(%TransferThresholdSet{} = event, _metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "financial_policy_updated",
+      actor_email: "system@nexus.ai",
+      org_id: event.org_id,
+      details: %{threshold: event.threshold, policy_id: event.policy_id},
+      recorded_at: Nexus.Schema.parse_datetime(event.set_at)
     })
   end)
 end

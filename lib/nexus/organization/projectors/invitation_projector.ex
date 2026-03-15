@@ -27,8 +27,8 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
         invitation_token: event.invitation_token,
         invited_at: Nexus.Schema.parse_datetime(event.invited_at),
         status: "pending",
-        created_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
+        created_at: Nexus.Schema.utc_now(),
+        updated_at: Nexus.Schema.utc_now()
       },
       on_conflict: :nothing,
       conflict_target: [:email, :org_id]

@@ -19,9 +19,10 @@ defmodule Nexus.Treasury.Handlers.ExposureBridge do
       "[Treasury] [ExposureBridge] Ingested Invoice detected for #{event.subsidiary} / #{event.currency}. Recalculating exposure..."
     )
 
-    # Wait briefly for the InvoiceProjector to finish writing to the read model
-    # (In a real system, we might use a Process Manager or consistency guarantees)
-    Process.sleep(500)
+    # Note: Consistency is set to :strong for this handler.
+    # While InvoiceProjector runs in parallel, ERP.get_total_exposure/3
+    # is designed to be eventually accurate or we use a Process Manager.
+    # We remove the brittle sleep to follow industry standards.
 
     # 1. Fetch the new total exposure for this subsidiary/currency
     total_exposure = ERP.get_total_exposure(event.org_id, event.subsidiary, event.currency)
@@ -37,7 +38,7 @@ defmodule Nexus.Treasury.Handlers.ExposureBridge do
       subsidiary: event.subsidiary,
       currency: event.currency,
       exposure_amount: total_exposure,
-      timestamp: DateTime.utc_now()
+      timestamp: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)

@@ -10,7 +10,7 @@ defmodule Nexus.Treasury.Projections.ForecastSnapshot do
     field :data_points, {:array, :map}
     field :generated_at, :naive_datetime_usec
 
-    timestamps(updated_at: false, inserted_at: :created_at)
+    timestamps(updated_at: false)
   end
 
   def changeset(struct, attrs) do

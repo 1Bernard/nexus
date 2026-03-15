@@ -28,10 +28,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
   end)
 
   project(%SettlementUnmatched{} = event, _metadata, fn multi ->
-    amount_str =
-      event.amount
-      |> Decimal.to_float()
-      |> :erlang.float_to_binary(decimals: 2)
+    amount_str = Decimal.to_string(event.amount, :normal)
 
     attrs = %{
       id: event.statement_line_id,

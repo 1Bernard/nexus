@@ -27,7 +27,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
   """
   def store_challenge(session_id, challenge) do
     # TTL of 10 minutes (600s) to tolerate deliberate user interaction / OS prompts
-    expires_at = DateTime.utc_now() |> DateTime.add(600, :second)
+    expires_at = Nexus.Schema.utc_now() |> DateTime.add(600, :second)
     :ets.insert(@table, {session_id, challenge, expires_at})
 
     Logger.debug(
@@ -45,7 +45,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
     case :ets.lookup(@table, session_id) do
       [{^session_id, challenge, expires_at}] ->
         :ets.delete(@table, session_id)
-        now = DateTime.utc_now()
+        now = Nexus.Schema.utc_now()
 
         if DateTime.compare(now, expires_at) == :lt do
           Logger.debug("[Identity] Challenge popped successfully for #{session_id}")
