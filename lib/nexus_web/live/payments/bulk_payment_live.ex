@@ -164,10 +164,10 @@ defmodule NexusWeb.Payments.BulkPaymentLive do
         end
       end)
       |> Enum.reject(fn p ->
-        is_nil(p) or
         # Skip header if 'amount' is in the first column or amount is 0 and account looks like 'account'
-        (p.amount == Decimal.new(0) and
-           String.contains?(String.downcase(p.recipient_account), "account")) or
+        is_nil(p) or
+          (p.amount == Decimal.new(0) and
+             String.contains?(String.downcase(p.recipient_account), "account")) or
           (p.recipient_name == "" and p.recipient_account == "")
       end)
 

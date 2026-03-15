@@ -224,7 +224,9 @@ defmodule NexusWeb.Identity.BiometricLive do
               case App.dispatch(command) do
                 :ok ->
                   Process.send_after(self(), :advance_screening_1, 800)
-                  {:noreply, assign(socket, step: :verifying, status: "success", user_id: user.id)}
+
+                  {:noreply,
+                   assign(socket, step: :verifying, status: "success", user_id: user.id)}
 
                 {:error, reason} ->
                   {:noreply, assign(socket, step: :error, error_message: inspect(reason))}
@@ -234,6 +236,7 @@ defmodule NexusWeb.Identity.BiometricLive do
               {:noreply,
                assign(socket, step: :error, error_message: "WebAuthn Error: #{inspect(reason)}")}
           end
+
         {:error, reason} ->
           {:noreply,
            assign(socket, step: :error, error_message: "Challenge Error: #{inspect(reason)}")}
