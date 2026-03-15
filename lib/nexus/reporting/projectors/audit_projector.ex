@@ -12,8 +12,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
   alias Nexus.Organization.Events.TenantProvisioned
   alias Nexus.Organization.Events.TenantSuspended
   alias Nexus.Organization.Events.TenantModuleToggled
-  alias Nexus.Treasury.Events.{TransferThresholdSet, TransferAuthorized, TransferExecuted, ReconciliationProposed}
-  alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged}
+  alias Nexus.Treasury.Events.{TransferThresholdSet, TransferAuthorized, TransferExecuted, ReconciliationProposed, ReconciliationReversed, ReconciliationRejected}
+  alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, BiometricVerified, StepUpVerified}
   alias Nexus.ERP.Events.InvoiceMatched
   alias Nexus.Reporting.Projections.AuditLog
   alias Nexus.Schema
@@ -145,6 +145,58 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       correlation_id: metadata.correlation_id,
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
+    })
+  end)
+
+  project(%ReconciliationRejected{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "reconciliation_rejected",
+      actor_email: event.rejector_email,
+      org_id: event.org_id,
+      details: %{reconciliation_id: event.reconciliation_id},
+      correlation_id: metadata.correlation_id,
+      causation_id: metadata.causation_id,
+      recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
+    })
+  end)
+
+  project(%ReconciliationReversed{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "reconciliation_reversed",
+      actor_email: event.actor_email,
+      org_id: event.org_id,
+      details: %{reconciliation_id: event.reconciliation_id, invoice_id: event.invoice_id},
+      correlation_id: metadata.correlation_id,
+      causation_id: metadata.causation_id,
+      recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
+    })
+  end)
+
+  project(%BiometricVerified{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "security_biometric_verified",
+      actor_email: "user_#{event.user_id}",
+      org_id: event.org_id,
+      details: %{handshake_id: event.handshake_id},
+      correlation_id: metadata.correlation_id,
+      causation_id: metadata.causation_id,
+      recorded_at: Nexus.Schema.parse_datetime(event.verified_at)
+    })
+  end)
+
+  project(%StepUpVerified{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "security_step_up_verified",
+      actor_email: "user_#{event.user_id}",
+      org_id: event.org_id,
+      details: %{action_id: event.action_id},
+      correlation_id: metadata.correlation_id,
+      causation_id: metadata.causation_id,
+      recorded_at: Nexus.Schema.parse_datetime(event.verified_at)
     })
   end)
 end
