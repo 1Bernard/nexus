@@ -125,7 +125,8 @@ defmodule Nexus.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:stream_data, "~> 1.1", only: :test}
     ]
   end
 

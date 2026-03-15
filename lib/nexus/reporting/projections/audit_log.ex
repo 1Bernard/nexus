@@ -11,6 +11,8 @@ defmodule Nexus.Reporting.Projections.AuditLog do
     field :org_id, :binary_id
     field :tenant_name, :string
     field :details, :map
+    field :correlation_id, :binary_id
+    field :causation_id, :binary_id
     field :recorded_at, :utc_datetime_usec
 
     timestamps()

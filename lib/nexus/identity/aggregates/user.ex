@@ -57,6 +57,10 @@ defmodule Nexus.Identity.Aggregates.User do
     }
   end
 
+  def execute(%__MODULE__{id: _exists}, %RegisterUser{}) do
+    {:error, :already_registered}
+  end
+
   def execute(%__MODULE__{id: nil}, %VerifyBiometric{}) do
     {:error, :unregistered_user}
   end

@@ -2,6 +2,21 @@ defmodule Nexus.Treasury.Events.TransactionReconciled do
   @moduledoc """
   Event emitted when a transaction is successfully reconciled against a bank statement line.
   """
+  alias Nexus.Types
+
+  @type t :: %__MODULE__{
+          org_id: Types.org_id(),
+          reconciliation_id: Types.binary_id(),
+          invoice_id: Types.binary_id(),
+          statement_id: Types.binary_id(),
+          statement_line_id: Types.binary_id(),
+          amount: Types.money(),
+          variance: Types.money() | nil,
+          variance_reason: String.t() | nil,
+          actor_email: String.t(),
+          currency: Types.currency(),
+          timestamp: Types.datetime()
+        }
   @derive Jason.Encoder
   @enforce_keys [
     :org_id,
