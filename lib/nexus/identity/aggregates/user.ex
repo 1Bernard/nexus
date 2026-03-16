@@ -119,7 +119,6 @@ defmodule Nexus.Identity.Aggregates.User do
       org_id: cmd.org_id,
       locale: cmd.locale,
       timezone: cmd.timezone,
-      theme: cmd.theme,
       notifications_enabled: cmd.notifications_enabled,
       updated_at: cmd.updated_at
     }

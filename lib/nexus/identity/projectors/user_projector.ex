@@ -36,7 +36,6 @@ defmodule Nexus.Identity.Projectors.UserProjector do
       [
         locale: event.locale,
         timezone: event.timezone,
-        theme: event.theme,
         notifications_enabled: event.notifications_enabled,
         updated_at: event.updated_at
       ]

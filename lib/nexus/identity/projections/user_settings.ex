@@ -9,7 +9,6 @@ defmodule Nexus.Identity.Projections.UserSettings do
     field :org_id, :binary_id
     field :locale, :string, default: "en"
     field :timezone, :string, default: "UTC"
-    field :theme, :string, default: "dark"
     field :notifications_enabled, :boolean, default: true
 
     timestamps(inserted_at: :created_at)
@@ -17,7 +16,7 @@ defmodule Nexus.Identity.Projections.UserSettings do
 
   def changeset(struct, attrs) do
     struct
-    |> cast(attrs, [:org_id, :user_id, :locale, :timezone, :theme, :notifications_enabled])
+    |> cast(attrs, [:org_id, :user_id, :locale, :timezone, :notifications_enabled])
     |> validate_required([:org_id, :user_id])
   end
 end

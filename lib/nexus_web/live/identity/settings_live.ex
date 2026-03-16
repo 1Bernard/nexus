@@ -5,16 +5,18 @@ defmodule NexusWeb.Identity.SettingsLive do
   use NexusWeb, :live_view
 
   alias Nexus.Identity.Queries.SettingsQuery
+  alias Nexus.Identity.Projections.UserSettings
   alias Nexus.Identity.Commands.{UpdateSettings, ExpireSession}
   alias Nexus.App
 
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    settings = SettingsQuery.get_settings(user.id) || %{
+    settings = SettingsQuery.get_settings(user.id) || %UserSettings{
+      user_id: user.id,
+      org_id: user.org_id,
       locale: "en",
       timezone: "UTC",
-      theme: "dark",
       notifications_enabled: true
     }
     sessions = SettingsQuery.list_active_sessions(user.id)
@@ -113,44 +115,11 @@ defmodule NexusWeb.Identity.SettingsLive do
                 </div>
               </div>
 
-              <div>
-                <.label class="text-[10px] uppercase tracking-widest text-slate-500 mb-2 block">
-                  Theme Appearance
-                </.label>
-                <div class="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    phx-click="set_theme"
-                    phx-value-theme="dark"
-                    class={[
-                      "flex items-center gap-3 p-4 rounded-xl border transition-all text-left",
-                      @settings.theme == "dark" && "bg-indigo-500/10 border-indigo-500/40 text-white",
-                      @settings.theme != "dark" && "bg-slate-900/50 border-white/5 text-slate-400 hover:border-white/10"
-                    ]}
-                  >
-                    <span class="hero-moon w-5 h-5"></span>
-                    <div>
-                      <p class="text-xs font-bold">Deep Space</p>
-                      <p class="text-[9px] uppercase tracking-tighter opacity-60">Dark Mode</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    phx-click="set_theme"
-                    phx-value-theme="light"
-                    class={[
-                      "flex items-center gap-3 p-4 rounded-xl border transition-all text-left opacity-40 cursor-not-allowed",
-                      @settings.theme == "light" && "bg-indigo-500/10 border-indigo-500/40 text-white",
-                      @settings.theme != "light" && "bg-slate-900/50 border-white/5 text-slate-400"
-                    ]}
-                  >
-                    <span class="hero-sun w-5 h-5"></span>
-                    <div>
-                      <p class="text-xs font-bold">Lumina</p>
-                      <p class="text-[9px] uppercase tracking-tighter opacity-60">Light Mode (Coming Soon)</p>
-                    </div>
-                  </button>
+              <div class="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 mb-6 flex items-start gap-3">
+                <span class="hero-shield-check w-5 h-5 text-indigo-400 mt-0.5"></span>
+                <div>
+                  <p class="text-xs font-bold text-white uppercase tracking-wider">Passkey Secured Account</p>
+                  <p class="text-[10px] text-slate-500 mt-1">Your preferences are cryptographically bound to your hardware security key.</p>
                 </div>
               </div>
 
@@ -218,9 +187,15 @@ defmodule NexusWeb.Identity.SettingsLive do
                                 {parse_user_agent(session.user_agent)}
                               </p>
                               <%= if session.id == @current_session_id do %>
-                                <span class="text-[8px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded">
-                                  Current
-                                </span>
+                                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                  <span class="relative flex h-1.5 w-1.5">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                  </span>
+                                  <span class="text-[8px] font-black uppercase tracking-widest text-emerald-400">
+                                    Active Now
+                                  </span>
+                                </div>
                               <% end %>
                             </div>
                             <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-medium">
@@ -264,7 +239,6 @@ defmodule NexusWeb.Identity.SettingsLive do
       user_id: socket.assigns.current_user.id,
       locale: params["locale"],
       timezone: params["timezone"],
-      theme: socket.assigns.settings.theme,
       notifications_enabled: params["notifications_enabled"] == "true",
       updated_at: DateTime.utc_now()
     }
@@ -280,13 +254,6 @@ defmodule NexusWeb.Identity.SettingsLive do
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to update settings: #{inspect(reason)}")}
     end
-  end
-
-  @impl true
-  def handle_event("set_theme", %{"theme" => theme}, socket) do
-    # For now, just a visual toggle
-    settings = Map.put(socket.assigns.settings, :theme, theme)
-    {:noreply, assign(socket, settings: settings)}
   end
 
   @impl true

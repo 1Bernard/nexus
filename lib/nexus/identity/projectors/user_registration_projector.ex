@@ -57,7 +57,6 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
             user_id: event.user_id,
             locale: "en",
             timezone: "UTC",
-            theme: "dark",
             notifications_enabled: true
           }
 

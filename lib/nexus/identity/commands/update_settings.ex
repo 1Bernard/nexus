@@ -7,13 +7,12 @@ defmodule Nexus.Identity.Commands.UpdateSettings do
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           user_id: Types.binary_id(),
-          locale: String.t() | nil,
-          timezone: String.t() | nil,
-          theme: String.t() | nil,
-          notifications_enabled: boolean() | nil,
+          locale: String.t(),
+          timezone: String.t(),
+          notifications_enabled: boolean(),
           updated_at: Types.datetime()
         }
 
   @enforce_keys [:org_id, :user_id, :updated_at]
-  defstruct [:org_id, :user_id, :locale, :timezone, :theme, :notifications_enabled, :updated_at]
+  defstruct [:org_id, :user_id, :locale, :timezone, :notifications_enabled, :updated_at]
 end

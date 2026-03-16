@@ -99,7 +99,6 @@ defmodule Nexus.Identity.UserSessionTest do
         user_id: user_id,
         locale: "fr",
         timezone: "Europe/Paris",
-        theme: "light",
         notifications_enabled: false,
         updated_at: DateTime.utc_now()
       }
@@ -113,7 +112,6 @@ defmodule Nexus.Identity.UserSessionTest do
       assert settings, "Settings should exist"
       assert settings.locale == "fr"
       assert settings.timezone == "Europe/Paris"
-      assert settings.theme == "light"
       assert settings.notifications_enabled == false
     end
   end
