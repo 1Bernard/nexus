@@ -20,6 +20,11 @@ defmodule Nexus.Router do
     identity: :user_id
   )
 
+  dispatch([Nexus.Identity.Commands.UpdateSettings, Nexus.Identity.Commands.StartSession, Nexus.Identity.Commands.ExpireSession],
+    to: Nexus.Identity.Aggregates.User,
+    identity: :user_id
+  )
+
   dispatch(Nexus.Identity.Commands.RegisterSystemAdmin,
     to: Nexus.Identity.Aggregates.User,
     identity: :user_id

@@ -8,16 +8,13 @@ defmodule Nexus.CrossDomain.NotificationsTest do
   alias Nexus.Repo
 
   setup do
-    # Start notification components in isolation for this test
-    # This prevents them from interfering with other tests while ensuring
-    # the integration logic is verified.
-    start_supervised!(Nexus.CrossDomain.Projectors.NotificationProjector)
-    start_supervised!(Nexus.CrossDomain.Handlers.SystemNotificationHandler)
     :ok
   end
 
   test "receiving a notification via bridge" do
     org_id = Nexus.Schema.generate_uuidv7()
+    _user_id = Nexus.Schema.generate_uuidv7()
+
     # 1. Trigger the bridge event
     event = %Nexus.Treasury.Events.PolicyAlertTriggered{
       policy_id: Nexus.Schema.generate_uuidv7(),
@@ -28,29 +25,42 @@ defmodule Nexus.CrossDomain.NotificationsTest do
       triggered_at: DateTime.utc_now()
     }
 
-    # Dispatch via the handler (simulated or direct)
-    # Since SystemNotificationHandler is an event handler, it will react to the event store.
-    # We'll just verify the resulting command was dispatched/processed.
-
-    # Instead of full BDD (which requires browser), we'll do an integration test for the bridge.
+    # 2. Capture the command dispatched by the handler
+    # We use a handler that dispatches a command.
     Nexus.CrossDomain.Handlers.SystemNotificationHandler.handle(event, %{})
 
-    assert_receive_event(App, NotificationCreated, fn e ->
-      e.org_id == org_id and e.type == "treasury_alert"
-    end)
+    # 3. Read the event from the EventStore to get the notification data
+    # (Since we dispatched a command, an event should have been emitted)
+    recorded_event =
+      wait_for_event(App, NotificationCreated, fn e ->
+        e.org_id == org_id and e.type == "treasury_alert"
+      end)
 
-    # Verify projection with polling to account for catch-up
-    assert_eventually_projected(org_id, "treasury_alert")
+    # 4. Manually project the event using unboxed_run (Standard 7 compliance)
+    project_event(recorded_event.data, recorded_event.event_number)
+
+    # 5. Verify projection
+    snapshot = get_notification(recorded_event.data.id)
+    assert snapshot != nil
+    assert snapshot.type == "treasury_alert"
   end
 
-  defp assert_eventually_projected(org_id, type, retries \\ 10)
-  defp assert_eventually_projected(_org_id, _type, 0), do: flunk("Notification not projected in time")
-  defp assert_eventually_projected(org_id, type, retries) do
-    if Repo.get_by(Notification, org_id: org_id, type: type) do
-      :ok
-    else
-      Process.sleep(200)
-      assert_eventually_projected(org_id, type, retries - 1)
-    end
+  # --- Helpers ---
+
+  defp project_event(event, event_number) do
+    metadata = %{
+      handler_name: "CrossDomain.NotificationProjector",
+      event_number: event_number
+    }
+
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.CrossDomain.Projectors.NotificationProjector.handle(event, metadata)
+    end)
+  end
+
+  defp get_notification(id) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.get(Notification, id)
+    end)
   end
 end

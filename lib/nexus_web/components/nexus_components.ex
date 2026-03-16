@@ -20,6 +20,11 @@ defmodule NexusWeb.NexusComponents do
   """
   use Phoenix.Component
 
+  use Phoenix.VerifiedRoutes,
+    endpoint: NexusWeb.Endpoint,
+    router: NexusWeb.Router,
+    statics: NexusWeb.static_paths()
+
   # ══════════════════════════════════════════════════════════════
   # 1. LAYOUT
   # ══════════════════════════════════════════════════════════════
@@ -206,7 +211,6 @@ defmodule NexusWeb.NexusComponents do
     </div>
     """
   end
-
 
   @doc """
   Persistent left sidebar with navigation links, session status, and trust footer.
@@ -1964,18 +1968,18 @@ defmodule NexusWeb.NexusComponents do
           </p>
         </div>
         <div class="p-2 space-y-0.5">
-          <a
-            href="#"
+          <.link
+            navigate={~p"/settings"}
             class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <span class="hero-cog-8-tooth w-4 h-4 text-slate-500"></span> Settings
-          </a>
-          <a
-            href="#"
+          </.link>
+          <.link
+            navigate={~p"/settings?tab=security"}
             class="flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <span class="hero-shield-check w-4 h-4 text-slate-500"></span> Security
-          </a>
+          </.link>
           <div class="my-1 border-t border-[var(--nx-border)]"></div>
           <.link
             href="/auth/logout"

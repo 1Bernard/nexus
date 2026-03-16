@@ -9,7 +9,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     field :org_id, :binary_id
     field :entity_id, :string
     field :currency, :string
-    field :amount, :string
+    field :amount, :decimal
     field :subsidiary, :string
     field :line_items, {:array, :map}
     field :sap_document_number, :string

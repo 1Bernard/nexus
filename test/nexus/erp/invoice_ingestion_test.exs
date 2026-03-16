@@ -30,10 +30,10 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       invoice_id: invoice_id,
       entity_id: "E-100",
       currency: "EUR",
-      amount: "1000",
+      amount: Decimal.new("1000"),
       subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Consulting", amount: "1000"}],
+      line_items: [%{description: "Consulting", amount: Decimal.new("1000")}],
       sap_document_number: "SAP-#{invoice_id}",
       sap_status: "Verified_Via_Network",
       ingested_at: DateTime.utc_now()
@@ -55,10 +55,10 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       invoice_id: invoice_id,
       entity_id: "E-101",
       currency: currency,
-      amount: amount,
+      amount: Decimal.new(amount),
       subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Software License", amount: amount}],
+      line_items: [%{description: "Software License", amount: Decimal.new(amount)}],
       sap_document_number: "SAP-#{invoice_id}",
       sap_status: "Verified_Via_Network",
       ingested_at: DateTime.utc_now()
@@ -79,10 +79,10 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       invoice_id: invoice_id,
       entity_id: "E-101",
       currency: currency,
-      amount: amount,
+      amount: Decimal.new(amount),
       subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Refund", amount: amount}],
+      line_items: [%{description: "Refund", amount: Decimal.new(amount)}],
       sap_document_number: "SAP-#{invoice_id}",
       sap_status: "Verified_Via_Network",
       ingested_at: DateTime.utc_now()
@@ -100,10 +100,10 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
       invoice_id: invoice_id,
       entity_id: "E-100",
       currency: "EUR",
-      amount: "1000",
+      amount: Decimal.new("1000"),
       subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Consulting", amount: "1000"}],
+      line_items: [%{description: "Consulting", amount: Decimal.new("1000")}],
       sap_document_number: "SAP-#{invoice_id}",
       sap_status: "Verified_Via_Network",
       ingested_at: DateTime.utc_now()
@@ -124,7 +124,7 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
     invoice = get_invoice(state.command.invoice_id)
     assert invoice != nil
     assert invoice.org_id == state.org_id
-    assert invoice.amount == state.command.amount
+    assert Decimal.equal?(invoice.amount, state.command.amount)
 
     {:ok, state}
   end

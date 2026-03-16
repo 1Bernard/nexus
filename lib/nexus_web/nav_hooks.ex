@@ -94,8 +94,8 @@ defmodule NexusWeb.NavHooks do
 
   # --- Real-Time PubSub Interceptors ---
 
-  defp handle_nav_info({:notification_created, notif}, socket) do
-    notifications = [notif | socket.assigns.notifications] |> Enum.take(10)
+  defp handle_nav_info({:notification_created, notification}, socket) do
+    notifications = [notification | socket.assigns.notifications] |> Enum.take(10)
 
     {:halt,
      socket
@@ -106,8 +106,8 @@ defmodule NexusWeb.NavHooks do
   defp handle_nav_info({:notification_read, id}, socket) do
     notifications =
       Enum.map(socket.assigns.notifications, fn
-        %{id: ^id} = n -> %{n | read_at: DateTime.utc_now()}
-        n -> n
+        %{id: ^id} = notification -> %{notification | read_at: DateTime.utc_now()}
+        notification -> notification
       end)
 
     {:halt,

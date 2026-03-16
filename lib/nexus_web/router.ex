@@ -43,6 +43,7 @@ defmodule NexusWeb.Router do
       live "/payments", Payments.BulkPaymentLive
       live "/intelligence", Tenant.AnalysisLive
       live "/intelligence/investigate/:id", Tenant.AnomalyInvestigationLive
+      live "/settings", Identity.SettingsLive, :index
       live "/admin/analysis", Admin.AnalysisLive
       live "/admin/analysis/investigate/:id", Admin.AnomalyInvestigationLive
     end

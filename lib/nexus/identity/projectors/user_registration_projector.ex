@@ -10,7 +10,7 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
     consistency: :strong
 
   alias Nexus.Identity.Events.UserRegistered
-  alias Nexus.Identity.Projections.User
+  alias Nexus.Identity.Projections.{User, UserSettings}
 
   project(%UserRegistered{} = event, _metadata, fn multi ->
     # Guard against stale test data with invalid ID formats
@@ -22,7 +22,7 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
           email: event.email,
           display_name: event.display_name,
           role: event.role,
-          status: event.status,
+          status: event.status || "active",
           cose_key: safe_decode64(event.cose_key),
           credential_id: safe_decode64(event.credential_id)
         }
@@ -47,6 +47,24 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
         id_exists -> {:ok, id_exists}
         email_exists -> {:ok, email_exists}
         true -> repo.insert(User.changeset(%User{}, user_data))
+      end
+    end)
+    |> Ecto.Multi.run(:settings, fn repo, _ ->
+      case repo.get(UserSettings, event.user_id) do
+        nil ->
+          settings_data = %{
+            org_id: event.org_id,
+            user_id: event.user_id,
+            locale: "en",
+            timezone: "UTC",
+            theme: "dark",
+            notifications_enabled: true
+          }
+
+          repo.insert(UserSettings.changeset(%UserSettings{}, settings_data))
+
+        existing ->
+          {:ok, existing}
       end
     end)
   end

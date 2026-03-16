@@ -12,7 +12,10 @@ defmodule Nexus.Identity.Aggregates.User do
     VerifyBiometric,
     VerifyStepUp,
     ChangeUserRole,
-    ChangeUserStatus
+    ChangeUserStatus,
+    UpdateSettings,
+    StartSession,
+    ExpireSession
   }
 
   alias Nexus.Identity.Events.{
@@ -20,7 +23,10 @@ defmodule Nexus.Identity.Aggregates.User do
     UserRegistered,
     StepUpVerified,
     UserRoleChanged,
-    UserStatusChanged
+    UserStatusChanged,
+    SettingsUpdated,
+    SessionStarted,
+    SessionExpired
   }
 
   # --- Command Handlers ---
@@ -107,8 +113,44 @@ defmodule Nexus.Identity.Aggregates.User do
     }
   end
 
+  def execute(%__MODULE__{id: id}, %UpdateSettings{} = cmd) when not is_nil(id) do
+    %SettingsUpdated{
+      user_id: id,
+      org_id: cmd.org_id,
+      locale: cmd.locale,
+      timezone: cmd.timezone,
+      theme: cmd.theme,
+      notifications_enabled: cmd.notifications_enabled,
+      updated_at: cmd.updated_at
+    }
+  end
+
+  def execute(%__MODULE__{id: id}, %StartSession{} = cmd) when not is_nil(id) do
+    %SessionStarted{
+      user_id: id,
+      org_id: cmd.org_id,
+      session_id: cmd.session_id,
+      session_token: cmd.session_token,
+      user_agent: cmd.user_agent,
+      ip_address: cmd.ip_address,
+      started_at: cmd.started_at
+    }
+  end
+
+  def execute(%__MODULE__{id: id}, %ExpireSession{} = cmd) when not is_nil(id) do
+    %SessionExpired{
+      user_id: id,
+      org_id: cmd.org_id,
+      session_id: cmd.session_id,
+      expired_at: cmd.expired_at
+    }
+  end
+
   def execute(%__MODULE__{id: nil}, %ChangeUserRole{}), do: {:error, :unregistered_user}
   def execute(%__MODULE__{id: nil}, %ChangeUserStatus{}), do: {:error, :unregistered_user}
+  def execute(%__MODULE__{id: nil}, %UpdateSettings{}), do: {:error, :unregistered_user}
+  def execute(%__MODULE__{id: nil}, %StartSession{}), do: {:error, :unregistered_user}
+  def execute(%__MODULE__{id: nil}, %ExpireSession{}), do: {:error, :unregistered_user}
 
   def execute(state, cmd) do
     {:error, {:unexpected_command, state, cmd}}
@@ -155,4 +197,8 @@ defmodule Nexus.Identity.Aggregates.User do
 
     %__MODULE__{state | status: status}
   end
+
+  def apply(%__MODULE__{} = state, %SettingsUpdated{}), do: state
+  def apply(%__MODULE__{} = state, %SessionStarted{}), do: state
+  def apply(%__MODULE__{} = state, %SessionExpired{}), do: state
 end

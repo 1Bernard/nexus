@@ -16,7 +16,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   # Processing a new invoice
   def execute(%__MODULE__{status: nil}, %IngestInvoice{} = cmd) do
     cond do
-      Decimal.compare(Decimal.new(cmd.amount |> to_string()), Decimal.new("0.0")) != :gt ->
+      Decimal.compare(cmd.amount, Decimal.new("0.0")) != :gt ->
         %InvoiceRejected{
           org_id: cmd.org_id,
           invoice_id: cmd.invoice_id,

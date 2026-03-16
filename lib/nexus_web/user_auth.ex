@@ -45,8 +45,13 @@ defmodule NexusWeb.UserAuth do
             |> Phoenix.Component.assign_new(:current_user_id, fn -> active_user_id end)
             |> Phoenix.Component.assign_new(:current_user, fn -> user end)
             |> Phoenix.Component.assign(:is_impersonated, is_impersonated)
+            |> Phoenix.Component.assign(:current_session_id, session["session_id"])
             |> Phoenix.Component.assign_new(:session_id, fn ->
-              String.slice(String.upcase(active_user_id), 0, 8)
+              if session["session_id"] do
+                String.slice(session["session_id"], 0, 8) |> String.upcase()
+              else
+                String.slice(String.upcase(active_user_id), 0, 8)
+              end
             end)
 
           # Avoid double-attaching the hook if it's already there (e.g. redundant on_mount)
