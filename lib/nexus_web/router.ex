@@ -53,6 +53,10 @@ defmodule NexusWeb.Router do
       live "/admin/users", Admin.UserLive.Index
       live "/admin/policy", Admin.PolicyLive
     end
+
+    live_session :auditor, on_mount: [{NexusWeb.UserAuth, :require_auditor}] do
+      live "/compliance", Reporting.ComplianceLive
+    end
   end
 
   # Other scopes may use custom stacks.

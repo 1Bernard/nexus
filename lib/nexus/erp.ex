@@ -1,13 +1,14 @@
 defmodule Nexus.ERP do
   @moduledoc """
-  The ERP context. Handles invoice ingestion, status tracking, and bank statement uploads.
+  The ERP context facade.
+
+  Handles invoice ingestion, status tracking, and bank statement uploads.
+  Delegates query orchestration to specialized query modules.
   """
-  import Ecto.Query
   alias Nexus.Repo
-  alias Nexus.Treasury.Projections.PolicyAuditLog
-  alias Nexus.Reporting.Projections.AuditLog
-  alias Nexus.ERP.Queries.InvoiceQuery
-  alias Nexus.ERP.Projections.{Statement, StatementLine}
+  alias Nexus.ERP.Queries.{InvoiceQuery, StatementQuery, StatementLineQuery}
+  alias Nexus.Treasury.Queries.PolicyAuditLogQuery
+  alias Nexus.Reporting.Queries.AuditLogQuery
 
   alias Nexus.Types
 
@@ -42,15 +43,10 @@ defmodule Nexus.ERP do
   end
 
   defp count_lines_by_status(org_id, status) do
-    query =
-      if org_id == :all do
-        from(l in StatementLine, where: l.status == ^status)
-      else
-        from(l in StatementLine, where: l.org_id == ^org_id and l.status == ^status)
-      end
-
-    query
-    |> select([l], count(l.id))
+    StatementLineQuery.base()
+    |> StatementLineQuery.for_org(org_id)
+    |> StatementLineQuery.with_status(status)
+    |> StatementLineQuery.count()
     |> Repo.one() || 0
   end
 
@@ -97,22 +93,8 @@ defmodule Nexus.ERP do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
 
-    # Fetch Invoices
-    invoices_query =
-      if org_id == :all do
-        InvoiceQuery.base()
-      else
-        InvoiceQuery.base()
-        |> InvoiceQuery.for_org(org_id)
-      end
-
     invoices =
-      invoices_query
-      |> join(:left, [inv], t in Nexus.Organization.Projections.Tenant,
-        on: inv.org_id == t.org_id
-      )
-      |> select([inv, t], %{inv | org_name: t.name})
-      |> InvoiceQuery.newest_first()
+      InvoiceQuery.activity_query(org_id)
       |> Repo.all()
       |> Enum.map(fn inv ->
         %{
@@ -126,19 +108,8 @@ defmodule Nexus.ERP do
         }
       end)
 
-    # Fetch Policy Audits
-    policy_query =
-      if org_id == :all do
-        PolicyAuditLog
-      else
-        from(p in PolicyAuditLog, where: p.org_id == ^org_id)
-      end
-
     audits =
-      policy_query
-      |> join(:left, [p], t in Nexus.Organization.Projections.Tenant, on: p.org_id == t.org_id)
-      |> select([p, t], %{p | org_name: t.name})
-      |> order_by(desc: :changed_at)
+      PolicyAuditLogQuery.list_for_org(org_id)
       |> Repo.all()
       |> Enum.map(fn log ->
         %{
@@ -152,17 +123,8 @@ defmodule Nexus.ERP do
         }
       end)
 
-    # Fetch Platform Audit Logs
-    base_query =
-      if org_id == :all do
-        AuditLog
-      else
-        from(a in AuditLog, where: a.org_id == ^org_id)
-      end
-
     audit_logs =
-      base_query
-      |> order_by(desc: :recorded_at)
+      AuditLogQuery.newest_for_org_query(org_id, 20)
       |> Repo.all()
       |> Enum.map(fn log ->
         %{
@@ -187,6 +149,7 @@ defmodule Nexus.ERP do
   @doc """
   Lists the 5 most recent activities related to invoices.
   """
+  @spec list_recent_activity(Types.org_id()) :: [activity_item()]
   def list_recent_activity(org_id) do
     list_activity(org_id, limit: 5)
   end
@@ -247,63 +210,40 @@ defmodule Nexus.ERP do
   Lists all bank statements for an organisation, newest first.
   Supports filtering by filename and date.
   """
+  @spec list_statements(Types.org_id(), String.t(), String.t()) :: [Projections.Statement.t()]
   def list_statements(org_id, query \\ "", date \\ "") do
-    base_query =
-      if org_id == :all do
-        from(s in Statement)
-      else
-        from(s in Statement, where: s.org_id == ^org_id)
-      end
-
-    base_query
-    |> join(:left, [s], t in Nexus.Organization.Projections.Tenant, on: s.org_id == t.org_id)
-    |> select([s, t], %{s | org_name: t.name})
-    |> order_by([s], desc: s.uploaded_at)
-    |> filter_by_filename(query)
-    |> filter_by_date(date)
+    StatementQuery.list_query(org_id, query, date)
     |> Repo.all()
-  end
-
-  defp filter_by_filename(q, ""), do: q
-
-  defp filter_by_filename(q, query) do
-    from(s in q, where: ilike(s.filename, ^"%#{query}%"))
-  end
-
-  defp filter_by_date(q, ""), do: q
-
-  defp filter_by_date(q, date) do
-    # Simple date string prefix match for the demo
-    from(s in q, where: fragment("?::text", s.uploaded_at) |> ilike(^"#{date}%"))
   end
 
   @doc """
   Returns the raw content of a bank statement.
   """
+  @spec get_statement_content(Types.binary_id()) :: String.t() | nil
   def get_statement_content(id) do
-    from(s in Statement, where: s.id == ^id, select: s.raw_content)
+    StatementQuery.content_query(id)
     |> Repo.one()
   end
 
   @doc """
   Lists all parsed transaction lines for a given statement.
   """
+  @spec list_statement_lines(Types.binary_id()) :: [Projections.StatementLine.t()]
   def list_statement_lines(statement_id) do
-    from(l in StatementLine,
-      where: l.statement_id == ^statement_id,
-      order_by: [asc: l.date]
-    )
+    StatementLineQuery.for_statement_query(statement_id)
+    |> StatementLineQuery.oldest_first()
     |> Repo.all()
   end
 
   @doc """
   Checks if a statement with the same content hash already exists for an organization.
   """
+  @spec statement_exists_by_hash?(Types.org_id(), String.t()) :: boolean()
   def statement_exists_by_hash?(org_id, hash) do
-    from(s in Statement,
-      where: s.org_id == ^org_id and s.content_hash == ^hash,
-      select: count(s.id)
-    )
+    StatementQuery.base()
+    |> StatementQuery.for_org(org_id)
+    |> StatementQuery.with_hash(hash)
+    |> StatementQuery.count()
     |> Repo.one()
     |> Kernel.>(0)
   end
@@ -311,11 +251,12 @@ defmodule Nexus.ERP do
   @doc """
   Checks if a statement with the same filename already exists for an organization.
   """
+  @spec statement_exists_by_filename?(Types.org_id(), String.t()) :: boolean()
   def statement_exists_by_filename?(org_id, filename) do
-    from(s in Statement,
-      where: s.org_id == ^org_id and s.filename == ^filename,
-      select: count(s.id)
-    )
+    StatementQuery.base()
+    |> StatementQuery.for_org(org_id)
+    |> StatementQuery.with_filename(filename)
+    |> StatementQuery.count()
     |> Repo.one()
     |> Kernel.>(0)
   end

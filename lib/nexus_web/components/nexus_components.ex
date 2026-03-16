@@ -219,7 +219,8 @@ defmodule NexusWeb.NexusComponents do
 
     admin_nav = [
       %{path: "/admin/users", label: "Manage Users", icon: "hero-users"},
-      %{path: "/activity", label: "Activity & Audit", icon: "hero-shield-check"},
+      %{path: "/compliance", label: "Compliance Hub", icon: "hero-shield-check"},
+      %{path: "/activity", label: "Activity Logs", icon: "hero-list-bullet"},
       %{path: "/admin/analysis", label: "AI Sentinel", icon: "hero-cpu-chip"},
       %{path: "/admin/policy", label: "Policy Settings", icon: "hero-adjustments-horizontal"},
       %{path: "/backoffice", label: "Backoffice", icon: "hero-server-stack"}

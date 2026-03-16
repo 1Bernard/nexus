@@ -5,17 +5,25 @@ defmodule Nexus.Treasury.Queries.ForecastQuery do
   import Ecto.Query
   alias Nexus.Treasury.Projections.ForecastSnapshot
 
-  def base, do: ForecastSnapshot
+  @doc "Base query for ForecastSnapshot."
+  @spec base() :: Ecto.Query.t()
+  def base, do: from(f in ForecastSnapshot)
 
+  @doc "Filters forecasts by organization ID."
+  @spec for_org(Ecto.Query.t(), Nexus.Types.org_id()) :: Ecto.Query.t()
   def for_org(query, org_id) do
-    from(f in query, where: f.org_id == ^org_id)
+    where(query, [f], f.org_id == ^org_id)
   end
 
+  @doc "Filters forecasts by currency."
+  @spec for_currency(Ecto.Query.t(), Nexus.Types.currency()) :: Ecto.Query.t()
   def for_currency(query, currency) do
-    from(f in query, where: f.currency == ^currency)
+    where(query, [f], f.currency == ^currency)
   end
 
+  @doc "Sorts forecasts by generation and creation dates (recent first)."
+  @spec newest_first(Ecto.Query.t()) :: Ecto.Query.t()
   def newest_first(query) do
-    from(f in query, order_by: [desc: f.generated_at, desc: f.created_at])
+    order_by(query, [f], desc: f.generated_at, desc: f.created_at)
   end
 end

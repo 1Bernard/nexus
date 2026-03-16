@@ -1,7 +1,10 @@
 defmodule Nexus.Treasury do
   @moduledoc """
-  The Treasury context. Provides a unified API for market data,
-  exposures, and trade execution coordination.
+  The Treasury context facade.
+
+  Provides a unified API for market data, exposures, risk assessment, and trade execution.
+  This facade delegates complex query orchestration to specialized query modules while
+  managing command dispatch for treasury operations.
   """
   alias Nexus.Repo
 
@@ -10,8 +13,12 @@ defmodule Nexus.Treasury do
     ExposureQuery,
     TreasuryPolicyQuery,
     PolicyAlertQuery,
-    ForecastQuery
+    ForecastQuery,
+    ReconciliationQuery,
+    LiquidityPositionQuery,
+    PolicyAuditLogQuery
   }
+  alias Nexus.ERP.Queries.{InvoiceQuery, StatementLineQuery}
 
   alias Nexus.Treasury.Gateways.PriceCache
 
@@ -23,7 +30,7 @@ defmodule Nexus.Treasury do
     ExecuteTransfer
   }
 
-  alias Nexus.Treasury.Projections.{TreasuryPolicy, Reconciliation}
+  alias Nexus.Treasury.Projections.Reconciliation
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
   alias Nexus.Treasury.Services.ForecastEngine
 
@@ -53,26 +60,7 @@ defmodule Nexus.Treasury do
   """
   @spec list_reconciliations(Types.org_id()) :: [Reconciliation.t()]
   def list_reconciliations(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(reconciliation in Reconciliation,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: reconciliation.org_id == t.org_id,
-          select: %{reconciliation | org_name: t.name}
-        )
-      else
-        from(reconciliation in Reconciliation,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: reconciliation.org_id == t.org_id,
-          where: reconciliation.org_id == ^org_id,
-          select: %{reconciliation | org_name: t.name}
-        )
-      end
-
-    query
-    |> order_by([r], desc: r.matched_at)
+    ReconciliationQuery.list_query(org_id)
     |> Repo.all()
   end
 
@@ -81,61 +69,31 @@ defmodule Nexus.Treasury do
   """
   @spec list_unmatched_invoices(Types.org_id()) :: [Invoice.t()]
   def list_unmatched_invoices(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(invoice in Invoice,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: invoice.org_id == t.org_id,
-          where: invoice.status == "ingested",
-          select: %{invoice | org_name: t.name}
-        )
-      else
-        from(invoice in Invoice,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: invoice.org_id == t.org_id,
-          where: invoice.org_id == ^org_id and invoice.status == "ingested",
-          select: %{invoice | org_name: t.name}
-        )
-      end
-
-    query
-    |> order_by([i], desc: i.created_at)
+    InvoiceQuery.base()
+    |> InvoiceQuery.with_tenant()
+    |> InvoiceQuery.for_org(org_id)
+    |> InvoiceQuery.with_status("ingested")
+    |> InvoiceQuery.newest_first()
     |> Repo.all()
   end
 
   @doc """
   Lists all statement lines that are currently unmatched.
   """
+  @spec list_unmatched_statement_lines(Types.org_id()) :: [StatementLine.t()]
   def list_unmatched_statement_lines(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(line in StatementLine,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: line.org_id == t.org_id,
-          where: line.status == "unmatched",
-          select: %{line | org_name: t.name}
-        )
-      else
-        from(line in StatementLine,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: line.org_id == t.org_id,
-          where: line.org_id == ^org_id and line.status == "unmatched",
-          select: %{line | org_name: t.name}
-        )
-      end
-
-    query
-    |> order_by([l], desc: l.created_at)
+    StatementLineQuery.base()
+    |> StatementLineQuery.with_tenant()
+    |> StatementLineQuery.for_org(org_id)
+    |> StatementLineQuery.with_status("unmatched")
+    |> StatementLineQuery.newest_first()
     |> Repo.all()
   end
 
   @doc """
   Lists recent policy alerts for an organization.
   """
+  @spec list_policy_alerts(Types.org_id() | :all, integer()) :: [Nexus.Treasury.Projections.PolicyAlert.t()]
   def list_policy_alerts(org_id, limit \\ 5) do
     import Ecto.Query
 
@@ -159,53 +117,26 @@ defmodule Nexus.Treasury do
   @doc """
   Lists policy audit logs for an organization.
   """
+  @spec list_policy_audit_logs(Types.org_id()) :: [Nexus.Treasury.Projections.PolicyAuditLog.t()]
   def list_policy_audit_logs(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(log in Nexus.Treasury.Projections.PolicyAuditLog,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: log.org_id == t.org_id,
-          select: %{log | org_name: t.name}
-        )
-      else
-        from(log in Nexus.Treasury.Projections.PolicyAuditLog,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: log.org_id == t.org_id,
-          where: log.org_id == ^org_id,
-          select: %{log | org_name: t.name}
-        )
-      end
-
-    query
-    |> order_by([l], desc: l.changed_at)
-    |> limit(10)
+    PolicyAuditLogQuery.list_for_org(org_id)
     |> Repo.all()
   end
 
   @doc """
-  Fetches the current policy mode and threshold for an organisation.
-  Returns a `%TreasuryPolicy{}` or nil if no policy has been set.
+  Fetches the treasury policy for an organization.
   """
+  @spec get_policy_mode(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
   def get_policy_mode(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(policy in TreasuryPolicy)
-      else
-        from(policy in TreasuryPolicy, where: policy.org_id == ^org_id)
-      end
-
-    query
-    |> limit(1)
+    TreasuryPolicyQuery.base()
+    |> TreasuryPolicyQuery.for_org(org_id)
     |> Repo.one()
   end
 
   @doc """
   Fetches the latest forecast for a currency.
   """
+  @spec get_latest_forecast(Types.org_id() | :all, Types.currency()) :: Nexus.Treasury.Projections.ForecastSnapshot.t() | nil
   def get_latest_forecast(org_id, currency) do
     require Ecto.Query
 
@@ -227,23 +158,17 @@ defmodule Nexus.Treasury do
   @doc """
   Lists historical daily net cash flow for an organization and currency.
   """
+  @spec list_historical_cash_flow(Types.org_id(), Types.currency(), integer()) :: [map()]
   def list_historical_cash_flow(org_id, currency, days \\ 60) do
-    import Ecto.Query
     end_date = Date.utc_today()
     start_date = Date.add(end_date, -days)
 
-    query =
-      if org_id == :all do
-        from(line in StatementLine, where: line.currency == ^currency)
-      else
-        from(line in StatementLine, where: line.org_id == ^org_id and line.currency == ^currency)
-      end
-
-    query
-    |> where([l], l.date >= ^Date.to_string(start_date) and l.date <= ^Date.to_string(end_date))
-    |> group_by([l], l.date)
-    |> select([l], %{date: l.date, amount: sum(l.amount)})
-    |> order_by([l], asc: l.date)
+    StatementLineQuery.historical_cash_flow_query(
+      org_id,
+      currency,
+      Date.to_string(start_date),
+      Date.to_string(end_date)
+    )
     |> Repo.all()
     |> Enum.map(fn %{date: date_str, amount: total_amount} ->
       %{
@@ -256,6 +181,7 @@ defmodule Nexus.Treasury do
   @doc """
   Returns a CSV-formatted string of the latest forecast data points.
   """
+  @spec list_forecast_csv(Types.org_id() | :all, Types.currency()) :: String.t()
   def list_forecast_csv(org_id, currency) do
     case get_latest_forecast(org_id, currency) do
       nil ->
@@ -276,6 +202,7 @@ defmodule Nexus.Treasury do
   @doc """
   Triggers a liquidity forecast calculation and dispatches the command.
   """
+  @spec generate_forecast(Types.org_id(), Types.currency(), integer()) :: :ok | {:error, any()}
   def generate_forecast(org_id, currency, horizon_days \\ 30) do
     case ForecastEngine.calculate(org_id, currency, horizon_days) do
       {:ok, predictions} ->
@@ -316,19 +243,10 @@ defmodule Nexus.Treasury do
 
     gross_invoice_exposures = Repo.all(gross_invoice_query)
 
-    # 3. Fetch all liquidity positions for the org (Liquid Cash)
-    import Ecto.Query
-
-    liquidity_query =
-      if org_id == :all do
-        from(position in Nexus.Treasury.Projections.LiquidityPosition)
-      else
-        from(position in Nexus.Treasury.Projections.LiquidityPosition,
-          where: position.org_id == ^org_id
-        )
-      end
-
-    liquidity_positions = Repo.all(liquidity_query)
+    liquidity_positions =
+      LiquidityPositionQuery.base()
+      |> LiquidityPositionQuery.for_org(org_id)
+      |> Repo.all()
 
     # 4. Consolidate into Net Exposure in reporting currency
     # Map liquidity by currency for easy lookup
@@ -427,6 +345,7 @@ defmodule Nexus.Treasury do
   @doc """
   Lists active currency pairs with their latest prices and changes.
   """
+  @spec list_active_currencies() :: [map()]
   def list_active_currencies do
     [
       {"EUR/USD", "+0.12%"},
@@ -505,6 +424,7 @@ defmodule Nexus.Treasury do
   Lists recent OHLC buckets for a pair.
   Buckets individual ticks into time-based intervals (default 5m).
   """
+  @spec list_recent_ohlc(String.t(), integer(), integer()) :: [list()]
   def list_recent_ohlc(pair, bucket_minutes \\ 5, limit \\ 40) do
     MarketTickQuery.base()
     |> MarketTickQuery.for_pair(pair)
@@ -547,25 +467,17 @@ defmodule Nexus.Treasury do
   @doc """
   Fetches the treasury policy for an organization.
   """
+  @spec get_treasury_policy(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
   def get_treasury_policy(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        TreasuryPolicyQuery.base()
-      else
-        TreasuryPolicyQuery.base()
-        |> TreasuryPolicyQuery.for_org(org_id)
-      end
-
-    query
-    |> limit(1)
+    TreasuryPolicyQuery.base()
+    |> TreasuryPolicyQuery.for_org(org_id)
     |> Repo.one()
   end
 
   @doc """
   Updates the transfer threshold for an organization.
   """
+  @spec update_transfer_threshold(Types.org_id(), String.t() | number()) :: :ok | {:error, any()}
   def update_transfer_threshold(org_id, threshold) do
     command = %SetTransferThreshold{
       policy_id: Nexus.Schema.generate_uuidv7(),
@@ -580,6 +492,14 @@ defmodule Nexus.Treasury do
   @doc """
   Manually reconciles an invoice with a statement line.
   """
+  @spec reconcile_manually(
+          Types.org_id(),
+          Types.binary_id(),
+          Types.binary_id(),
+          String.t() | nil,
+          String.t() | nil,
+          String.t() | nil
+        ) :: :ok | {:error, any()}
   def reconcile_manually(
         org_id,
         invoice_id,
@@ -633,6 +553,7 @@ defmodule Nexus.Treasury do
   @doc """
   Approves a pending reconciliation.
   """
+  @spec approve_reconciliation(Types.org_id(), Types.binary_id(), String.t()) :: :ok | {:error, any()}
   def approve_reconciliation(org_id, reconciliation_id, approver_email) do
     command = %Nexus.Treasury.Commands.ApproveReconciliation{
       org_id: org_id,
@@ -647,6 +568,7 @@ defmodule Nexus.Treasury do
   @doc """
   Rejects a pending reconciliation.
   """
+  @spec reject_reconciliation(Types.org_id(), Types.binary_id(), String.t()) :: :ok | {:error, any()}
   def reject_reconciliation(org_id, reconciliation_id, rejector_email) do
     command = %Nexus.Treasury.Commands.RejectReconciliation{
       org_id: org_id,
@@ -661,6 +583,7 @@ defmodule Nexus.Treasury do
   @doc """
   Reverses a previously matched reconciliation.
   """
+  @spec reverse_reconciliation(Types.org_id(), Types.binary_id(), String.t() | nil) :: :ok | {:error, any()}
   def reverse_reconciliation(org_id, reconciliation_id, actor_email \\ nil) do
     command = %Nexus.Treasury.Commands.ReverseReconciliation{
       org_id: org_id,
@@ -675,35 +598,20 @@ defmodule Nexus.Treasury do
   @doc """
   Lists all liquidity positions for an organization.
   """
+  @spec list_liquidity_positions(Types.org_id()) :: [Nexus.Treasury.Projections.LiquidityPosition.t()]
   def list_liquidity_positions(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(position in Nexus.Treasury.Projections.LiquidityPosition)
-      else
-        from(position in Nexus.Treasury.Projections.LiquidityPosition,
-          where: position.org_id == ^org_id
-        )
-      end
-
-    Repo.all(query)
+    LiquidityPositionQuery.for_org_query(org_id)
+    |> Repo.all()
   end
 
   @doc """
   Returns reconciliation statistics for an organization.
   """
+  @spec get_reconciliation_stats(Types.org_id()) :: reconciliation_stats()
   def get_reconciliation_stats(org_id) do
-    import Ecto.Query
-
-    query =
-      if org_id == :all do
-        from(reconciliation in Reconciliation)
-      else
-        from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
-      end
-
-    reconciliations = Repo.all(query)
+    reconciliations =
+      ReconciliationQuery.stats_query(org_id)
+      |> Repo.all()
 
     auto_matched =
       Enum.count(
@@ -738,6 +646,7 @@ defmodule Nexus.Treasury do
   @doc """
   Initiates a fund transfer request.
   """
+  @spec request_transfer(map()) :: :ok | {:error, any()}
   def request_transfer(attrs) do
     command = %RequestTransfer{
       transfer_id: attrs.transfer_id,
@@ -757,6 +666,7 @@ defmodule Nexus.Treasury do
   @doc """
   Authorizes a pending transfer.
   """
+  @spec authorize_transfer(Types.org_id(), Types.binary_id(), String.t() | nil) :: :ok | {:error, any()}
   def authorize_transfer(org_id, transfer_id, actor_email \\ nil) do
     command = %AuthorizeTransfer{
       transfer_id: transfer_id,
@@ -771,6 +681,7 @@ defmodule Nexus.Treasury do
   @doc """
   Finalizes and executes an authorized transfer.
   """
+  @spec execute_transfer(Types.org_id(), Types.binary_id()) :: :ok | {:error, any()}
   def execute_transfer(org_id, transfer_id) do
     command = %ExecuteTransfer{
       transfer_id: transfer_id,

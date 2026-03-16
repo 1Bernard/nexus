@@ -89,6 +89,7 @@ defmodule Nexus.Application do
           [
             Nexus.Intelligence.Projectors.AnalysisProjector,
             Nexus.Reporting.Projectors.AuditProjector,
+            Nexus.Reporting.Projectors.ControlProjector,
             # WebSocket gateway — requires live network; excluded in test env
             Nexus.Treasury.Gateways.PolygonClient,
             Nexus.Treasury.Gateways.MarketSimulator,

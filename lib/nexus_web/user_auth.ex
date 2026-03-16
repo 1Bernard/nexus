@@ -90,6 +90,21 @@ defmodule NexusWeb.UserAuth do
     on_mount(:mount_current_user, params, session, socket)
   end
 
+  # LiveView on_mount to protect Auditor routes
+  def on_mount(:require_auditor, params, session, socket) do
+    case on_mount(:mount_current_user, params, session, socket) do
+      {:cont, socket} ->
+        if socket.assigns.current_user.role in ["system_admin", "org_admin", "auditor"] do
+          {:cont, socket}
+        else
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
+        end
+
+      {:halt, socket} ->
+        {:halt, socket}
+    end
+  end
+
   # LiveView on_mount to redirect away from login
   def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
     if user_id = session["user_id"] do
