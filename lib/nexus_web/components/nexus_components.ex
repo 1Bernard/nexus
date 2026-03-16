@@ -128,6 +128,10 @@ defmodule NexusWeb.NexusComponents do
   attr :current_user, :any, required: true, doc: "The authenticated user struct"
   attr :is_backoffice, :boolean, default: false
   attr :is_impersonated, :boolean, default: false
+  attr :notifications, :list, default: []
+  attr :unread_count, :integer, default: 0
+  attr :command_palette_open, :boolean, default: false
+  attr :command_results, :list, default: []
   slot :topbar_title
   slot :topbar_subtitle
   slot :topbar_actions
@@ -178,7 +182,12 @@ defmodule NexusWeb.NexusComponents do
         "flex-1 flex flex-col min-h-screen transition-all duration-300 w-full overflow-x-hidden",
         if(!@is_backoffice, do: "lg:ml-[var(--nx-sidebar-w)]")
       ]}>
-        <.topbar current_user={@current_user} session_id={@session_id}>
+        <.topbar
+          current_user={@current_user}
+          session_id={@session_id}
+          notifications={@notifications}
+          unread_count={@unread_count}
+        >
           <:title>{render_slot(@topbar_title)}</:title>
           <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
           <:actions>{render_slot(@topbar_actions)}</:actions>
@@ -190,10 +199,14 @@ defmodule NexusWeb.NexusComponents do
       </div>
 
       <%!-- Global Command Palette --%>
-      <.command_palette />
+      <.command_palette
+        command_results={@command_results}
+        command_palette_open={@command_palette_open}
+      />
     </div>
     """
   end
+
 
   @doc """
   Persistent left sidebar with navigation links, session status, and trust footer.
@@ -395,6 +408,8 @@ defmodule NexusWeb.NexusComponents do
   @doc """
   Top bar with page title, subtitle, and session badge.
   """
+  attr :notifications, :list, default: []
+  attr :unread_count, :integer, default: 0
   attr :current_user, :any, default: nil
   attr :session_id, :string, default: nil
   slot :title
@@ -460,7 +475,10 @@ defmodule NexusWeb.NexusComponents do
 
         <div class="flex items-center gap-5 pl-5 border-l border-[var(--nx-border)]">
           <%!-- Notifications --%>
-          <.notification_dropdown notifications={[]} />
+          <.notification_dropdown
+            notifications={@notifications}
+            unread_count={@unread_count}
+          />
 
           <%!-- User Profile Dropdown Toggle --%>
           <.profile_menu
@@ -1842,6 +1860,7 @@ defmodule NexusWeb.NexusComponents do
       <.notification_dropdown notifications={@notifications} />
   """
   attr :notifications, :list, default: []
+  attr :unread_count, :integer, default: 0
   attr :show, :boolean, default: false
   attr :on_toggle, :string, default: "toggle-notifications"
 
@@ -1856,10 +1875,10 @@ defmodule NexusWeb.NexusComponents do
       >
         <span class="hero-bell w-5 h-5"></span>
         <span
-          :if={length(@notifications) > 0}
+          :if={@unread_count > 0}
           class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-500 rounded-full text-[9px] font-bold flex items-center justify-center text-white"
         >
-          {min(length(@notifications), 9)}
+          {min(@unread_count, 9)}
         </span>
       </button>
 
@@ -1872,11 +1891,33 @@ defmodule NexusWeb.NexusComponents do
         </div>
         <div class="max-h-72 overflow-y-auto scroll-soft">
           <div
-            :for={notif <- Enum.take(@notifications, 8)}
-            class="px-4 py-3 border-b border-[var(--nx-border)] hover:bg-white/[0.02] transition-colors"
+            :for={notif <- @notifications}
+            id={"notification-#{notif.id}"}
+            class={[
+              "px-4 py-3 border-b border-[var(--nx-border)] hover:bg-white/[0.02] transition-colors relative",
+              is_nil(notif.read_at) && "bg-indigo-500/5"
+            ]}
           >
-            <p class="text-sm text-slate-300">{notif.message}</p>
-            <p class="text-[10px] text-slate-600 mt-0.5">{notif.time}</p>
+            <div class="flex justify-between items-start gap-3">
+              <div class="flex-1">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                  {notif.type |> String.replace("_", " ")}
+                </p>
+                <p class="text-sm font-semibold text-slate-200">{notif.title}</p>
+                <p class="text-xs text-slate-400 mt-1 line-clamp-2">{notif.body}</p>
+                <p class="text-[9px] text-slate-600 mt-2 font-medium">
+                  {Calendar.strftime(notif.created_at, "%b %d, %H:%M")}
+                </p>
+              </div>
+              <button
+                :if={is_nil(notif.read_at)}
+                phx-click={JS.push("mark-read", value: %{id: notif.id})}
+                class="shrink-0 p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all"
+                title="Mark as read"
+              >
+                <span class="hero-check w-3.5 h-3.5"></span>
+              </button>
+            </div>
           </div>
           <div :if={@notifications == []} class="px-4 py-6 text-center">
             <p class="text-xs text-slate-600">No recent activity</p>
@@ -1956,26 +1997,42 @@ defmodule NexusWeb.NexusComponents do
   @doc """
   Global Command Menu triggered by Cmd+K.
   """
+  attr :command_results, :list, default: []
+  attr :command_palette_open, :boolean, default: false
+
   def command_palette(assigns) do
     ~H"""
     <div
       id="command-palette-backdrop"
-      class="hidden fixed inset-0 z-50 bg-[#0B0E14]/80 backdrop-blur-sm transition-opacity opacity-0 flex items-start justify-center pt-[10vh]"
+      phx-window-keydown={JS.push("close_command_palette")}
+      phx-key="escape"
+      class={[
+        "fixed inset-0 z-50 bg-[#0B0E14]/80 backdrop-blur-sm transition-opacity flex items-start justify-center pt-[10vh]",
+        if(@command_palette_open, do: "opacity-100", else: "opacity-0 pointer-events-none hidden")
+      ]}
     >
       <div
         id="command-palette-modal"
-        class="relative w-full max-w-2xl bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl shadow-black/80 overflow-hidden scale-95 transition-all opacity-0"
+        phx-click-away={JS.push("close_command_palette")}
+        class={[
+          "relative w-full max-w-2xl bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-[var(--nx-radius-lg)] shadow-2xl shadow-black/80 overflow-hidden transition-all",
+          if(@command_palette_open, do: "opacity-100 scale-100", else: "opacity-0 scale-95")
+        ]}
       >
         <%!-- Header (Input) --%>
         <div class="px-4 py-4 border-b border-[var(--nx-border)] flex items-center gap-3">
           <span class="hero-magnifying-glass w-5 h-5 text-indigo-400"></span>
-          <input
-            id="command-palette-input"
-            type="text"
-            placeholder="Search transactions, jump to invoice..."
-            autocomplete="off"
-            class="flex-1 bg-transparent border-none text-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-0"
-          />
+          <form phx-change="command_palette_search" class="flex-1 m-0">
+            <input
+              id="command-palette-input"
+              name="query"
+              type="text"
+              placeholder="Search transactions, jump to invoice..."
+              autocomplete="off"
+              class="w-full bg-transparent border-none text-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-0"
+              phx-debounce="200"
+            />
+          </form>
           <span class="text-[10px] text-slate-500 font-mono border border-slate-700 rounded px-1.5 py-0.5 bg-slate-800 shadow-sm shrink-0">
             ESC
           </span>
@@ -1984,7 +2041,11 @@ defmodule NexusWeb.NexusComponents do
         <%!-- Body (Results) --%>
         <div class="max-h-[60vh] overflow-y-auto p-2" id="cmd-pal-results-container">
           <%!-- Initial State --%>
-          <div id="cmd-pal-empty" class="py-12 flex flex-col items-center justify-center text-center">
+          <div
+            :if={!assigns[:command_results] || @command_results == []}
+            id="cmd-pal-empty"
+            class="py-12 flex flex-col items-center justify-center text-center"
+          >
             <span class="hero-magnifying-glass w-8 h-8 text-slate-600 mb-3"></span>
             <p class="text-sm font-medium text-slate-300">Looking for something specific?</p>
             <p class="text-xs text-slate-500 mt-1 max-w-xs">
@@ -1992,36 +2053,28 @@ defmodule NexusWeb.NexusComponents do
             </p>
           </div>
 
-          <%!-- Example Section: Suggestions (Hidden by default, can be toggled via JS) --%>
-          <div class="mb-4 hidden" id="cmd-pal-results">
+          <%!-- Results Section --%>
+          <div :if={assigns[:command_results] && @command_results != []} class="mb-4" id="cmd-pal-results">
             <h3 class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
-              Recent Activity
+              Search Results
             </h3>
             <div class="space-y-0.5">
               <a
-                href="#"
+                :for={result <- @command_results}
+                href={result.path}
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-sm text-slate-300 transition-colors group"
+                phx-click={JS.push("close_command_palette")}
               >
-                <span class="hero-document-text w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors">
+                <span class={[
+                  result.icon || "hero-arrow-right-circle",
+                  "w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors"
+                ]}>
                 </span>
                 <span class="flex-1">
-                  Invoice <span class="text-white font-medium">#INV-2024-3847</span>
+                  {result.label} <span :if={result.detail} class="text-slate-500 ml-2">{result.detail}</span>
                 </span>
                 <span class="text-[10px] text-slate-500 font-mono tracking-wider group-hover:text-indigo-300 hidden group-hover:block">
                   JUMP
-                </span>
-              </a>
-              <a
-                href="#"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-sm text-slate-300 transition-colors group"
-              >
-                <span class="hero-banknotes w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors">
-                </span>
-                <span class="flex-1 text-amber-100/80">
-                  Pending Settlement <span class="text-white font-medium">#BNK-9924</span>
-                </span>
-                <span class="text-[10px] text-slate-500 font-mono tracking-wider group-hover:text-amber-300 hidden group-hover:block">
-                  REVIEW
                 </span>
               </a>
             </div>

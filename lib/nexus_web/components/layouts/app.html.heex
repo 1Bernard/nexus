@@ -4,6 +4,10 @@
   session_id={@session_id}
   current_user={@current_user}
   is_impersonated={assigns[:is_impersonated] || false}
+  notifications={assigns[:notifications] || []}
+  unread_count={assigns[:unread_count] || 0}
+  command_palette_open={assigns[:command_palette_open] || false}
+  command_results={assigns[:command_results] || []}
 >
   <:topbar_title>{assigns[:page_title] || "Nexus"}</:topbar_title>
   <:topbar_subtitle>{assigns[:page_subtitle]}</:topbar_subtitle>

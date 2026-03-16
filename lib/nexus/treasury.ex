@@ -97,19 +97,10 @@ defmodule Nexus.Treasury do
   def list_policy_alerts(org_id, limit \\ 5) do
     import Ecto.Query
 
-    query =
-      if org_id == :all do
-        PolicyAlertQuery.base()
-      else
-        PolicyAlertQuery.base()
-        |> PolicyAlertQuery.for_org(org_id)
-      end
-
-    from(a in query,
-      left_join: t in Nexus.Organization.Projections.Tenant,
-      on: a.org_id == t.org_id,
-      select: %{a | org_name: t.name}
-    )
+    PolicyAlertQuery.base()
+    |> PolicyAlertQuery.for_org(org_id)
+    |> join(:left, [a], t in Nexus.Organization.Projections.Tenant, on: a.org_id == t.org_id)
+    |> select([a, t], %{a | org_name: t.name})
     |> PolicyAlertQuery.recent(limit)
     |> Repo.all()
   end
@@ -127,6 +118,7 @@ defmodule Nexus.Treasury do
   Fetches the treasury policy for an organization.
   """
   @spec get_policy_mode(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
+  def get_policy_mode(:all), do: nil
   def get_policy_mode(org_id) do
     TreasuryPolicyQuery.base()
     |> TreasuryPolicyQuery.for_org(org_id)
@@ -140,15 +132,8 @@ defmodule Nexus.Treasury do
   def get_latest_forecast(org_id, currency) do
     require Ecto.Query
 
-    query =
-      if org_id == :all do
-        ForecastQuery.base()
-      else
-        ForecastQuery.base()
-        |> ForecastQuery.for_org(org_id)
-      end
-
-    query
+    ForecastQuery.base()
+    |> ForecastQuery.for_org(org_id)
     |> ForecastQuery.for_currency(currency)
     |> ForecastQuery.newest_first()
     |> Ecto.Query.limit(1)
@@ -233,15 +218,10 @@ defmodule Nexus.Treasury do
     reporting_currency = (policy && policy.reporting_currency) || "USD"
 
     # 2. Fetch all exposures for the org (Gross Invoice Volume)
-    gross_invoice_query =
-      if org_id == :all do
-        ExposureQuery.base()
-      else
-        ExposureQuery.base()
-        |> ExposureQuery.for_org(org_id)
-      end
-
-    gross_invoice_exposures = Repo.all(gross_invoice_query)
+    gross_invoice_exposures =
+      ExposureQuery.base()
+      |> ExposureQuery.for_org(org_id)
+      |> Repo.all()
 
     liquidity_positions =
       LiquidityPositionQuery.base()
@@ -370,15 +350,10 @@ defmodule Nexus.Treasury do
   @spec list_exposure_heatmap(Types.org_id()) :: exposure_heatmap()
   def list_exposure_heatmap(org_id) do
     # Fetch all snapshots for the org
-    query =
-      if org_id == :all do
-        ExposureQuery.base()
-      else
-        ExposureQuery.base()
-        |> ExposureQuery.for_org(org_id)
-      end
-
-    snapshots = Repo.all(query)
+    snapshots =
+      ExposureQuery.base()
+      |> ExposureQuery.for_org(org_id)
+      |> Repo.all()
 
     # Dynamic extraction of active subsidiaries and currencies from existing snapshots
     # This allows new branches and currencies to appear automatically as invoices are ingested.
@@ -468,6 +443,7 @@ defmodule Nexus.Treasury do
   Fetches the treasury policy for an organization.
   """
   @spec get_treasury_policy(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
+  def get_treasury_policy(:all), do: nil
   def get_treasury_policy(org_id) do
     TreasuryPolicyQuery.base()
     |> TreasuryPolicyQuery.for_org(org_id)

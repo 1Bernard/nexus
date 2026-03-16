@@ -29,7 +29,11 @@ defmodule NexusWeb.Router do
       live "/invites/:token", Organization.InvitesLive
     end
 
-    live_session :authenticated, on_mount: [{NexusWeb.UserAuth, :mount_current_user}] do
+    live_session :authenticated,
+      on_mount: [
+        {NexusWeb.UserAuth, :mount_current_user},
+        NexusWeb.NavHooks
+      ] do
       live "/dashboard", Tenant.DashboardLive
       live "/activity", Tenant.ActivityLive
       live "/invoices", ERP.InvoiceLive
@@ -43,18 +47,30 @@ defmodule NexusWeb.Router do
       live "/admin/analysis/investigate/:id", Admin.AnomalyInvestigationLive
     end
 
-    live_session :system_admin, on_mount: [{NexusWeb.UserAuth, :require_system_admin}] do
+    live_session :system_admin,
+      on_mount: [
+        {NexusWeb.UserAuth, :require_system_admin},
+        NexusWeb.NavHooks
+      ] do
       live "/backoffice", System.BackofficeLive
       get "/backoffice/impersonate/:id", System.BackofficeController, :impersonate
       delete "/backoffice/impersonate/end", System.BackofficeController, :end_impersonation
     end
 
-    live_session :org_admin, on_mount: [{NexusWeb.UserAuth, :require_org_admin}] do
+    live_session :org_admin,
+      on_mount: [
+        {NexusWeb.UserAuth, :require_org_admin},
+        NexusWeb.NavHooks
+      ] do
       live "/admin/users", Admin.UserLive.Index
       live "/admin/policy", Admin.PolicyLive
     end
 
-    live_session :auditor, on_mount: [{NexusWeb.UserAuth, :require_auditor}] do
+    live_session :auditor,
+      on_mount: [
+        {NexusWeb.UserAuth, :require_auditor},
+        NexusWeb.NavHooks
+      ] do
       live "/compliance", Reporting.ComplianceLive
     end
   end

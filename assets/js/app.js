@@ -111,41 +111,12 @@ Hooks.NavInteractions = {
 
     // Command Palette Logic
     this.cmdBtn = this.el.querySelector('#search-trigger')
-    this.cmdBackdrop = this.el.querySelector('#command-palette-backdrop')
-    this.cmdModal = this.el.querySelector('#command-palette-modal')
     this.cmdInput = this.el.querySelector('#command-palette-input')
-
-    const toggleCommandPalette = (show) => {
-      if (!this.cmdBackdrop || !this.cmdModal) return
-      
-      if (show) {
-        this.cmdBackdrop.classList.remove('hidden')
-        // Hide other dropdowns
-        if(this.notifMenu) this.notifMenu.classList.add('hidden')
-        if(this.profileMenu) this.profileMenu.classList.add('hidden')
-
-        // Animate in
-        requestAnimationFrame(() => {
-          this.cmdBackdrop.classList.remove('opacity-0')
-          this.cmdBackdrop.classList.add('opacity-100')
-          this.cmdModal.classList.remove('opacity-0', 'scale-95')
-          this.cmdModal.classList.add('opacity-100', 'scale-100')
-          setTimeout(() => this.cmdInput && this.cmdInput.focus(), 100)
-        })
-      } else {
-        // Animate out
-        this.cmdBackdrop.classList.remove('opacity-100')
-        this.cmdBackdrop.classList.add('opacity-0')
-        this.cmdModal.classList.remove('opacity-100', 'scale-100')
-        this.cmdModal.classList.add('opacity-0', 'scale-95')
-        setTimeout(() => this.cmdBackdrop.classList.add('hidden'), 200)
-      }
-    }
 
     if (this.cmdBtn) {
       this.cmdBtn.addEventListener('click', (e) => {
         e.preventDefault()
-        toggleCommandPalette(true)
+        this.pushEvent("toggle_command_palette", {})
       })
     }
 
@@ -153,21 +124,17 @@ Hooks.NavInteractions = {
     window.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        const isHidden = this.cmdBackdrop && this.cmdBackdrop.classList.contains('hidden')
-        toggleCommandPalette(isHidden)
-      } else if (e.key === 'Escape') {
-        toggleCommandPalette(false)
+        this.pushEvent("toggle_command_palette", {})
       }
     })
 
-    // Click outside backdrop to close
-    if (this.cmdBackdrop) {
-      this.cmdBackdrop.addEventListener('click', (e) => {
-        if (e.target === this.cmdBackdrop) {
-          toggleCommandPalette(false)
-        }
-      })
-    }
+    // Focus input when server opens palette
+    this.handleEvent("focus_search", () => {
+      setTimeout(() => {
+        const input = document.getElementById('command-palette-input')
+        if (input) input.focus()
+      }, 50)
+    })
   }
 }
 

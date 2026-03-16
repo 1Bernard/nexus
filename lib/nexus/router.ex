@@ -161,4 +161,15 @@ defmodule Nexus.Router do
     to: Nexus.Payments.Aggregates.BulkPayment,
     identity: :bulk_payment_id
   )
+
+  # --- Cross-Domain Domain ---
+  dispatch(Nexus.CrossDomain.Commands.CreateNotification,
+    to: Nexus.CrossDomain.Aggregates.Notification,
+    identity: :id
+  )
+
+  dispatch(Nexus.CrossDomain.Commands.MarkNotificationRead,
+    to: Nexus.CrossDomain.Aggregates.Notification,
+    identity: :id
+  )
 end

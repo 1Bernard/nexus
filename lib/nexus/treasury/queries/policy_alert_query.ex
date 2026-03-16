@@ -11,6 +11,7 @@ defmodule Nexus.Treasury.Queries.PolicyAlertQuery do
 
   @doc "Filters alerts by organization ID."
   @spec for_org(Ecto.Query.t(), Nexus.Types.org_id()) :: Ecto.Query.t()
+  def for_org(query, :all), do: query
   def for_org(query, org_id) do
     where(query, [a], a.org_id == ^org_id)
   end

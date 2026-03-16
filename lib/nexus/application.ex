@@ -74,9 +74,6 @@ defmodule Nexus.Application do
        batch_timeout: 100},
       # 3. Commanded Application (Command Dispatcher)
       Nexus.App,
-      # --- Intelligence Domain ---
-      # --- Reporting Domain ---
-
       # 4. Web Transport
       NexusWeb.Endpoint
     ]
@@ -125,6 +122,19 @@ defmodule Nexus.Application do
             Nexus.Treasury.ProcessManagers.TransferManager,
             Nexus.Payments.ProcessManagers.BulkPaymentSaga
           ]
+      end
+
+    # Global UI & Notifications are needed for production.
+    # In test env, we avoid starting them globally to prevent sandbox interference.
+    children =
+      if @env != :test do
+        children ++
+          [
+            Nexus.CrossDomain.Projectors.NotificationProjector,
+            Nexus.CrossDomain.Handlers.SystemNotificationHandler
+          ]
+      else
+        children
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -10,7 +10,10 @@ defmodule Nexus.Identity.Queries.UserQuery do
   @doc """
   Lists users within an organization with support for search, role filtering, and pagination.
   """
-  def list_users_by_org(org_id, params \\ %{}) do
+  def list_users_by_org(:all, params) do
+    list_all_users(params)
+  end
+  def list_users_by_org(org_id, params) do
     from(u in User,
       left_join: t in Nexus.Organization.Projections.Tenant,
       on: u.org_id == t.org_id,
@@ -48,6 +51,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
   @doc """
   Returns the total count of users in an organization.
   """
+  def total_users_count(:all), do: total_users_count()
   def total_users_count(org_id) do
     from(u in User, where: u.org_id == ^org_id)
     |> Repo.aggregate(:count, :id)
