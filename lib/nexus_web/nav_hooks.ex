@@ -55,8 +55,8 @@ defmodule NexusWeb.NavHooks do
     socket =
       socket
       |> assign(:command_palette_open, new_state)
-      |> then(fn s ->
-        if new_state, do: push_event(s, "focus_search", %{}), else: assign(s, :command_results, [])
+      |> then(fn socket ->
+        if new_state, do: push_event(socket, "focus_search", %{}), else: assign(socket, :command_results, [])
       end)
 
     {:halt, socket}
