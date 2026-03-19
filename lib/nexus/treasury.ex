@@ -687,7 +687,9 @@ defmodule Nexus.Treasury do
       iban: Map.get(attrs, :iban),
       currency: attrs.currency,
       provider: attrs.provider,
-      registered_at: Nexus.Schema.utc_now()
+      registered_at: Nexus.Schema.utc_now(),
+      daily_withdrawal_limit: Nexus.Schema.parse_decimal(Map.get(attrs, :daily_withdrawal_limit, 0)),
+      requires_multi_sig: Map.get(attrs, :requires_multi_sig, false)
     }
 
     Nexus.App.dispatch(command)

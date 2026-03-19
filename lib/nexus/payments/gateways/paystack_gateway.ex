@@ -63,24 +63,23 @@ defmodule Nexus.Payments.Gateways.PaystackGateway do
 
     request = Finch.build(:post, url, headers, body)
 
-    case Finch.request(request, Nexus.Finch, receive_timeout: 10_000) do
-      {:ok, %Finch.Response{status: 200, body: resp_body}} ->
-        case Jason.decode(resp_body) do
-          {:ok, %{"status" => true, "data" => %{"transfer_code" => code}}} ->
-            Logger.info("[Paystack] Transfer initiated: #{code}")
-            {:ok, code}
-
-          {:ok, %{"message" => msg}} ->
-            Logger.error("[Paystack] API error: #{msg}")
-            {:error, msg}
-
-          _ ->
-            {:error, :invalid_response}
-        end
-
+    with {:ok, %Finch.Response{status: 200, body: resp_body}} <-
+           Finch.request(request, Nexus.Finch, receive_timeout: 10_000),
+         {:ok, %{"status" => true, "data" => %{"transfer_code" => code}}} <-
+           Jason.decode(resp_body) do
+      Logger.info("[Paystack] Transfer initiated: #{code}")
+      {:ok, code}
+    else
       {:ok, %Finch.Response{status: status}} ->
         Logger.error("[Paystack] Unexpected status: #{status}")
         {:error, :http_error}
+
+      {:ok, %{"message" => msg}} ->
+        Logger.error("[Paystack] API error: #{msg}")
+        {:error, msg}
+
+      {:ok, _other} ->
+        {:error, :invalid_response}
 
       {:error, reason} ->
         Logger.error("[Paystack] Network failure: #{inspect(reason)}")

@@ -15,13 +15,15 @@ defmodule Nexus.Treasury.Projections.Vault do
     field :balance, :decimal, default: 0
     field :provider, :string
     field :status, :string, default: "active"
+    field :daily_withdrawal_limit, :decimal, default: 0
+    field :requires_multi_sig, :boolean, default: false
 
     timestamps()
   end
 
   def changeset(vault, attrs) do
     vault
-    |> cast(attrs, [:id, :org_id, :name, :bank_name, :account_number, :iban, :currency, :balance, :provider, :status])
+    |> cast(attrs, [:id, :org_id, :name, :bank_name, :account_number, :iban, :currency, :balance, :provider, :status, :daily_withdrawal_limit, :requires_multi_sig])
     |> validate_required([:id, :org_id, :name, :bank_name, :currency, :provider])
   end
 end

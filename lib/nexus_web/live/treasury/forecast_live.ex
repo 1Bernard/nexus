@@ -116,15 +116,15 @@ defmodule NexusWeb.Treasury.ForecastLive do
             variant="solid"
           />
 
-          <.nx_button phx-click="download_csv" variant="outline" size="sm" icon="hero-arrow-down-tray">
-            Export CSV
+          <.nx_button phx-click="download_csv" variant="outline" class="px-6 py-2.5 group" icon="hero-arrow-down-tray">
+            Export Forecast
           </.nx_button>
           <.nx_button
             phx-click="generate_forecast"
             disabled={@loading}
             variant="primary"
-            size="sm"
             icon="hero-sparkles"
+            class="px-6 py-2.5 shadow-lg shadow-indigo-600/20 group"
           >
             {if @loading, do: "ANALYZING...", else: "REGENERATE FORECAST"}
           </.nx_button>

@@ -1209,6 +1209,7 @@ defmodule NexusWeb.NexusComponents do
   attr :field, Phoenix.HTML.FormField, default: nil
   attr :errors, :list, default: []
   attr :rest, :global, include: ~w(disabled readonly required min max step autocomplete)
+  slot :addon
 
   def nx_input(assigns) do
     assigns =
@@ -1250,6 +1251,7 @@ defmodule NexusWeb.NexusComponents do
           ]}
           {@rest}
         />
+        {render_slot(@addon)}
       </div>
       <p :for={msg <- @errors} class="text-xs text-rose-400 flex items-center gap-1">
         <span class="hero-exclamation-circle w-3.5 h-3.5"></span>
@@ -1500,7 +1502,7 @@ defmodule NexusWeb.NexusComponents do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :icon, :string, default: nil
   attr :loading, :boolean, default: false
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
 
   attr :rest, :global,
     include:

@@ -35,6 +35,11 @@ defmodule NexusWeb.Treasury.VaultComponents do
             </span>
             <span class="text-[9px] text-emerald-500/80 font-mono uppercase tracking-tighter">Live Connection</span>
           </div>
+
+          <div :if={@vault.requires_multi_sig} class="mt-2 flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+            <span class="hero-shield-check w-3 h-3 text-indigo-400"></span>
+            <span class="text-[8px] text-indigo-400 font-bold uppercase tracking-widest">Multi-Sig Active</span>
+          </div>
         </div>
       </div>
 
@@ -58,9 +63,9 @@ defmodule NexusWeb.Treasury.VaultComponents do
           </p>
         </div>
         <div class="text-right">
-          <p class="text-[9px] text-slate-600 uppercase tracking-widest font-bold mb-1">Last Sync</p>
+          <p class="text-[9px] text-slate-600 uppercase tracking-widest font-bold mb-1">Daily Limit</p>
           <p class="text-xs text-slate-400 font-mono tracking-tighter">
-            {format_relative_time(@vault.updated_at)}
+            {if Decimal.gt?(@vault.daily_withdrawal_limit || 0, 0), do: format_currency(@vault.daily_withdrawal_limit, currency: @vault.currency), else: "Unlimited"}
           </p>
         </div>
       </div>

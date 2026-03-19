@@ -66,72 +66,45 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
             as={:transfer}
           >
             <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Source Currency
-                </label>
-                <div class="relative group">
-                  <select
-                    name="transfer[from_currency]"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none cursor-pointer group-hover:border-white/20"
-                  >
-                    <%= for c <- @currencies do %>
-                      <option value={c} selected={@form[:from_currency].value == c}>{c}</option>
-                    <% end %>
-                  </select>
-                  <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  </span>
-                </div>
-              </div>
+              <.nx_select
+                field={@form[:from_currency]}
+                label="Source Currency"
+                options={@currencies}
+              />
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Destination
-                </label>
-                <div class="relative group">
-                  <select
-                    name="transfer[to_currency]"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none cursor-pointer group-hover:border-white/20"
-                  >
-                    <%= for c <- @currencies do %>
-                      <option value={c} selected={@form[:to_currency].value == c}>{c}</option>
-                    <% end %>
-                  </select>
-                  <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  </span>
-                </div>
-              </div>
+              <.nx_select
+                field={@form[:to_currency]}
+                label="Destination"
+                options={@currencies}
+              />
             </div>
 
-            <div class="space-y-2">
-              <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                Amount
-              </label>
-              <div class="relative group">
-                <input
-                  type="number"
-                  name="transfer[amount]"
-                  value={@form[:amount].value}
-                  placeholder="0.00"
-                  step="0.01"
-                  required
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-mono font-bold text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all group-hover:border-white/20"
-                />
-                <div class="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-indigo-400/50 uppercase tracking-tighter">
-                  {@form[:from_currency].value}
-                </div>
+            <.nx_input
+              field={@form[:amount]}
+              type="number"
+              label="Amount"
+              placeholder="0.00"
+              required
+              step="0.01"
+              class="text-2xl font-mono"
+            >
+            <:addon>
+              <div class="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-indigo-400/50 uppercase tracking-tighter">
+                {@form[:from_currency].value}
               </div>
-            </div>
+            </:addon>
+            </.nx_input>
 
             <div class="pt-4">
-              <button
+              <.nx_button
                 type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
+                variant="primary"
+                class="w-full py-4 rounded-2xl shadow-xl shadow-indigo-600/20 group"
               >
                 Confirm Transfer
-                <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform">
+                <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform ml-2">
                 </span>
-              </button>
+              </.nx_button>
             </div>
           </.form>
 

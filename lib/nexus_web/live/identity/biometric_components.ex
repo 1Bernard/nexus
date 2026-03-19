@@ -2,7 +2,7 @@ defmodule NexusWeb.Identity.BiometricComponents do
   @moduledoc """
   UI primitives and layout components for the Biometric flow.
   """
-  use Phoenix.Component
+  use NexusWeb, :html
 
   attr :active_index, :integer, required: true
 
@@ -258,14 +258,14 @@ defmodule NexusWeb.Identity.BiometricComponents do
         />
       </div>
 
-      <button
+      <.nx_button
         phx-click="next_step"
         phx-value-step="consent"
-        class="w-full py-4 bg-indigo-600 active:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 touch-feedback"
+        class="w-full py-4 shadow-xl shadow-indigo-600/20 group"
       >
         <span>Begin identity verification</span>
-        <span class="hero-arrow-right w-4 h-4"></span>
-      </button>
+        <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform ml-2"></span>
+      </.nx_button>
       <p class="text-[9px] text-center text-slate-600 mt-4">
         🔒 Nexus encrypted session · end-to-end
       </p>
@@ -305,18 +305,18 @@ defmodule NexusWeb.Identity.BiometricComponents do
         </label>
       </div>
 
-      <button
+      <.nx_button
         id="consentConfirmBtn"
         phx-click="next_step"
         phx-value-step="biometric"
         disabled={not @consent_checked}
         class={[
-          "w-full py-4 bg-white text-slate-900 font-bold rounded-xl transition-all active:scale-95 touch-feedback",
+          "w-full py-4 bg-white text-slate-900 font-bold rounded-xl",
           not @consent_checked && "opacity-50 cursor-not-allowed"
         ]}
       >
         Confirm & continue
-      </button>
+      </.nx_button>
       <button
         phx-click="next_step"
         phx-value-step="welcome"
@@ -431,12 +431,13 @@ defmodule NexusWeb.Identity.BiometricComponents do
           <span class="text-[10px] font-bold text-emerald-400">LOW / 1.2</span>
         </div>
       </div>
-      <button
+      <.nx_button
         phx-click="go_to_dashboard"
-        class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-xl active:scale-95"
+        variant="primary"
+        class="w-full py-4 rounded-xl shadow-xl"
       >
         Enter Nexus dashboard
-      </button>
+      </.nx_button>
     </div>
     """
   end
@@ -450,13 +451,14 @@ defmodule NexusWeb.Identity.BiometricComponents do
       <h2 class="text-2xl font-serif italic font-bold">Verification failed</h2>
       <p class="text-sm text-slate-400 mt-1 mb-8 text-center">{@error}</p>
 
-      <button
+      <.nx_button
         phx-click="next_step"
         phx-value-step="biometric"
-        class="w-full py-4 bg-white text-slate-900 font-bold rounded-xl shadow-xl active:scale-95"
+        variant="primary"
+        class="w-full py-4 bg-white text-slate-900 font-bold rounded-xl shadow-xl hover:bg-slate-100"
       >
         Retry verification
-      </button>
+      </.nx_button>
     </div>
     """
   end

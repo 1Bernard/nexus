@@ -45,22 +45,26 @@ defmodule Nexus.Identity.AuthChallengeStore do
     case :ets.lookup(@table, session_id) do
       [{^session_id, challenge, expires_at}] ->
         :ets.delete(@table, session_id)
-        now = Nexus.Schema.utc_now()
-
-        if DateTime.compare(now, expires_at) == :lt do
-          Logger.debug("[Identity] Challenge popped successfully for #{session_id}")
-          {:ok, challenge}
-        else
-          Logger.warning(
-            "[Identity] Challenge expired for #{session_id} (expired at #{expires_at}, now is #{now})"
-          )
-
-          {:error, :expired}
-        end
+        verify_challenge_expiration(session_id, challenge, expires_at)
 
       [] ->
         Logger.error("[Identity] Challenge not found for session #{session_id}")
         {:error, :not_found}
+    end
+  end
+
+  defp verify_challenge_expiration(session_id, challenge, expires_at) do
+    now = Nexus.Schema.utc_now()
+
+    if DateTime.compare(now, expires_at) == :lt do
+      Logger.debug("[Identity] Challenge popped successfully for #{session_id}")
+      {:ok, challenge}
+    else
+      Logger.warning(
+        "[Identity] Challenge expired for #{session_id} (expired at #{expires_at}, now is #{now})"
+      )
+
+      {:error, :expired}
     end
   end
 

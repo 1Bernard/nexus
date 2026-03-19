@@ -63,114 +63,99 @@ defmodule NexusWeb.Treasury.Components.VaultRegistrationModal do
             as={:vault}
           >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Vault Name
-                </label>
-                <input
-                  type="text"
-                  name="vault[name]"
-                  value={@form[:name].value}
-                  placeholder="e.g. JPMorgan Operating"
-                  required
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all hover:border-white/20"
-                />
-              </div>
+              <.nx_input
+                field={@form[:name]}
+                name="vault[name]"
+                label="Vault Name"
+                placeholder="e.g. JPMorgan Operating"
+                required
+              />
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Bank Name
-                </label>
-                <input
-                  type="text"
-                  name="vault[bank_name]"
-                  value={@form[:bank_name].value}
-                  placeholder="e.g. JPMorgan Chase"
-                  required
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all hover:border-white/20"
-                />
-              </div>
+              <.nx_input
+                field={@form[:bank_name]}
+                name="vault[bank_name]"
+                label="Bank Name"
+                placeholder="e.g. JPMorgan Chase"
+                required
+              />
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Currency
-                </label>
-                <div class="relative group">
-                  <select
-                    name="vault[currency]"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none cursor-pointer hover:border-white/20"
-                  >
-                    <%= for c <- @currencies do %>
-                      <option value={c} selected={@form[:currency].value == c}>{c}</option>
-                    <% end %>
-                  </select>
-                  <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  </span>
+              <.nx_select
+                field={@form[:currency]}
+                label="Currency"
+                options={@currencies}
+              />
+
+              <.nx_select
+                field={@form[:provider]}
+                label="Provider"
+                options={@providers}
+              />
+
+              <.nx_input
+                field={@form[:account_number]}
+                name="vault[account_number]"
+                label="Account Number"
+                placeholder="•••• 1234"
+                class="font-mono"
+              />
+
+              <.nx_input
+                field={@form[:iban]}
+                name="vault[iban]"
+                label="IBAN (Europe Only)"
+                placeholder="GB29..."
+                class="font-mono"
+              />
+
+              <div class="md:col-span-2 pt-4 border-t border-white/5 space-y-6">
+                <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <div class="flex gap-4 items-center">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                      <.icon name="hero-shield-check" class="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <div>
+                      <h5 class="text-sm font-bold text-white">Enforce Multi-Signature Approval</h5>
+                      <p class="text-[10px] text-slate-500">Requires multiple authorizers for any fund movement.</p>
+                    </div>
+                  </div>
+                  <.input
+                    type="checkbox"
+                    field={@form[:requires_multi_sig]}
+                    name="vault[requires_multi_sig]"
+                    class="rounded-lg bg-slate-900 border-slate-700 text-indigo-500 focus:ring-indigo-500/40 w-6 h-6"
+                  />
                 </div>
-              </div>
 
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Provider
-                </label>
-                <div class="relative group">
-                  <select
-                    name="vault[provider]"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none cursor-pointer hover:border-white/20"
-                  >
-                    <%= for {label, value} <- @providers do %>
-                      <option value={value} selected={@form[:provider].value == value}>{label}</option>
-                    <% end %>
-                  </select>
-                  <span class="hero-chevron-down w-4 h-4 text-slate-500 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  </span>
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Account Number
-                </label>
-                <input
-                  type="text"
-                  name="vault[account_number]"
-                  value={@form[:account_number].value}
-                  placeholder="•••• 1234"
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-mono font-bold text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all hover:border-white/20"
-                />
-              </div>
-
-              <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  IBAN (Europe Only)
-                </label>
-                <input
-                  type="text"
-                  name="vault[iban]"
-                  value={@form[:iban].value}
-                  placeholder="GB29..."
-                  class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-mono font-bold text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all hover:border-white/20"
+                <.nx_input
+                  field={@form[:daily_withdrawal_limit]}
+                  name="vault[daily_withdrawal_limit]"
+                  label="Institutional Daily Withdrawal Limit"
+                  placeholder="e.g. 50000.00"
+                  type="number"
+                  step="0.01"
                 />
               </div>
             </div>
 
             <div class="pt-6 border-t border-white/5 flex gap-4">
-              <button
+              <.nx_button
                 type="button"
+                variant="ghost"
                 phx-click="close"
                 phx-target={@myself}
-                class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
+                class="flex-1 py-4 rounded-2xl"
               >
                 Dismiss
-              </button>
-              <button
+              </.nx_button>
+              <.nx_button
                 type="submit"
-                class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
+                variant="primary"
+                class="flex-1 py-4 rounded-2xl shadow-xl shadow-indigo-600/20 group"
               >
                 Initiate Registration
-                <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform">
+                <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform ml-2">
                 </span>
-              </button>
+              </.nx_button>
             </div>
           </.form>
 

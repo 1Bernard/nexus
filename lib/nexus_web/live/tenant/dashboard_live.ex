@@ -108,7 +108,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
         <:actions>
           <.link
             navigate={~p"/admin/policy"}
-            class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border border-white/5 rounded-xl mr-3 group hover:border-indigo-500/30 transition-all"
+            class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-slate-900/50 border border-white/5 rounded-xl group hover:border-indigo-500/30 transition-all"
           >
             <div class={[
               "w-2 h-2 rounded-full animate-pulse",
@@ -122,12 +122,14 @@ defmodule NexusWeb.Tenant.DashboardLive do
             </span>
           </.link>
 
-          <button
+          <.nx_button
+            variant="primary"
             phx-click="initiate_transfer"
-            class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/10 transition-all active:scale-95 flex items-center gap-2"
+            icon="hero-arrows-right-left"
+            class="px-6 py-2.5 shadow-lg shadow-indigo-600/20 group"
           >
-            <span class="hero-arrows-right-left w-4 h-4"></span> Transfer Funds
-          </button>
+            Transfer Funds
+          </.nx_button>
         </:actions>
       </.page_header>
 

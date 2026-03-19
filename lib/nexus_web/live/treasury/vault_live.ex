@@ -101,11 +101,22 @@ defmodule NexusWeb.Treasury.VaultLive do
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 md:px-6">
-      <.page_header title="Vault Center" subtitle="Real-time Liquidity Management" />
+      <.page_header title="Vault Center" subtitle="Real-time Liquidity Management">
+        <:actions>
+          <.nx_button
+            phx-click="show_registration"
+            variant="primary"
+            class="px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 group"
+          >
+            <span class="hero-plus w-4 h-4 mr-2 group-hover:rotate-90 transition-transform"></span>
+            Register Vault
+          </.nx_button>
+        </:actions>
+      </.page_header>
 
       <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <%!-- Stats Overview --%>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div :if={@vaults != []} class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <.stat_card
             label="Total USD Liquidity"
             value={format_currency(@stats.total_usd, currency: "USD")}
@@ -123,30 +134,45 @@ defmodule NexusWeb.Treasury.VaultLive do
           />
         </div>
 
-        <%!-- Vault Grid --%>
-        <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
-          <%= for vault <- @vaults do %>
-            <.vault_card vault={vault} />
-          <% end %>
+        <%!-- Empty State or Vault Grid --%>
+        <%= if @vaults == [] do %>
+          <div class="py-24 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.02]">
+            <div class="w-20 h-20 rounded-3xl bg-indigo-500/10 flex items-center justify-center mb-8 border border-indigo-500/20">
+              <span class="hero-building-library w-10 h-10 text-indigo-400"></span>
+            </div>
+            <h3 class="text-2xl font-black text-white tracking-tight mb-2">No Vaults Registered</h3>
+            <p class="text-slate-500 text-center max-w-sm mb-10 leading-relaxed">
+              Connect your institutional bank accounts to enable real-time liquidity monitoring and automated settlements.
+            </p>
+            <.nx_button
+              phx-click="show_registration"
+              variant="primary"
+              class="px-10 py-4 rounded-2xl shadow-2xl shadow-indigo-600/30 font-bold group"
+            >
+              Initiate Onboarding
+              <span class="hero-chevron-right w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></span>
+            </.nx_button>
+          </div>
+        <% else %>
+          <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+            <%= for vault <- @vaults do %>
+              <.vault_card vault={vault} />
+            <% end %>
 
-          <%!-- Create New Button (Elite Style) --%>
-          <button
-            phx-click="show_registration"
-            class="relative group h-[300px] border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all duration-300"
-          >
-            <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <.icon name="hero-plus" class="w-6 h-6 text-slate-500 group-hover:text-indigo-400" />
-            </div>
-            <span class="text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-indigo-300 transition-colors">
-              Register New Vault
-            </span>
-            <div class="absolute inset-x-0 bottom-4 px-8 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <p class="text-[10px] text-slate-600 leading-relaxed font-medium">
-                Add secure bank connectivity for institutional settlements.
-              </p>
-            </div>
-          </button>
-        </div>
+            <%!-- Create New Button (Elite Style) --%>
+            <button
+              phx-click="show_registration"
+              class="relative group h-[280px] border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all duration-300"
+            >
+              <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <.icon name="hero-plus" class="w-6 h-6 text-slate-500 group-hover:text-indigo-400" />
+              </div>
+              <span class="text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-indigo-300 transition-colors">
+                Register New Vault
+              </span>
+            </button>
+          </div>
+        <% end %>
 
         <%!-- Recent Rebalancing Activity (Placeholder for Rebalance Events) --%>
         <.dark_card title="Autonomous Rebalancing Activity" class="mt-8">

@@ -48,6 +48,6 @@ defmodule Nexus.Reporting.Projectors.ControlProjector do
       metric_key: key,
       score: score,
       metadata: metadata
-    }, on_conflict: [set: [score: score, metadata: metadata, updated_at: DateTime.utc_now()]], conflict_target: [:org_id, :metric_key])
+    }, on_conflict: [set: [score: score, metadata: metadata, updated_at: Schema.utc_now()]], conflict_target: [:org_id, :metric_key])
   end
 end

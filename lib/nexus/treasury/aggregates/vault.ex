@@ -3,7 +3,7 @@ defmodule Nexus.Treasury.Aggregates.Vault do
   Aggregate to manage physical bank accounts (Vaults) and their balances.
   """
   @derive Jason.Encoder
-  defstruct [:id, :org_id, :currency, :balance, :status]
+  defstruct [:id, :org_id, :currency, :balance, :status, :daily_withdrawal_limit, :requires_multi_sig]
 
   alias Nexus.Treasury.Commands.{RegisterVault, SyncVaultBalance, DebitVault, CreditVault}
   alias Nexus.Treasury.Events.{VaultRegistered, VaultBalanceSynced, VaultDebited, VaultCredited}
@@ -20,7 +20,9 @@ defmodule Nexus.Treasury.Aggregates.Vault do
       iban: cmd.iban,
       currency: cmd.currency,
       provider: cmd.provider,
-      registered_at: cmd.registered_at
+      registered_at: cmd.registered_at,
+      daily_withdrawal_limit: cmd.daily_withdrawal_limit,
+      requires_multi_sig: cmd.requires_multi_sig
     }
   end
 
@@ -68,7 +70,9 @@ defmodule Nexus.Treasury.Aggregates.Vault do
         org_id: event.org_id,
         currency: event.currency,
         balance: Decimal.new(0),
-        status: :active
+        status: :active,
+        daily_withdrawal_limit: event.daily_withdrawal_limit,
+        requires_multi_sig: event.requires_multi_sig
     }
   end
 

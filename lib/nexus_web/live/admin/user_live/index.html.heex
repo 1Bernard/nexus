@@ -1,26 +1,26 @@
 <.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in">
-  <.page_header title="User Management" subtitle="Manage your team and their access levels" />
+  <.page_header title="User Management" subtitle="Manage your team and their access levels">
+    <:actions>
+      <.nx_button
+        phx-click="generate-invite"
+        variant="primary"
+        icon="hero-user-plus"
+        class="px-6 py-2.5 shadow-lg shadow-indigo-600/20 group"
+      >
+        Invite User
+      </.nx_button>
+    </:actions>
+  </.page_header>
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
     <div class="lg:col-span-9">
       <.data_grid
         id="users-grid"
-        title="Member Directory"
-        subtitle="Manage institutional access levels and security clearances"
+        title="Active Members"
+        subtitle="Full access to treasury operations"
         rows={@users}
-        total={@total_count}
-        params={@datagrid_params}
+        total={Enum.count(@users)}
       >
-        <:primary_actions>
-          <.nx_button
-            phx-click="generate-invite"
-            variant="primary"
-            size="sm"
-            icon="hero-user-plus"
-          >
-            Invite User
-          </.nx_button>
-        </:primary_actions>
 
         <:filters>
           <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-700/50 min-w-max">

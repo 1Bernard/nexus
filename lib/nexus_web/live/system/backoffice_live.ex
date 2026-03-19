@@ -68,11 +68,18 @@ defmodule NexusWeb.System.BackofficeLive do
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in pb-12">
-      <.page_header
-        title="PLATFORM BACKOFFICE"
-        subtitle="System Administrator Zone"
-        is_backoffice={true}
-      />
+      <.page_header title="PLATFORM BACKOFFICE" subtitle="System Administrator Zone" is_backoffice={true}>
+        <:actions>
+          <.nx_button
+            variant="danger"
+            phx-click="toggle_provision_modal"
+            icon="hero-plus"
+            class="px-6 py-2.5 shadow-lg shadow-rose-600/20 group"
+          >
+            Provision Tenant
+          </.nx_button>
+        </:actions>
+      </.page_header>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
         <.stat_card
@@ -109,14 +116,6 @@ defmodule NexusWeb.System.BackofficeLive do
           rows={@tenants}
           total={Enum.count(@tenants)}
         >
-          <:primary_actions>
-            <button
-              phx-click="toggle_provision_modal"
-              class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all shadow-[0_0_15px_rgba(225,29,72,0.3)] flex items-center gap-2"
-            >
-              <span class="hero-plus w-4 h-4"></span> Provision Tenant
-            </button>
-          </:primary_actions>
 
           <:col :let={tenant} label="Tenant Name">
             <span class="font-bold text-slate-200">{tenant.name}</span>
@@ -211,12 +210,9 @@ defmodule NexusWeb.System.BackofficeLive do
             <.nx_button type="button" variant="ghost" phx-click="toggle_provision_modal">
               Cancel
             </.nx_button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all shadow-[0_0_15px_rgba(225,29,72,0.3)]"
-            >
+            <.nx_button type="submit" variant="danger" class="shadow-rose-600/20">
               Provision
-            </button>
+            </.nx_button>
           </div>
         </.form>
       </.nx_modal>
@@ -271,14 +267,15 @@ defmodule NexusWeb.System.BackofficeLive do
                       </p>
                     </div>
                   </div>
-                  <button
+                  <.nx_button
                     type="button"
+                    variant="danger"
+                    size="sm"
                     phx-click="suspend_tenant"
                     data-confirm="Immediately invalidate all active sessions for this tenant?"
-                    class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-400 text-xs font-bold rounded-lg border border-rose-800 transition-colors"
                   >
                     Suspend
-                  </button>
+                  </.nx_button>
                 </div>
               </div>
             </div>

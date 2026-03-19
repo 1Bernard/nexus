@@ -370,7 +370,26 @@ defmodule NexusWeb.ERP.InvoiceLive do
     </style>
 
     <.page_container class="px-4 md:px-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization" />
+      <.page_header title="Accounts Payable" subtitle="Real-time ERP ledger synchronization">
+        <:actions>
+          <.nx_button
+            variant="outline"
+            phx-click="export-csv"
+            icon="hero-arrow-down-tray"
+            class="px-6 py-2.5 group"
+          >
+            Export Invoices
+          </.nx_button>
+          <.nx_button
+            variant="primary"
+            phx-click="toggle-manual-modal"
+            icon="hero-plus"
+            class="px-6 py-2.5 shadow-lg shadow-indigo-600/20 group"
+          >
+            Create Invoice
+          </.nx_button>
+        </:actions>
+      </.page_header>
 
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
@@ -448,26 +467,6 @@ defmodule NexusWeb.ERP.InvoiceLive do
         row_item={fn {_, inv} -> inv end}
         row_click={fn {_, inv} -> JS.push("select_invoice", value: %{id: inv.id}) end}
       >
-        <:primary_actions>
-          <div class="flex flex-col sm:flex-row items-center gap-3">
-            <NexusWeb.NexusComponents.nx_button
-              variant="outline"
-              size="sm"
-              icon="hero-arrow-down-tray"
-              phx-click="export-csv"
-            >
-              Export
-            </NexusWeb.NexusComponents.nx_button>
-            <NexusWeb.NexusComponents.nx_button
-              variant="primary"
-              size="sm"
-              icon="hero-plus"
-              phx-click="toggle-manual-modal"
-            >
-              New Entry
-            </NexusWeb.NexusComponents.nx_button>
-          </div>
-        </:primary_actions>
         <:filters>
           <div class="relative">
             <form phx-change="filter-status" class="m-0">

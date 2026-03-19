@@ -14,7 +14,9 @@ defmodule Nexus.Treasury.Events.VaultRegistered do
     :iban,
     :currency,
     :provider,
-    :registered_at
+    :registered_at,
+    :daily_withdrawal_limit,
+    :requires_multi_sig
   ]
 
   @type t :: %__MODULE__{
@@ -26,6 +28,8 @@ defmodule Nexus.Treasury.Events.VaultRegistered do
           iban: String.t() | nil,
           currency: Types.currency(),
           provider: String.t(),
-          registered_at: Types.datetime()
+          registered_at: Types.datetime(),
+          daily_withdrawal_limit: Types.money(),
+          requires_multi_sig: boolean()
         }
 end
