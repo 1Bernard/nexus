@@ -145,6 +145,17 @@ defmodule Nexus.Router do
     identity: :reconciliation_id
   )
 
+  dispatch(
+    [
+      Nexus.Treasury.Commands.RegisterVault,
+      Nexus.Treasury.Commands.SyncVaultBalance,
+      Nexus.Treasury.Commands.DebitVault,
+      Nexus.Treasury.Commands.CreditVault
+    ],
+    to: Nexus.Treasury.Aggregates.Vault,
+    identity: :vault_id
+  )
+
   # --- Intelligence Domain ---
   dispatch(
     [
@@ -165,6 +176,16 @@ defmodule Nexus.Router do
   dispatch(Nexus.Payments.Commands.FinalizeBulkPayment,
     to: Nexus.Payments.Aggregates.BulkPayment,
     identity: :bulk_payment_id
+  )
+
+  dispatch(
+    [
+      Nexus.Payments.Commands.InitiateExternalPayment,
+      Nexus.Payments.Commands.SettleExternalPayment,
+      Nexus.Payments.Commands.FailExternalPayment
+    ],
+    to: Nexus.Payments.Aggregates.Payment,
+    identity: :payment_id
   )
 
   # --- Cross-Domain Domain ---

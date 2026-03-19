@@ -231,6 +231,7 @@ defmodule NexusWeb.NexusComponents do
       %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
       %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"},
       %{path: "/forecast", label: "Cash Flow Outlook", icon: "hero-presentation-chart-line"},
+      %{path: "/vaults", label: "Vault Center", icon: "hero-building-library"},
       %{path: "/payments", label: "Bulk Payments", icon: "hero-credit-card"}
     ]
 
@@ -1545,14 +1546,54 @@ defmodule NexusWeb.NexusComponents do
   # ══════════════════════════════════════════════════════════════
 
   @doc """
-  Modal overlay with backdrop, centered content.
+  Horizontal header for modals, following the 'New Tenant' benchmark.
+  Includes a themed icon box on the left, and title/subtitle on the right.
+  """
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  attr :icon, :string, required: true
+  attr :theme, :string, default: "indigo", values: ["indigo", "rose", "emerald", "amber"]
+  attr :class, :string, default: nil
+  slot :actions
+  slot :inner_block
 
-  ## Examples
+  def modal_header(assigns) do
+    themes = %{
+      "indigo" => "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
+      "rose" => "bg-rose-500/10 border-rose-500/20 text-rose-400",
+      "emerald" => "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+      "amber" => "bg-amber-500/10 border-amber-500/20 text-amber-400"
+    }
 
-      <.modal id="confirm-trade" show={@show_modal}>
-        <h2>Confirm Your Identity</h2>
-        <p>This trade is over €100,000</p>
-      </.modal>
+    assigns = assign(assigns, :theme_classes, themes[assigns.theme])
+
+    ~H"""
+    <div class={["flex items-center justify-between gap-4 mb-8", @class]}>
+      <div class="flex items-center gap-4">
+        <div class={["w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0", @theme_classes]}>
+          <span class={[@icon, "w-6 h-6"]}></span>
+        </div>
+        <div>
+          <h3 class="text-xl font-serif italic font-bold text-slate-100 tracking-tight">
+            {@title}
+          </h3>
+          <p :if={@subtitle} class="text-[10px] text-slate-500 uppercase tracking-[0.15em] font-bold mt-0.5">
+            {@subtitle}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        {render_slot(@actions)}
+        {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Main modal primitive. Uses the approved Elite standard:
+  - Backdrop: bg-black/60 + backdrop-blur-sm
+  - Container: rounded-3xl, p-8, bg-[#0B0E14]
   """
   attr :id, :string, required: true
   attr :show, :boolean, default: false
@@ -1561,7 +1602,7 @@ defmodule NexusWeb.NexusComponents do
   attr :rest, :global
   slot :inner_block, required: true
 
-  def modal(assigns) do
+  def nx_modal(assigns) do
     ~H"""
     <div
       id={@id}

@@ -282,120 +282,89 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       </div>
 
       <%!-- Match Actions Modal --%>
-      <.modal
-        :if={@selected_invoice_id && @selected_line_id}
+      <.nx_modal
         id="match-actions-modal"
         show={@selected_invoice_id && @selected_line_id}
         on_close={JS.push("clear_selection")}
+        class="max-w-xl"
       >
-        <% inv = Enum.find(@unmatched_invoices, &(&1.id == @selected_invoice_id))
-        line = Enum.find(@unmatched_lines, &(&1.id == @selected_line_id))
-        inv_amount = Decimal.new(inv.amount)
-        line_amount = Decimal.new(line.amount)
-        variance = Decimal.sub(line_amount, inv_amount)
-        is_exact = Decimal.eq?(inv_amount, line_amount) %>
-        <div class="flex flex-col gap-8">
-          <div class="flex flex-col">
-            <h2 class="text-xl font-serif italic font-bold text-white mb-1">Manual Reconciliation</h2>
-            <p class="text-slate-500 text-sm">Verify pair matching and reason for variance if any.</p>
-          </div>
+        <% inv = @selected_invoice_id && Enum.find(@unmatched_invoices, &(&1.id == @selected_invoice_id))
+        line = @selected_line_id && Enum.find(@unmatched_lines, &(&1.id == @selected_line_id)) %>
+        <div :if={inv && line} class="relative z-10">
+          <% inv_amount = Decimal.new(inv.amount)
+          line_amount = Decimal.new(line.amount)
+          variance = Decimal.sub(line_amount, inv_amount)
+          is_exact = Decimal.eq?(inv_amount, line_amount) %>
+          <.modal_header
+            title="Manual Reconciliation"
+            subtitle="Verify pair matching and reason for variance if any."
+            icon="hero-arrows-right-left"
+            theme="amber"
+          />
 
-          <div class="grid grid-cols-1 gap-6 py-6 border-y border-white/5">
-            <div class="flex flex-col gap-4">
-              <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                Pair Selection
-              </span>
-              <div class="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                <div class="flex flex-col">
-                  <span class="text-[10px] text-indigo-400 font-mono italic">
-                    SAP BELNR: {inv.sap_document_number}
-                  </span>
-                  <span class="text-sm font-bold text-white">
-                    {Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}
-                  </span>
-                </div>
-                <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                  <span class="hero-arrows-right-left w-4 h-4 text-slate-400"></span>
-                </div>
-                <div class="flex flex-col text-right">
-                  <span class="text-[10px] text-amber-400 font-mono italic">BNK REF: {line.ref}</span>
-                  <span class="text-sm font-bold text-white">
-                    {Decimal.round(Decimal.new(line.amount), 2)} {line.currency}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-4">
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                  Variance
-                </span>
-                <span class={[
-                  "text-sm font-mono font-bold",
-                  if(is_exact, do: "text-emerald-400", else: "text-rose-400")
-                ]}>
-                  {Decimal.round(variance, 2)} {line.currency}
-                </span>
-              </div>
-
-              <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
-                <%= if is_exact do %>
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span class="text-xs text-emerald-400 font-bold uppercase tracking-tight">
-                      Exact Match Confirmed
-                    </span>
+          <div class="flex flex-col gap-8">
+            <div class="grid grid-cols-1 gap-6 py-6 border-y border-white/5">
+              <div class="flex flex-col gap-4">
+                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Pair Selection</span>
+                <div class="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                  <div class="flex flex-col">
+                    <span class="text-[10px] text-indigo-400 font-mono italic">SAP BELNR: {inv.sap_document_number}</span>
+                    <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}</span>
                   </div>
-                <% else %>
-                  <div class="flex flex-col gap-3 w-full">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[10px] text-rose-400 font-black uppercase tracking-widest">
-                        Needs Reason
-                      </span>
+                  <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                    <span class="hero-arrows-right-left w-4 h-4 text-slate-40" />
+                  </div>
+                  <div class="flex flex-col text-right">
+                    <span class="text-[10px] text-amber-400 font-mono italic">BNK REF: {line.ref}</span>
+                    <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(line.amount), 2)} {line.currency}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Variance</span>
+                  <span class={["text-sm font-mono font-bold", if(is_exact, do: "text-emerald-400", else: "text-rose-400")]}>
+                    {Decimal.round(variance, 2)} {line.currency}
+                  </span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
+                  <%= if is_exact do %>
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span class="text-xs text-emerald-400 font-bold uppercase tracking-tight">Exact Match Confirmed</span>
                     </div>
-                    <select
-                      phx-change="set_variance_reason"
-                      class="w-full bg-slate-900 border-white/10 text-sm text-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                    >
-                      <option value="">Select variance reason...</option>
-                      <option value="bank_fee" selected={@variance_reason == "bank_fee"}>
-                        Bank Fee
-                      </option>
-                      <option value="fx_diff" selected={@variance_reason == "fx_diff"}>
-                        FX Difference
-                      </option>
-                      <option value="overpayment" selected={@variance_reason == "overpayment"}>
-                        Overpayment
-                      </option>
-                      <option value="underpayment" selected={@variance_reason == "underpayment"}>
-                        Underpayment
-                      </option>
-                      <option value="other" selected={@variance_reason == "other"}>Other</option>
-                    </select>
-                  </div>
-                <% end %>
+                  <% else %>
+                    <div class="flex flex-col gap-3 w-full">
+                      <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-rose-400 font-black uppercase tracking-widest">Needs Reason</span>
+                      </div>
+                      <select phx-change="set_variance_reason" class="w-full bg-slate-900 border-white/10 text-sm text-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all">
+                        <option value="">Select variance reason...</option>
+                        <option value="bank_fee" selected={@variance_reason == "bank_fee"}>Bank Fee</option>
+                        <option value="fx_diff" selected={@variance_reason == "fx_diff"}>FX Difference</option>
+                        <option value="overpayment" selected={@variance_reason == "overpayment"}>Overpayment</option>
+                        <option value="underpayment" selected={@variance_reason == "underpayment"}>Underpayment</option>
+                        <option value="other" selected={@variance_reason == "other"}>Other</option>
+                      </select>
+                    </div>
+                  <% end %>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="flex items-center gap-3">
-            <button
-              phx-click="match_selected"
-              disabled={!is_exact && is_nil(@variance_reason)}
-              class="flex-1 py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
-            >
-              Confirm Reconciliation
-            </button>
-            <button
-              phx-click={JS.push("clear_selection")}
-              class="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-sm transition-all"
-            >
-              Cancel
-            </button>
+            <div class="flex items-center gap-3">
+              <button phx-click="match_selected" disabled={!is_exact && is_nil(@variance_reason)} class="flex-1 py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
+                Confirm Reconciliation
+              </button>
+              <button phx-click={JS.push("clear_selection")} class="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-sm transition-all">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </.modal>
+      </.nx_modal>
 
       <NexusWeb.NexusComponents.data_grid
         id="reconciliations-table"

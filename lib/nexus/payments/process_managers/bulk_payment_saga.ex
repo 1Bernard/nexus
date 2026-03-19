@@ -118,4 +118,12 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
   def apply(%__MODULE__{processed_items: processed} = saga, %TransferInitiated{} = _event) do
     %__MODULE__{saga | processed_items: processed + 1}
   end
+
+  # --- Stop Condition ---
+
+  def stop?(%__MODULE__{processed_items: processed, total_items: total})
+      when processed >= total and total > 0,
+      do: true
+
+  def stop?(_), do: false
 end

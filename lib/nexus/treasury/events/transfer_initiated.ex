@@ -13,6 +13,7 @@ defmodule Nexus.Treasury.Events.TransferInitiated do
           amount: Types.money(),
           status: String.t(),
           bulk_payment_id: Types.binary_id() | nil,
+          recipient_data: map() | nil,
           requested_at: Types.datetime()
         }
   @derive [Jason.Encoder]
@@ -35,6 +36,7 @@ defmodule Nexus.Treasury.Events.TransferInitiated do
     :amount,
     :status,
     :bulk_payment_id,
+    :recipient_data,
     :requested_at
   ]
 end

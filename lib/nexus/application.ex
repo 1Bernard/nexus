@@ -103,6 +103,7 @@ defmodule Nexus.Application do
             Nexus.Treasury.Projectors.ExposureProjector,
             Nexus.Treasury.Projectors.LiquidityProjector,
             Nexus.Treasury.Projectors.PolicyProjector,
+            Nexus.Treasury.Projectors.VaultProjector,
             Nexus.Treasury.Projectors.ForecastProjector,
             Nexus.Treasury.Projectors.ReconciliationProjector,
             Nexus.Payments.Projectors.BulkPaymentProjector,
@@ -112,15 +113,19 @@ defmodule Nexus.Application do
             Nexus.Intelligence.Handlers.InvoiceAnalyzer,
             # --- Real-Time Notification Handlers (Rule 3) ---
             Nexus.Payments.Handlers.BulkPaymentHandler,
+            Nexus.Payments.Handlers.ExternalPaymentHandler,
             Nexus.Intelligence.Handlers.RealTimeAnalysisHandler,
             Nexus.Organization.Handlers.RealTimeTenantHandler,
             Nexus.Treasury.Handlers.PolicyNotificationHandler,
             Nexus.Treasury.Handlers.TransferNotificationHandler,
+            Nexus.Treasury.Handlers.VaultNotificationHandler,
             Nexus.ERP.Handlers.ERPNotificationHandler,
             # --- Process Managers ---
             Nexus.Treasury.ProcessManagers.ReconciliationManager,
             Nexus.Treasury.ProcessManagers.TransferManager,
-            Nexus.Payments.ProcessManagers.BulkPaymentSaga
+            Nexus.Treasury.ProcessManagers.RebalanceManager,
+            Nexus.Payments.ProcessManagers.BulkPaymentSaga,
+            Nexus.Payments.ProcessManagers.PaymentExecutionSaga
           ]
       end
 

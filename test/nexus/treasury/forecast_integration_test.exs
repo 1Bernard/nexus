@@ -54,7 +54,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
       end
 
       # 2. Trigger forecast
-      result = Treasury.generate_forecast(@org_id, @currency, 30)
+      result = Treasury.generate_forecast(@org_id, @currency, 30, consistency: :eventual)
 
       :ok = result
 

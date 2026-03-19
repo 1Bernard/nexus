@@ -13,6 +13,7 @@ defmodule Nexus.Treasury.Commands.RequestTransfer do
           amount: Types.money(),
           threshold: Types.money() | nil,
           bulk_payment_id: Types.binary_id() | nil,
+          recipient_data: map() | nil,
           requested_at: Types.datetime()
         }
   @enforce_keys [
@@ -33,6 +34,7 @@ defmodule Nexus.Treasury.Commands.RequestTransfer do
     :amount,
     :threshold,
     :bulk_payment_id,
+    :recipient_data,
     :requested_at
   ]
 end

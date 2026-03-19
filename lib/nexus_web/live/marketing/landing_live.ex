@@ -301,7 +301,7 @@ defmodule NexusWeb.Marketing.LandingLive do
                   Start Building
                 </button>
               </div>
-              
+
     <!-- Tier 2 -->
               <div class="bg-gradient-to-b from-indigo-500/10 to-[#0B0E14] border border-indigo-500/30 rounded-2xl p-8 transform md:-translate-y-4 shadow-2xl relative">
                 <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
@@ -332,7 +332,7 @@ defmodule NexusWeb.Marketing.LandingLive do
                   Upgrade to Pro
                 </button>
               </div>
-              
+
     <!-- Tier 3 -->
               <div class="bg-[#0B0E14] border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-colors">
                 <div class="text-slate-400 font-semibold mb-2">Enterprise</div>

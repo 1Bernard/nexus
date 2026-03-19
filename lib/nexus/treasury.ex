@@ -27,7 +27,9 @@ defmodule Nexus.Treasury do
     GenerateForecast,
     RequestTransfer,
     AuthorizeTransfer,
-    ExecuteTransfer
+    ExecuteTransfer,
+    RegisterVault,
+    SyncVaultBalance
   }
 
   alias Nexus.Treasury.Projections.Reconciliation
@@ -187,8 +189,8 @@ defmodule Nexus.Treasury do
   @doc """
   Triggers a liquidity forecast calculation and dispatches the command.
   """
-  @spec generate_forecast(Types.org_id(), Types.currency(), integer()) :: :ok | {:error, any()}
-  def generate_forecast(org_id, currency, horizon_days \\ 30) do
+  @spec generate_forecast(Types.org_id(), Types.currency(), integer(), keyword()) :: :ok | {:error, any()}
+  def generate_forecast(org_id, currency, horizon_days \\ 30, opts \\ []) do
     case ForecastEngine.calculate(org_id, currency, horizon_days) do
       {:ok, predictions} ->
         command = %GenerateForecast{
@@ -199,7 +201,10 @@ defmodule Nexus.Treasury do
           generated_at: Nexus.Schema.utc_now()
         }
 
-        Nexus.App.dispatch(command, consistency: :strong)
+        dispatch_opts = Keyword.take(opts, [:consistency, :timeout])
+        dispatch_opts = Keyword.put_new(dispatch_opts, :consistency, :strong)
+
+        Nexus.App.dispatch(command, dispatch_opts)
 
       {:error, reason} ->
         {:error, reason}
@@ -663,6 +668,42 @@ defmodule Nexus.Treasury do
       transfer_id: transfer_id,
       org_id: org_id,
       executed_at: Nexus.Schema.utc_now()
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Registers a new physical bank account (Vault).
+  """
+  @spec register_vault(map()) :: :ok | {:error, any()}
+  def register_vault(attrs) do
+    command = %RegisterVault{
+      vault_id: Nexus.Schema.generate_uuidv7(),
+      org_id: attrs.org_id,
+      name: attrs.name,
+      bank_name: attrs.bank_name,
+      account_number: Map.get(attrs, :account_number),
+      iban: Map.get(attrs, :iban),
+      currency: attrs.currency,
+      provider: attrs.provider,
+      registered_at: Nexus.Schema.utc_now()
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Syncs the latest balance for a vault.
+  """
+  @spec sync_vault_balance(map()) :: :ok | {:error, any()}
+  def sync_vault_balance(attrs) do
+    command = %SyncVaultBalance{
+      vault_id: attrs.vault_id,
+      org_id: attrs.org_id,
+      amount: attrs.amount,
+      currency: attrs.currency,
+      synced_at: Nexus.Schema.utc_now()
     }
 
     Nexus.App.dispatch(command)

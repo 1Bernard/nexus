@@ -83,7 +83,7 @@ defmodule NexusWeb.System.BackofficeLive do
         <.stat_card label="Event Store Lag" value={"#{@health.event_store_lag}ms"} icon="hero-clock" />
         <.stat_card label="System Health" value={@health.system_health} icon="hero-heart" />
       </div>
-      
+
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-6 w-full mt-4">
         <.tab_button
@@ -181,16 +181,13 @@ defmodule NexusWeb.System.BackofficeLive do
         </.data_grid>
       <% end %>
 
-      <.modal id="provision-modal" show={@show_provision_modal} on_close="toggle_provision_modal">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-            <span class="hero-building-office-2 w-6 h-6"></span>
-          </div>
-          <div>
-            <h3 class="text-xl font-bold text-slate-100 italic font-serif">New Tenant</h3>
-            <p class="text-xs text-slate-500">Create a dedicated partition for a new organization.</p>
-          </div>
-        </div>
+      <.nx_modal id="provision-modal" show={@show_provision_modal} on_close="toggle_provision_modal">
+        <.modal_header
+          title="New Tenant"
+          subtitle="Create a dedicated partition for a new organization."
+          icon="hero-building-office-2"
+          theme="rose"
+        />
 
         <.form for={@form} phx-submit="provision_tenant" class="space-y-6">
           <.nx_input
@@ -222,7 +219,7 @@ defmodule NexusWeb.System.BackofficeLive do
             </button>
           </div>
         </.form>
-      </.modal>
+      </.nx_modal>
 
       <.slide_over
         :if={@selected_tenant_id}

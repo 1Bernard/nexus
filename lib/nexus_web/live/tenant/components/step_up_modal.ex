@@ -224,25 +224,17 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id={@id} class={if(!@show, do: "hidden")}>
-      <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0B0E14]/90 backdrop-blur-3xl">
-        <%!-- Backdrop capture to prevent "goes off" syndrome --%>
-        <div class="absolute inset-0" phx-click={JS.push("noop", target: @myself)}></div>
-
-        <div class="w-full max-w-sm bg-[#0B0E14] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-          <!-- Background Glow -->
-          <div class={[
-            "absolute -top-24 -left-24 w-48 h-48 rounded-full blur-[80px]",
-            if(@status == "success",
-              do: "bg-emerald-500/20",
-              else: "bg-indigo-500/10"
-            )
-          ]}>
-          </div>
-
+    <div id={@id}>
+      <.nx_modal
+        id={@id <> "-shell"}
+        show={@show}
+        on_close={JS.push("close_modal", target: @myself)}
+        class="max-w-sm"
+      >
+        <div class="relative z-10">
           <%= if @status == "success" do %>
             <%!-- Success screen --%>
-            <div class="relative z-10 flex flex-col items-center gap-6 py-6">
+            <div class="flex flex-col items-center gap-6 py-10 text-center">
               <div class="w-20 h-20 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/30 flex items-center justify-center animate-in zoom-in-75 duration-300">
                 <span class="hero-check-circle w-10 h-10 text-emerald-400"></span>
               </div>
@@ -251,7 +243,7 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                   Identity Verified
                 </h3>
                 <p class="text-emerald-400/80 text-xs mt-2 font-mono tracking-widest uppercase">
-                  Authorizing transfer…
+                  Authorizing action…
                 </p>
               </div>
               <div class="flex gap-1.5">
@@ -274,36 +266,34 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
             </div>
           <% else %>
             <%!-- Challenge screen --%>
-            <div class="mb-6 relative z-10">
-              <div class="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-3 ring-1 ring-indigo-500/30 mx-auto">
-                <span class="hero-shield-check w-6 h-6 text-indigo-400"></span>
-              </div>
-              <h3 class="text-xl font-serif italic font-bold text-white uppercase tracking-tight">
-                Step-Up Authorization
-              </h3>
-              <p class="text-slate-400 text-xs mt-2 px-4 leading-relaxed">
-                A high-value action has been requested. Physical biometric verification is required.
-              </p>
+            <.modal_header
+              title="Step-Up Authorization"
+              subtitle="Institutional Security Portal"
+              icon="hero-shield-check"
+            />
 
-              <%= if assigns[:transfer] do %>
-                <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 w-full animate-in slide-in-from-bottom-2 duration-500">
-                  <div class="flex flex-col gap-1">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                      Transfer Amount
+            <p class="text-slate-400 text-xs mb-8 leading-relaxed">
+              A high-value action has been requested. Physical biometric verification is required to proceed.
+            </p>
+
+            <%= if assigns[:transfer] do %>
+              <div class="mb-8 p-4 rounded-2xl bg-white/5 border border-white/10 w-full animate-in slide-in-from-bottom-2 duration-500">
+                <div class="flex flex-col gap-1 text-left">
+                  <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                    Transfer Amount
+                  </span>
+                  <span class="text-lg font-mono text-white">
+                    {format_amount(@transfer.amount)} {@transfer.from_currency}
+                  </span>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[9px] text-indigo-400 font-bold uppercase">To</span>
+                    <span class="text-[10px] text-slate-300">
+                      {@transfer.to_currency} Global Treasury
                     </span>
-                    <span class="text-lg font-mono text-white">
-                      {format_amount(@transfer.amount)} {@transfer.from_currency}
-                    </span>
-                    <div class="flex items-center gap-2 mt-1">
-                      <span class="text-[9px] text-indigo-400 font-bold uppercase">To</span>
-                      <span class="text-[10px] text-slate-300">
-                        {@transfer.to_currency} Global Treasury
-                      </span>
-                    </div>
                   </div>
                 </div>
-              <% end %>
-            </div>
+              </div>
+            <% end %>
 
             <div
               id={"step-up-container-#{@id}"}
@@ -321,29 +311,28 @@ defmodule NexusWeb.Tenant.Components.StepUpModal do
                 <%= if @error_message do %>
                   <span class="text-rose-400">Verification Error: {@error_message}</span>
                 <% else %>
-                  <span>⬇️ scan fingerprint to authorize ⬇️</span>
+                  <span>[ scan fingerprint to authorize ]</span>
                 <% end %>
               </div>
             </div>
 
-            <div class="mt-8 w-full relative z-10">
+            <div class="mt-10 w-full flex flex-col items-center gap-6 border-t border-white/5 pt-8">
               <button
                 phx-click="close_modal"
                 phx-target={@myself}
                 type="button"
-                class="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-slate-300 transition-colors p-4"
+                class="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-slate-300 transition-colors"
               >
-                [ Cancel Transaction ]
+                Dismiss Transaction
               </button>
-            </div>
-            
-    <!-- Security Primitives -->
-            <div class="mt-8 flex gap-4 opacity-30 grayscale scale-75">
-              <.security_badge />
+
+              <div class="flex gap-4 opacity-30 grayscale scale-75 pointer-events-none">
+                <.security_badge />
+              </div>
             </div>
           <% end %>
         </div>
-      </div>
+      </.nx_modal>
     </div>
     """
   end

@@ -38,18 +38,21 @@ defmodule Nexus.Organization.Projectors.TenantProjector do
   end)
 
   project(%TenantSuspended{} = event, _metadata, fn multi ->
-    import Ecto.Query
+    Ecto.Multi.run(multi, :tenant, fn repo, _changes ->
+      tenant = repo.get(Tenant, event.org_id)
 
-    Ecto.Multi.update_all(
-      multi,
-      :tenant,
-      from(t in Tenant, where: t.org_id == ^event.org_id),
-      set: [
-        status: "SUSPENDED",
-        suspended_at: event.suspended_at,
-        updated_at: Nexus.Schema.utc_now()
-      ]
-    )
+      if tenant do
+        tenant
+        |> Ecto.Changeset.change(%{
+          status: "SUSPENDED",
+          suspended_at: event.suspended_at,
+          updated_at: Nexus.Schema.utc_now()
+        })
+        |> repo.update()
+      else
+        {:error, :not_found}
+      end
+    end)
   end)
 
   project(%TenantModuleToggled{} = event, _metadata, fn multi ->

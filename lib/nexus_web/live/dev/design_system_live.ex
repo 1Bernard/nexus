@@ -364,21 +364,25 @@ defmodule NexusWeb.Dev.DesignSystemLive do
         <%!-- ═══ MODAL ═══ --%>
         <.section title="Modal" subtitle="modal — centered overlay with backdrop">
           <.nx_button phx-click="toggle-modal" icon="hero-eye">Open Modal</.nx_button>
-          <.modal id="demo-modal" show={@show_modal} on_close="close-modal">
-            <div class="text-center space-y-4">
-              <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 flex items-center justify-center mx-auto">
-                <span class="hero-shield-check w-7 h-7 text-indigo-400"></span>
-              </div>
-              <h2 class="text-xl font-bold">Confirm Your Identity</h2>
-              <p class="text-sm text-slate-400">
-                This operation requires step-up verification for trades over €100,000.
-              </p>
-              <div class="flex gap-3 justify-center pt-2">
+          <.nx_modal
+            id="demo-modal"
+            show={@show_modal}
+            on_close={JS.push("close-modal")}
+            class="max-w-md"
+          >
+            <div class="relative z-10">
+              <.modal_header
+                title="Confirm Your Identity"
+                subtitle="This operation requires step-up verification for trades over €100,000."
+                icon="hero-shield-check"
+                theme="indigo"
+              />
+              <div class="flex gap-3 justify-center pt-6 border-t border-white/5">
                 <.nx_button variant="ghost" phx-click="close-modal">Cancel</.nx_button>
                 <.nx_button phx-click="close-modal">Verify Now</.nx_button>
               </div>
             </div>
-          </.modal>
+          </.nx_modal>
         </.section>
 
         <%!-- ═══ LOADING SKELETONS ═══ --%>

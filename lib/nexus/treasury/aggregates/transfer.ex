@@ -3,22 +3,26 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   Aggregate to manage Fund Transfers and their authorization states.
   """
   @derive Jason.Encoder
-  defstruct [:id, :org_id, :status, :amount, :from_currency, :to_currency]
+  defstruct [:id, :org_id, :user_id, :from_currency, :to_currency, :amount, :status, :recipient_data]
 
   alias Nexus.Treasury.Commands.{RequestTransfer, AuthorizeTransfer, ExecuteTransfer}
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
 
   # --- Constants ---
-  @default_limit 1_000_000
 
   # --- Command Handlers ---
 
   def execute(%__MODULE__{id: nil}, %RequestTransfer{} = cmd) do
-    amount = parse_decimal(cmd.amount)
+    _amount = parse_decimal(cmd.amount)
     # Use the dynamic threshold from the command, or fall back to default
-    threshold = parse_decimal(cmd.threshold || @default_limit)
+    threshold = cmd.threshold || Decimal.new(1_000_000)
 
-    status = if Decimal.gt?(amount, threshold), do: "pending_authorization", else: "authorized"
+    status =
+      if Decimal.lt?(cmd.amount, threshold) do
+        "authorized"
+      else
+        "pending_authorization"
+      end
 
     %TransferInitiated{
       transfer_id: cmd.transfer_id,
@@ -29,6 +33,7 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
       amount: cmd.amount,
       status: status,
       bulk_payment_id: cmd.bulk_payment_id,
+      recipient_data: cmd.recipient_data,
       requested_at: cmd.requested_at
     }
   end
@@ -40,18 +45,19 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
     %TransferAuthorized{
       transfer_id: cmd.transfer_id,
       org_id: cmd.org_id,
-      actor_email: cmd.actor_email,
+      user_id: cmd.user_id,
       authorized_at: cmd.authorized_at
     }
   end
 
-  def execute(%__MODULE__{status: "authorized"} = state, %ExecuteTransfer{} = cmd) do
+  def execute(%__MODULE__{status: "authorized", recipient_data: recipient} = state, %ExecuteTransfer{} = cmd) do
     %TransferExecuted{
       transfer_id: cmd.transfer_id,
       org_id: cmd.org_id,
       amount: state.amount,
       from_currency: state.from_currency,
       to_currency: state.to_currency,
+      recipient_data: recipient,
       executed_at: cmd.executed_at
     }
   end
@@ -66,10 +72,12 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
       state
       | id: event.transfer_id,
         org_id: event.org_id,
-        amount: event.amount,
+        user_id: event.user_id,
         from_currency: event.from_currency,
         to_currency: event.to_currency,
-        status: event.status
+        amount: event.amount,
+        status: event.status,
+        recipient_data: event.recipient_data
     }
   end
 

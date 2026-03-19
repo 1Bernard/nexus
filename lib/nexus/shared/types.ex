@@ -9,5 +9,6 @@ defmodule Nexus.Types do
   @type org_id :: binary() | :all
   @type currency :: String.t()
   @type binary_id :: String.t()
+  @type vault_id :: String.t()
   @type datetime :: DateTime.t()
 end

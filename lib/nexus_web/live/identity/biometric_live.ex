@@ -439,7 +439,7 @@ defmodule NexusWeb.Identity.BiometricLive do
       <!-- Museum Archive Background Elements -->
       <.editorial_grid />
       <div class="absolute inset-0 volumetric-nebula opacity-[0.15] pointer-events-none"></div>
-      
+
     <!-- Subtle Ledger Streams in Background -->
       <div class="fixed left-0 top-0 bottom-0 w-64 opacity-[0.03] grayscale pointer-events-none hidden lg:block">
         <.ledger_stream />
