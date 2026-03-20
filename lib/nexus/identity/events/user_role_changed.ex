@@ -4,6 +4,8 @@ defmodule Nexus.Identity.Events.UserRoleChanged do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           user_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -11,7 +13,6 @@ defmodule Nexus.Identity.Events.UserRoleChanged do
           actor_id: Types.binary_id(),
           changed_at: Types.datetime()
         }
-  @derive [Jason.Encoder]
-  @enforce_keys [:user_id, :org_id, :role, :actor_id, :changed_at]
+
   defstruct [:user_id, :org_id, :role, :actor_id, :changed_at]
 end

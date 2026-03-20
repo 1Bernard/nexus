@@ -4,10 +4,24 @@ defmodule Nexus.Organization.Projections.Invitation do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :org_id,
+             :email,
+             :role,
+             :invited_by,
+             :invitation_token,
+             :status,
+             :invited_at,
+             :claimed_at
+           ]}
   schema "organization_invitations" do
     field :org_id, :binary_id
     field :email, :string
-    field :role, :string
+    field :role, :string, default: "trader"
     field :invited_by, :string
     field :invitation_token, :binary_id
     field :status, :string, default: "pending"
@@ -18,6 +32,7 @@ defmodule Nexus.Organization.Projections.Invitation do
   end
 
   @doc false
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(invitation, attrs) do
     invitation
     |> cast(attrs, [

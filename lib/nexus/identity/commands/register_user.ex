@@ -9,12 +9,13 @@ defmodule Nexus.Identity.Commands.RegisterUser do
           user_id: Types.binary_id(),
           org_id: Types.org_id(),
           email: String.t(),
-          cose_key: binary(),
-          credential_id: binary(),
+          cose_key: String.t(),
+          credential_id: Types.credential_id(),
           role: String.t(),
           display_name: String.t() | nil,
-          registered_at: Types.datetime()
+          registered_at: DateTime.t() | nil
         }
+
   @enforce_keys [:user_id, :org_id, :email, :cose_key, :credential_id, :registered_at]
   defstruct [
     :user_id,

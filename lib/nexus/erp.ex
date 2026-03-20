@@ -43,23 +43,14 @@ defmodule Nexus.ERP do
   end
 
   defp count_lines_by_status(org_id, status) do
-    StatementLineQuery.base()
-    |> StatementLineQuery.for_org(org_id)
+    StatementLineQuery.base(org_id)
     |> StatementLineQuery.with_status(status)
     |> StatementLineQuery.count()
     |> Repo.one() || 0
   end
 
   defp count_invoices_by_status(org_id, status) do
-    query =
-      if org_id == :all do
-        InvoiceQuery.base()
-      else
-        InvoiceQuery.base()
-        |> InvoiceQuery.for_org(org_id)
-      end
-
-    query
+    InvoiceQuery.base(org_id)
     |> InvoiceQuery.with_status(status)
     |> InvoiceQuery.count()
     |> Repo.one() || 0
@@ -70,15 +61,7 @@ defmodule Nexus.ERP do
   """
   @spec get_total_exposure(Types.org_id(), String.t(), Types.currency()) :: Types.money()
   def get_total_exposure(org_id, subsidiary, currency) do
-    query =
-      if org_id == :all do
-        InvoiceQuery.base()
-      else
-        InvoiceQuery.base()
-        |> InvoiceQuery.for_org(org_id)
-      end
-
-    query
+    InvoiceQuery.base(org_id)
     |> InvoiceQuery.for_subsidiary(subsidiary)
     |> InvoiceQuery.with_currency(currency)
     |> InvoiceQuery.sum_amount()
@@ -217,20 +200,21 @@ defmodule Nexus.ERP do
   end
 
   @doc """
-  Returns the raw content of a bank statement.
+  Returns the raw content of a bank statement, scoped by organization.
   """
-  @spec get_statement_content(Types.binary_id()) :: String.t() | nil
-  def get_statement_content(id) do
-    StatementQuery.content_query(id)
+  @spec get_statement_content(Types.org_id(), Types.binary_id()) :: String.t() | nil
+  def get_statement_content(org_id, id) do
+    StatementQuery.content_query(org_id, id)
     |> Repo.one()
   end
 
   @doc """
-  Lists all parsed transaction lines for a given statement.
+  Lists all parsed transaction lines for a given statement, scoped by organization.
   """
-  @spec list_statement_lines(Types.binary_id()) :: [Projections.StatementLine.t()]
-  def list_statement_lines(statement_id) do
-    StatementLineQuery.for_statement_query(statement_id)
+  @spec list_statement_lines(Types.org_id(), Types.binary_id()) ::
+          [Projections.StatementLine.t()]
+  def list_statement_lines(org_id, statement_id) do
+    StatementLineQuery.for_statement_query(org_id, statement_id)
     |> StatementLineQuery.oldest_first()
     |> Repo.all()
   end
@@ -240,8 +224,7 @@ defmodule Nexus.ERP do
   """
   @spec statement_exists_by_hash?(Types.org_id(), String.t()) :: boolean()
   def statement_exists_by_hash?(org_id, hash) do
-    StatementQuery.base()
-    |> StatementQuery.for_org(org_id)
+    StatementQuery.base(org_id)
     |> StatementQuery.with_hash(hash)
     |> StatementQuery.count()
     |> Repo.one()
@@ -253,8 +236,7 @@ defmodule Nexus.ERP do
   """
   @spec statement_exists_by_filename?(Types.org_id(), String.t()) :: boolean()
   def statement_exists_by_filename?(org_id, filename) do
-    StatementQuery.base()
-    |> StatementQuery.for_org(org_id)
+    StatementQuery.base(org_id)
     |> StatementQuery.with_filename(filename)
     |> StatementQuery.count()
     |> Repo.one()

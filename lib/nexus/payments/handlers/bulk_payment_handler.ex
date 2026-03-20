@@ -12,6 +12,8 @@ defmodule Nexus.Payments.Handlers.BulkPaymentHandler do
   alias Nexus.Payments.Events.BulkPaymentCompleted
   alias Nexus.Treasury.Events.TransferInitiated
 
+  @spec handle(BulkPaymentInitiated.t() | TransferInitiated.t() | BulkPaymentCompleted.t(), map()) ::
+          :ok
   def handle(%BulkPaymentInitiated{} = event, _metadata) do
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,

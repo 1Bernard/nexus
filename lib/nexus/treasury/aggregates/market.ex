@@ -5,12 +5,15 @@ defmodule Nexus.Treasury.Aggregates.Market do
   @derive Jason.Encoder
   defstruct [:id, :pair, :last_price, :last_tick_time]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Commands.RecordMarketTick
   alias Nexus.Treasury.Events.MarketTickRecorded
 
   @doc """
   Executes the RecordMarketTick command to emit an event.
   """
+  @spec execute(t(), RecordMarketTick.t()) :: [struct()] | struct()
   def execute(%__MODULE__{} = _state, %RecordMarketTick{} = cmd) do
     %MarketTickRecorded{
       pair: cmd.pair,
@@ -22,6 +25,7 @@ defmodule Nexus.Treasury.Aggregates.Market do
   @doc """
   Mutates state based on a MarketTickRecorded event.
   """
+  @spec apply(t(), MarketTickRecorded.t()) :: t()
   def apply(%__MODULE__{} = state, %MarketTickRecorded{} = event) do
     %{
       state

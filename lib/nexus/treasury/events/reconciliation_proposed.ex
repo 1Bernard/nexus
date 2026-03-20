@@ -5,6 +5,8 @@ defmodule Nexus.Treasury.Events.ReconciliationProposed do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           reconciliation_id: Types.binary_id(),
@@ -18,18 +20,7 @@ defmodule Nexus.Treasury.Events.ReconciliationProposed do
           currency: Types.currency(),
           timestamp: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [
-    :org_id,
-    :reconciliation_id,
-    :invoice_id,
-    :statement_id,
-    :statement_line_id,
-    :amount,
-    :actor_email,
-    :currency,
-    :timestamp
-  ]
+
   defstruct [
     :org_id,
     :reconciliation_id,

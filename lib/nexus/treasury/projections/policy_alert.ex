@@ -4,6 +4,10 @@ defmodule Nexus.Treasury.Projections.PolicyAlert do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [:org_id, :currency_pair, :exposure_amount, :threshold, :triggered_at]}
   schema "treasury_policy_alerts" do
     field :org_id, :binary_id
     field :currency_pair, :string
@@ -15,6 +19,7 @@ defmodule Nexus.Treasury.Projections.PolicyAlert do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(alert, attrs) do
     alert
     |> cast(attrs, [:org_id, :currency_pair, :exposure_amount, :threshold, :triggered_at])

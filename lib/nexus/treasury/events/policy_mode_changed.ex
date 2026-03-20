@@ -5,6 +5,8 @@ defmodule Nexus.Treasury.Events.PolicyModeChanged do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           policy_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -13,7 +15,6 @@ defmodule Nexus.Treasury.Events.PolicyModeChanged do
           actor_email: String.t(),
           changed_at: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
+
   defstruct [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
 end

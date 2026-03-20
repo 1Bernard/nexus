@@ -11,7 +11,11 @@ defmodule Nexus.Organization.GodModeTest do
     # Clear the projection versions table to ensure clean state
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.delete_all(Nexus.Organization.Projections.Tenant)
-      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions WHERE projection_name = 'Organization.TenantProjector'")
+
+      Ecto.Adapters.SQL.query!(
+        Nexus.Repo,
+        "DELETE FROM projection_versions WHERE projection_name = 'Organization.TenantProjector'"
+      )
     end)
 
     org_id = Ecto.UUID.generate()

@@ -6,8 +6,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
-    name: "Treasury.ExposureProjector",
-    consistency: :strong
+    name: "Treasury.ExposureProjector"
 
   # Explicitly marked overridable so the test-env override below does not
   # produce a compile warning about shadowing the macro-defined clause.
@@ -49,6 +48,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
     # In test, the Ecto Sandbox blocks Repo.transaction from the projector process
     # (even with Sandbox.allow). Override the repo transaction to run inside
     # Sandbox.unboxed_run, giving us a real connection that can actually commit.
+    @spec update_projection(struct(), map(), function()) :: any()
     def update_projection(event, metadata, multi_fn) do
       import Ecto.Query, only: [from: 2]
 
@@ -95,6 +95,7 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
     end
   end
 
+  @spec after_update(struct(), map(), map()) :: :ok
   def after_update(event, _metadata, _changes) do
     require Logger
     Logger.debug("[ExposureProjector] committed #{event.subsidiary}-#{event.currency}")

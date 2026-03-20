@@ -5,11 +5,27 @@ defmodule Nexus.Payments.Aggregates.Payment do
   @derive Jason.Encoder
   defstruct [:id, :org_id, :transfer_id, :amount, :currency, :status, :external_reference]
 
-  alias Nexus.Payments.Commands.{InitiateExternalPayment, SettleExternalPayment, FailExternalPayment}
-  alias Nexus.Payments.Events.{ExternalPaymentInitiated, ExternalPaymentSettled, ExternalPaymentFailed}
+  @type t :: %__MODULE__{}
+
+  alias Nexus.Payments.Commands.{
+    InitiateExternalPayment,
+    SettleExternalPayment,
+    FailExternalPayment
+  }
+
+  alias Nexus.Payments.Events.{
+    ExternalPaymentInitiated,
+    ExternalPaymentSettled,
+    ExternalPaymentFailed
+  }
 
   # --- Command Handlers ---
 
+  @spec execute(
+          t(),
+          InitiateExternalPayment.t() | SettleExternalPayment.t() | FailExternalPayment.t()
+        ) ::
+          Commanded.Aggregate.Multi.t() | struct() | [struct()]
   def execute(%__MODULE__{id: nil}, %InitiateExternalPayment{} = cmd) do
     # Call the gateway to initiate building the external record.
     # We do the API call INSIDE the handle (or preferably in a handler/saga).
@@ -26,7 +42,8 @@ defmodule Nexus.Payments.Aggregates.Payment do
       amount: cmd.amount,
       currency: cmd.currency,
       recipient_data: cmd.recipient_data,
-      external_reference: nil, # Will be filled by the gateway later
+      # Will be filled by the gateway later
+      external_reference: nil,
       initiated_at: cmd.initiated_at
     }
   end
@@ -55,6 +72,10 @@ defmodule Nexus.Payments.Aggregates.Payment do
 
   # --- State Transitions ---
 
+  @spec apply(
+          t(),
+          ExternalPaymentInitiated.t() | ExternalPaymentSettled.t() | ExternalPaymentFailed.t()
+        ) :: t()
   def apply(%__MODULE__{} = state, %ExternalPaymentInitiated{} = event) do
     %__MODULE__{
       state

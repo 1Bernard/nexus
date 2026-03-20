@@ -66,17 +66,9 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
             as={:transfer}
           >
             <div class="grid grid-cols-2 gap-4">
-              <.nx_select
-                field={@form[:from_currency]}
-                label="Source Currency"
-                options={@currencies}
-              />
+              <.nx_select field={@form[:from_currency]} label="Source Currency" options={@currencies} />
 
-              <.nx_select
-                field={@form[:to_currency]}
-                label="Destination"
-                options={@currencies}
-              />
+              <.nx_select field={@form[:to_currency]} label="Destination" options={@currencies} />
             </div>
 
             <.nx_input
@@ -88,11 +80,11 @@ defmodule NexusWeb.Tenant.Components.TransferModal do
               step="0.01"
               class="text-2xl font-mono"
             >
-            <:addon>
-              <div class="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-indigo-400/50 uppercase tracking-tighter">
-                {@form[:from_currency].value}
-              </div>
-            </:addon>
+              <:addon>
+                <div class="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-indigo-400/50 uppercase tracking-tighter">
+                  {@form[:from_currency].value}
+                </div>
+              </:addon>
             </.nx_input>
 
             <div class="pt-4">

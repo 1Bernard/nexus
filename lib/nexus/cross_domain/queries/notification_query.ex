@@ -7,9 +7,11 @@ defmodule Nexus.CrossDomain.Queries.NotificationQuery do
   alias Nexus.Organization.Projections.Tenant
   alias Nexus.Identity.Projections.User
 
-  @doc "Base query for Notification."
-  @spec base() :: Ecto.Query.t()
-  def base, do: from(n in Notification)
+  @doc "Base query for Notification, scoped by organization."
+  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  def base(org_id) do
+    from(n in Notification, where: n.org_id == ^org_id)
+  end
 
   @doc "Enriches notification query with Tenant and User information."
   @spec with_context(Ecto.Query.t()) :: Ecto.Query.t()

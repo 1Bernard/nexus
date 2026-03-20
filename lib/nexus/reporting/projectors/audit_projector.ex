@@ -12,7 +12,16 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
   alias Nexus.Organization.Events.TenantProvisioned
   alias Nexus.Organization.Events.TenantSuspended
   alias Nexus.Organization.Events.TenantModuleToggled
-  alias Nexus.Treasury.Events.{TransferThresholdSet, TransferAuthorized, TransferExecuted, ReconciliationProposed, ReconciliationReversed, ReconciliationRejected}
+
+  alias Nexus.Treasury.Events.{
+    TransferThresholdSet,
+    TransferAuthorized,
+    TransferExecuted,
+    ReconciliationProposed,
+    ReconciliationReversed,
+    ReconciliationRejected
+  }
+
   alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, BiometricVerified, StepUpVerified}
   alias Nexus.ERP.Events.InvoiceMatched
   alias Nexus.Reporting.Projections.AuditLog
@@ -114,8 +123,14 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
     Ecto.Multi.insert(multi, :audit_log, %AuditLog{
       id: Schema.generate_uuidv7(),
       event_type: "transfer_executed",
+      actor_email: "system@nexus.ai",
       org_id: event.org_id,
-      details: %{transfer_id: event.transfer_id, amount: event.amount, from_currency: event.from_currency, to_currency: event.to_currency},
+      details: %{
+        transfer_id: event.transfer_id,
+        amount: event.amount,
+        from_currency: event.from_currency,
+        to_currency: event.to_currency
+      },
       correlation_id: metadata.correlation_id,
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.executed_at)
@@ -128,7 +143,11 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       event_type: "invoice_matched",
       actor_email: event.actor_email,
       org_id: event.org_id,
-      details: %{invoice_id: event.invoice_id, matched_id: event.matched_id, matched_type: event.matched_type},
+      details: %{
+        invoice_id: event.invoice_id,
+        matched_id: event.matched_id,
+        matched_type: event.matched_type
+      },
       correlation_id: metadata.correlation_id,
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.matched_at)
@@ -141,7 +160,11 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       event_type: "reconciliation_proposed",
       actor_email: event.actor_email,
       org_id: event.org_id,
-      details: %{reconciliation_id: event.reconciliation_id, amount: event.amount, currency: event.currency},
+      details: %{
+        reconciliation_id: event.reconciliation_id,
+        amount: event.amount,
+        currency: event.currency
+      },
       correlation_id: metadata.correlation_id,
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.timestamp)

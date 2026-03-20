@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
 
   # --- Client API ---
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -17,6 +18,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
   # --- Server Callbacks ---
 
   @impl true
+  @spec init(keyword()) :: {:ok, map(), {:continue, :connect}}
   def init(opts) do
     url = Keyword.get(opts, :url, Application.get_env(:nexus, :massive_url, @default_url))
     api_key = Application.get_env(:nexus, :massive_api_key)
@@ -26,6 +28,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
   end
 
   @impl true
+  @spec handle_continue(:connect, map()) :: {:noreply, map()}
   def handle_continue(:connect, state) do
     Logger.info("[Treasury] Initiating background connection to Massive Feed...")
 
@@ -44,6 +47,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
   end
 
   @impl true
+  @spec handle_info(:connect, map()) :: {:noreply, map(), {:continue, :connect}}
   def handle_info(:connect, state) do
     {:noreply, state, {:continue, :connect}}
   end
@@ -63,12 +67,14 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
     end
 
     @impl true
+    @spec handle_connect(any(), any()) :: {:ok, any()}
     def handle_connect(_conn, state) do
       Logger.info("[Treasury] WebSocket Connection established. Waiting for server status...")
       {:ok, state}
     end
 
     @impl true
+    @spec handle_frame({atom(), any()}, any()) :: {:ok, any()} | {:reply, {:text, any()}, any()}
     def handle_frame({:text, msg}, state) do
       case Jason.decode(msg) do
         {:ok, payloads} ->
@@ -107,6 +113,7 @@ defmodule Nexus.Treasury.Gateways.PolygonClient do
       end
     end
 
+    @spec process_tick(String.t(), any(), integer()) :: :ok
     defp process_tick(pair, price, timestamp_ms) do
       timestamp = DateTime.from_unix!(timestamp_ms, :millisecond)
 

@@ -13,6 +13,7 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
   alias Nexus.Treasury.Events.ReconciliationProposed
   alias Nexus.ERP.Events.StatementUploaded
 
+  @spec handle(struct(), map()) :: :ok | {:error, any()}
   def handle(%PolicyAlertTriggered{} = event, _metadata) do
     cmd = %CreateNotification{
       id: Nexus.Schema.generate_uuidv7(),
@@ -54,7 +55,8 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       org_id: event.org_id,
       type: "reconciliation_proposed",
       title: "Reconciliation Pending Approval",
-      body: "A #{event.currency} #{event.amount} match requires approval (variance: #{event.variance}).",
+      body:
+        "A #{event.currency} #{event.amount} match requires approval (variance: #{event.variance}).",
       metadata: %{
         reconciliation_id: event.reconciliation_id,
         invoice_id: event.invoice_id,
@@ -90,7 +92,8 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       org_id: event.org_id,
       type: "statement_uploaded",
       title: "Statement Uploaded: #{event.filename}",
-      body: "#{event.format |> String.upcase()} statement with #{line_count} transaction line(s).",
+      body:
+        "#{event.format |> String.upcase()} statement with #{line_count} transaction line(s).",
       metadata: %{
         statement_id: event.statement_id,
         filename: event.filename,
@@ -101,5 +104,4 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
 
     App.dispatch(cmd)
   end
-
 end

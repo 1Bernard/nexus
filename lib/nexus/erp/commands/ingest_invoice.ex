@@ -7,7 +7,7 @@ defmodule Nexus.ERP.Commands.IngestInvoice do
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           invoice_id: Types.binary_id(),
-          entity_id: String.t(),
+          entity_id: Types.binary_id(),
           currency: Types.currency(),
           amount: Types.money(),
           due_date: String.t(),
@@ -17,6 +17,7 @@ defmodule Nexus.ERP.Commands.IngestInvoice do
           sap_status: String.t(),
           ingested_at: Types.datetime()
         }
+
   @enforce_keys [
     :org_id,
     :invoice_id,

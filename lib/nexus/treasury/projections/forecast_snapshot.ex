@@ -3,6 +3,11 @@ defmodule Nexus.Treasury.Projections.ForecastSnapshot do
   Read model for liquidity forecasts.
   """
   use Nexus.Schema
+
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [:id, :org_id, :currency, :horizon_days, :data_points, :generated_at]}
   schema "treasury_forecast_snapshots" do
     field :org_id, :binary_id
     field :currency, :string
@@ -13,6 +18,7 @@ defmodule Nexus.Treasury.Projections.ForecastSnapshot do
     timestamps(updated_at: false)
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, attrs) do
     struct
     |> cast(attrs, [:id, :org_id, :currency, :horizon_days, :data_points, :generated_at])

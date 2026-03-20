@@ -10,19 +10,27 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
   @derive Jason.Encoder
   defstruct [:org_id, :target_currency, :deficit_amount, :completed]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Events.{ForecastGenerated, TransferInitiated}
   alias Nexus.Treasury.Commands.RequestTransfer
   alias Nexus.Treasury.Queries.VaultQuery
   require Logger
 
   # 1. Start on forecast generation
-  def interested?(%ForecastGenerated{org_id: org_id, currency: curr}), do: {:start, "#{org_id}-#{curr}"}
+  @spec interested?(struct()) :: {:start | :continue, binary()} | false
+  def interested?(%ForecastGenerated{org_id: org_id, currency: curr}),
+    do: {:start, "#{org_id}-#{curr}"}
+
   # 2. Continue on transfer initiation to track progress (optional for this POC)
-  def interested?(%TransferInitiated{org_id: org_id, from_currency: curr}), do: {:continue, "#{org_id}-#{curr}"}
+  def interested?(%TransferInitiated{org_id: org_id, from_currency: curr}),
+    do: {:continue, "#{org_id}-#{curr}"}
+
   def interested?(_event), do: false
 
   # --- Command Dispatch ---
 
+  @spec handle(t(), struct()) :: [struct()] | struct() | []
   def handle(%__MODULE__{} = _saga, %ForecastGenerated{} = event) do
     # Simple logic: If any prediction is negative, we have a deficit
     total_prediction =
@@ -31,7 +39,10 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
       |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
     if Decimal.lt?(total_prediction, 0) do
-      Logger.info("[Treasury] [Rebalance] Deficit detected for #{event.currency}: #{total_prediction}")
+      Logger.info(
+        "[Treasury] [Rebalance] Deficit detected for #{event.currency}: #{total_prediction}"
+      )
+
       initiate_rebalance(event.org_id, event.currency, Decimal.abs(total_prediction))
     else
       []
@@ -63,8 +74,9 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
             from_currency: source_currency,
             to_currency: target_currency,
             amount: amount,
-            recipient_data: %{type: "vault", vault_id: vault.id},
-            requested_at: Nexus.Schema.utc_now()
+            requested_at: Nexus.Schema.utc_now(),
+            # In rebalance, we debit the source vault
+            recipient_data: %{type: "vault", vault_id: vault.id, from_vault_id: vault.id}
           }
         ]
     end
@@ -72,6 +84,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = saga, %ForecastGenerated{} = event) do
     %__MODULE__{saga | org_id: event.org_id, target_currency: event.currency}
   end
@@ -84,6 +97,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
 
   # --- Stop Condition ---
 
+  @spec stop?(t()) :: boolean()
   def stop?(%__MODULE__{completed: true}), do: true
   def stop?(_), do: false
 end

@@ -181,7 +181,7 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
     end
 
     # Persist PM state change
-    new_pm_state = ReconciliationManager.apply(pm_state, event)
+    _new_pm_state = ReconciliationManager.apply(pm_state, event)
 
     event_data = %EventStore.EventData{
       event_type: to_string(event.__struct__),

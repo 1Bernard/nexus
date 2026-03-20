@@ -66,9 +66,12 @@ for i <- 1..847 do
     org_id: org_id,
     entity_id: "ENT-#{i}",
     sap_document_number: "SAP-M-#{i}",
-    amount: "1000.00",
+    amount: Decimal.new("1000.00"),
     currency: "EUR",
-    status: "matched"
+    status: "matched",
+    due_date: now,
+    created_at: now,
+    updated_at: now
   })
 end
 
@@ -79,9 +82,12 @@ for i <- 1..38 do
     org_id: org_id,
     entity_id: "ENT-P-#{i}",
     sap_document_number: "SAP-P-#{i}",
-    amount: "500.00",
+    amount: Decimal.new("500.00"),
     currency: "EUR",
-    status: "partial"
+    status: "partial",
+    due_date: now,
+    created_at: now,
+    updated_at: now
   })
 end
 
@@ -92,9 +98,12 @@ for i <- 1..15 do
     org_id: org_id,
     entity_id: "ENT-U-#{i}",
     sap_document_number: "SAP-U-#{i}",
-    amount: "2500.00",
+    amount: Decimal.new("2500.00"),
     currency: "EUR",
-    status: "unmatched"
+    status: "unmatched",
+    due_date: now,
+    created_at: now,
+    updated_at: now
   })
 end
 
@@ -115,7 +124,9 @@ for sub <- subsidiaries, cur <- currencies do
     subsidiary: sub,
     currency: cur,
     exposure_amount: Decimal.new(amount),
-    calculated_at: now
+    calculated_at: now,
+    created_at: now,
+    updated_at: now
   })
 end
 
@@ -130,7 +141,8 @@ admin_cmd = %Nexus.Identity.Commands.RegisterSystemAdmin{
   user_id: admin_id,
   org_id: org_id,
   email: "admin@nexus-platform.io",
-  display_name: "Nexus System Admin"
+  display_name: "Nexus System Admin",
+  registered_at: now
 }
 
 elena_id = Nexus.Schema.generate_uuidv7()
@@ -139,7 +151,8 @@ elena_cmd = %Nexus.Identity.Commands.RegisterSystemAdmin{
   user_id: elena_id,
   org_id: org_id,
   email: "elena@global-corp.com",
-  display_name: "Elena (Global Corp App)"
+  display_name: "Elena (Global Corp App)",
+  registered_at: now
 }
 
 case Nexus.App.dispatch(admin_cmd) do
@@ -155,3 +168,74 @@ case Nexus.App.dispatch(elena_cmd) do
 end
 
 IO.puts("Identity Domain seeding complete.")
+
+# --- Seed Treasury Vaults & Liquidity Positions ---
+alias Nexus.Treasury.Projections.{Vault, LiquidityPosition}
+
+IO.puts("Seeding Treasury Vaults and Liquidity...")
+
+# Clean up
+Repo.delete_all(Vault)
+Repo.delete_all(LiquidityPosition)
+
+vault_configs = [
+  %{
+    name: "DB Main Operating (EUR)",
+    bank_name: "Deutsche Bank",
+    currency: "EUR",
+    amount: "642500.00"
+  },
+  %{
+    name: "HSBC Settlement (EUR)",
+    bank_name: "HSBC",
+    currency: "EUR",
+    amount: "200000.00"
+  },
+  %{
+    name: "Chase Treasury (USD)",
+    bank_name: "J.P. Morgan Chase",
+    currency: "USD",
+    amount: "1500000.00"
+  }
+]
+
+for config <- vault_configs do
+  vault_id = Ecto.UUID.generate()
+
+  # 1. Create the Vault Projection
+  Repo.insert!(%Vault{
+    id: vault_id,
+    org_id: org_id,
+    name: config.name,
+    bank_name: config.bank_name,
+    currency: config.currency,
+    balance: Decimal.new(config.amount),
+    provider: "Nexus Direct",
+    status: "active",
+    created_at: now,
+    updated_at: now
+  })
+end
+
+# 2. Create aggregated Liquidity Positions (one per currency)
+# Sum EUR (642,500 + 200,000 = 842,500)
+Repo.insert!(%LiquidityPosition{
+  id: Ecto.UUID.generate(),
+  org_id: org_id,
+  currency: "EUR",
+  amount: Decimal.new("842500.00"),
+  created_at: now,
+  updated_at: now
+})
+
+# Sum USD (1,500,000)
+Repo.insert!(%LiquidityPosition{
+  id: Ecto.UUID.generate(),
+  org_id: org_id,
+  currency: "USD",
+  amount: Decimal.new("1500000.00"),
+  created_at: now,
+  updated_at: now
+})
+
+IO.puts("Treasury seeding complete: 3 Vaults and 2 Aggregated Liquidity Positions added.")

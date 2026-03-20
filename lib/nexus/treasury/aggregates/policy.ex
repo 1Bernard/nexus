@@ -11,6 +11,8 @@ defmodule Nexus.Treasury.Aggregates.Policy do
     mode_thresholds: %{"standard" => "1000000", "strict" => "50000", "relaxed" => "10000000"}
   ]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Commands.{
     SetTransferThreshold,
     EvaluateExposurePolicy,
@@ -27,6 +29,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
 
   @valid_modes ~w[standard strict relaxed]
 
+  @spec execute(t(), struct()) :: [struct()] | struct() | {:error, any()}
   def execute(%__MODULE__{} = _state, %ConfigureModeThresholds{} = cmd) do
     %ModeThresholdsConfigured{
       policy_id: cmd.policy_id,
@@ -83,6 +86,7 @@ defmodule Nexus.Treasury.Aggregates.Policy do
     end
   end
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %TransferThresholdSet{} = event) do
     %__MODULE__{
       state

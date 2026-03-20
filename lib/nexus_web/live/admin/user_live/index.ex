@@ -123,7 +123,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
   end
 
   @impl true
-  def handle_event("set-editing-role", %{"role" => role}, socket) do
+  def handle_event("select-editing-role", %{"role" => role}, socket) do
     {:noreply, assign(socket, editing_role: role)}
   end
 
@@ -132,11 +132,11 @@ defmodule NexusWeb.Admin.UserLive.Index do
   end
 
   @impl true
-  def handle_event("update-user-role", %{"role" => role, "user_id" => user_id}, socket) do
+  def handle_event("update-user-roles", %{"user_id" => user_id}, socket) do
     command = %Nexus.Identity.Commands.ChangeUserRole{
       user_id: user_id,
       org_id: socket.assigns.current_user.org_id,
-      role: role,
+      role: socket.assigns.editing_role,
       actor_id: socket.assigns.current_user.id,
       changed_at: DateTime.utc_now()
     }
@@ -249,14 +249,14 @@ defmodule NexusWeb.Admin.UserLive.Index do
     }
 
     users_page =
-      if socket.assigns.current_user.role == "system_admin" do
+      if Enum.member?(socket.assigns.current_user.role, "system_admin") do
         UserQuery.list_all_users(query_params)
       else
         UserQuery.list_users_by_org(org_id, query_params)
       end
 
     total_count =
-      if socket.assigns.current_user.role == "system_admin" do
+      if Enum.member?(socket.assigns.current_user.role, "system_admin") do
         UserQuery.total_users_count()
       else
         UserQuery.total_users_count(org_id)
@@ -297,6 +297,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
         meta = List.first(metas)
         # Presence keys are always strings, but we ensure consistency here
         Map.put(meta, :id, to_string(user_id))
+        |> Map.put(:role, meta.roles)
       end)
 
     assign(socket, active_users: active_users)

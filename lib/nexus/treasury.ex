@@ -18,6 +18,7 @@ defmodule Nexus.Treasury do
     LiquidityPositionQuery,
     PolicyAuditLogQuery
   }
+
   alias Nexus.ERP.Queries.{InvoiceQuery, StatementLineQuery}
 
   alias Nexus.Treasury.Gateways.PriceCache
@@ -71,9 +72,8 @@ defmodule Nexus.Treasury do
   """
   @spec list_unmatched_invoices(Types.org_id()) :: [Invoice.t()]
   def list_unmatched_invoices(org_id) do
-    InvoiceQuery.base()
+    InvoiceQuery.base(org_id)
     |> InvoiceQuery.with_tenant()
-    |> InvoiceQuery.for_org(org_id)
     |> InvoiceQuery.with_status("ingested")
     |> InvoiceQuery.newest_first()
     |> Repo.all()
@@ -84,9 +84,8 @@ defmodule Nexus.Treasury do
   """
   @spec list_unmatched_statement_lines(Types.org_id()) :: [StatementLine.t()]
   def list_unmatched_statement_lines(org_id) do
-    StatementLineQuery.base()
+    StatementLineQuery.base(org_id)
     |> StatementLineQuery.with_tenant()
-    |> StatementLineQuery.for_org(org_id)
     |> StatementLineQuery.with_status("unmatched")
     |> StatementLineQuery.newest_first()
     |> Repo.all()
@@ -95,12 +94,13 @@ defmodule Nexus.Treasury do
   @doc """
   Lists recent policy alerts for an organization.
   """
-  @spec list_policy_alerts(Types.org_id() | :all, integer()) :: [Nexus.Treasury.Projections.PolicyAlert.t()]
+  @spec list_policy_alerts(Types.org_id() | :all, integer()) :: [
+          Nexus.Treasury.Projections.PolicyAlert.t()
+        ]
   def list_policy_alerts(org_id, limit \\ 5) do
     import Ecto.Query
 
-    PolicyAlertQuery.base()
-    |> PolicyAlertQuery.for_org(org_id)
+    PolicyAlertQuery.base(org_id)
     |> join(:left, [a], t in Nexus.Organization.Projections.Tenant, on: a.org_id == t.org_id)
     |> select([a, t], %{a | org_name: t.name})
     |> PolicyAlertQuery.recent(limit)
@@ -121,21 +121,21 @@ defmodule Nexus.Treasury do
   """
   @spec get_policy_mode(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
   def get_policy_mode(:all), do: nil
+
   def get_policy_mode(org_id) do
-    TreasuryPolicyQuery.base()
-    |> TreasuryPolicyQuery.for_org(org_id)
+    TreasuryPolicyQuery.base(org_id)
     |> Repo.one()
   end
 
   @doc """
   Fetches the latest forecast for a currency.
   """
-  @spec get_latest_forecast(Types.org_id() | :all, Types.currency()) :: Nexus.Treasury.Projections.ForecastSnapshot.t() | nil
+  @spec get_latest_forecast(Types.org_id() | :all, Types.currency()) ::
+          Nexus.Treasury.Projections.ForecastSnapshot.t() | nil
   def get_latest_forecast(org_id, currency) do
     require Ecto.Query
 
-    ForecastQuery.base()
-    |> ForecastQuery.for_org(org_id)
+    ForecastQuery.base(org_id)
     |> ForecastQuery.for_currency(currency)
     |> ForecastQuery.newest_first()
     |> Ecto.Query.limit(1)
@@ -189,7 +189,8 @@ defmodule Nexus.Treasury do
   @doc """
   Triggers a liquidity forecast calculation and dispatches the command.
   """
-  @spec generate_forecast(Types.org_id(), Types.currency(), integer(), keyword()) :: :ok | {:error, any()}
+  @spec generate_forecast(Types.org_id(), Types.currency(), integer(), keyword()) ::
+          :ok | {:error, any()}
   def generate_forecast(org_id, currency, horizon_days \\ 30, opts \\ []) do
     case ForecastEngine.calculate(org_id, currency, horizon_days) do
       {:ok, predictions} ->
@@ -224,13 +225,11 @@ defmodule Nexus.Treasury do
 
     # 2. Fetch all exposures for the org (Gross Invoice Volume)
     gross_invoice_exposures =
-      ExposureQuery.base()
-      |> ExposureQuery.for_org(org_id)
+      ExposureQuery.base(org_id)
       |> Repo.all()
 
     liquidity_positions =
-      LiquidityPositionQuery.base()
-      |> LiquidityPositionQuery.for_org(org_id)
+      LiquidityPositionQuery.base(org_id)
       |> Repo.all()
 
     # 4. Consolidate into Net Exposure in reporting currency
@@ -356,8 +355,7 @@ defmodule Nexus.Treasury do
   def list_exposure_heatmap(org_id) do
     # Fetch all snapshots for the org
     snapshots =
-      ExposureQuery.base()
-      |> ExposureQuery.for_org(org_id)
+      ExposureQuery.base(org_id)
       |> Repo.all()
 
     # Dynamic extraction of active subsidiaries and currencies from existing snapshots
@@ -449,9 +447,9 @@ defmodule Nexus.Treasury do
   """
   @spec get_treasury_policy(Types.org_id()) :: Nexus.Treasury.Projections.TreasuryPolicy.t() | nil
   def get_treasury_policy(:all), do: nil
+
   def get_treasury_policy(org_id) do
-    TreasuryPolicyQuery.base()
-    |> TreasuryPolicyQuery.for_org(org_id)
+    TreasuryPolicyQuery.base(org_id)
     |> Repo.one()
   end
 
@@ -534,7 +532,8 @@ defmodule Nexus.Treasury do
   @doc """
   Approves a pending reconciliation.
   """
-  @spec approve_reconciliation(Types.org_id(), Types.binary_id(), String.t()) :: :ok | {:error, any()}
+  @spec approve_reconciliation(Types.org_id(), Types.binary_id(), String.t()) ::
+          :ok | {:error, any()}
   def approve_reconciliation(org_id, reconciliation_id, approver_email) do
     command = %Nexus.Treasury.Commands.ApproveReconciliation{
       org_id: org_id,
@@ -549,7 +548,8 @@ defmodule Nexus.Treasury do
   @doc """
   Rejects a pending reconciliation.
   """
-  @spec reject_reconciliation(Types.org_id(), Types.binary_id(), String.t()) :: :ok | {:error, any()}
+  @spec reject_reconciliation(Types.org_id(), Types.binary_id(), String.t()) ::
+          :ok | {:error, any()}
   def reject_reconciliation(org_id, reconciliation_id, rejector_email) do
     command = %Nexus.Treasury.Commands.RejectReconciliation{
       org_id: org_id,
@@ -564,7 +564,8 @@ defmodule Nexus.Treasury do
   @doc """
   Reverses a previously matched reconciliation.
   """
-  @spec reverse_reconciliation(Types.org_id(), Types.binary_id(), String.t() | nil) :: :ok | {:error, any()}
+  @spec reverse_reconciliation(Types.org_id(), Types.binary_id(), String.t() | nil) ::
+          :ok | {:error, any()}
   def reverse_reconciliation(org_id, reconciliation_id, actor_email \\ nil) do
     command = %Nexus.Treasury.Commands.ReverseReconciliation{
       org_id: org_id,
@@ -579,7 +580,9 @@ defmodule Nexus.Treasury do
   @doc """
   Lists all liquidity positions for an organization.
   """
-  @spec list_liquidity_positions(Types.org_id()) :: [Nexus.Treasury.Projections.LiquidityPosition.t()]
+  @spec list_liquidity_positions(Types.org_id()) :: [
+          Nexus.Treasury.Projections.LiquidityPosition.t()
+        ]
   def list_liquidity_positions(org_id) do
     LiquidityPositionQuery.for_org_query(org_id)
     |> Repo.all()
@@ -647,7 +650,8 @@ defmodule Nexus.Treasury do
   @doc """
   Authorizes a pending transfer.
   """
-  @spec authorize_transfer(Types.org_id(), Types.binary_id(), String.t() | nil) :: :ok | {:error, any()}
+  @spec authorize_transfer(Types.org_id(), Types.binary_id(), String.t() | nil) ::
+          :ok | {:error, any()}
   def authorize_transfer(org_id, transfer_id, actor_email \\ nil) do
     command = %AuthorizeTransfer{
       transfer_id: transfer_id,
@@ -676,8 +680,8 @@ defmodule Nexus.Treasury do
   @doc """
   Registers a new physical bank account (Vault).
   """
-  @spec register_vault(map()) :: :ok | {:error, any()}
-  def register_vault(attrs) do
+  @spec register_vault(map(), keyword()) :: :ok | {:error, any()}
+  def register_vault(attrs, opts \\ []) do
     command = %RegisterVault{
       vault_id: Nexus.Schema.generate_uuidv7(),
       org_id: attrs.org_id,
@@ -688,18 +692,19 @@ defmodule Nexus.Treasury do
       currency: attrs.currency,
       provider: attrs.provider,
       registered_at: Nexus.Schema.utc_now(),
-      daily_withdrawal_limit: Nexus.Schema.parse_decimal(Map.get(attrs, :daily_withdrawal_limit, 0)),
+      daily_withdrawal_limit:
+        Nexus.Schema.parse_decimal(Map.get(attrs, :daily_withdrawal_limit, 0)),
       requires_multi_sig: Map.get(attrs, :requires_multi_sig, false)
     }
 
-    Nexus.App.dispatch(command)
+    Nexus.App.dispatch(command, opts)
   end
 
   @doc """
   Syncs the latest balance for a vault.
   """
-  @spec sync_vault_balance(map()) :: :ok | {:error, any()}
-  def sync_vault_balance(attrs) do
+  @spec sync_vault_balance(map(), keyword()) :: :ok | {:error, any()}
+  def sync_vault_balance(attrs, opts \\ []) do
     command = %SyncVaultBalance{
       vault_id: attrs.vault_id,
       org_id: attrs.org_id,
@@ -708,6 +713,6 @@ defmodule Nexus.Treasury do
       synced_at: Nexus.Schema.utc_now()
     }
 
-    Nexus.App.dispatch(command)
+    Nexus.App.dispatch(command, opts)
   end
 end

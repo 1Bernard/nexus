@@ -17,6 +17,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
 
   # --- Client API ---
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   @doc """
@@ -25,6 +26,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
   Calculates an expiration timestamp (TTL) to prevent memory leaks,
   which is an essential requirement for SOC2 compliance.
   """
+  @spec store_challenge(String.t(), any()) :: :ok
   def store_challenge(session_id, challenge) do
     # TTL of 10 minutes (600s) to tolerate deliberate user interaction / OS prompts
     expires_at = Nexus.Schema.utc_now() |> DateTime.add(600, :second)
@@ -41,6 +43,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
   This 'Pop' pattern prevents replay attacks by ensuring a
   cryptographic challenge can never be used twice.
   """
+  @spec pop_challenge(String.t()) :: {:ok, any()} | {:error, :not_found | :expired}
   def pop_challenge(session_id) do
     case :ets.lookup(@table, session_id) do
       [{^session_id, challenge, expires_at}] ->
@@ -71,6 +74,7 @@ defmodule Nexus.Identity.AuthChallengeStore do
   # --- Server Callbacks ---
 
   @impl true
+  @spec init(any()) :: {:ok, map()}
   def init(_opts) do
     # Ensure the table is created only if it doesn't exist
     if :ets.whereis(@table) == :undefined do

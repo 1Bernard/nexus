@@ -3,6 +3,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
   alias Nexus.Treasury
   alias Nexus.Treasury.Projections.ForecastSnapshot
   alias Nexus.ERP.Projections.StatementLine
+  alias Nexus.Repo
 
   @org_id Ecto.UUID.generate()
   @currency "EUR"
@@ -36,10 +37,9 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
       |> Repo.insert!()
 
       # Seed data with a trend: increasing cash flow
-      for i <- 60..1 do
-        date = Date.add(today, -i)
-        # Upward trend
-        amount = 1000 + i * 10
+      for days_ago <- 60..1//-1 do
+        date = Date.add(today, -days_ago)
+        amount = 1000 + days_ago * 10
 
         %StatementLine{
           id: Ecto.UUID.generate(),
@@ -48,7 +48,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
           date: Date.to_string(date),
           amount: Decimal.new(amount),
           currency: @currency,
-          ref: "TEST-#{i}"
+          ref: "TEST-#{days_ago}"
         }
         |> Repo.insert!()
       end
@@ -56,9 +56,9 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
       # 2. Trigger forecast
       result = Treasury.generate_forecast(@org_id, @currency, 30, consistency: :eventual)
 
-      :ok = result
+      assert :ok = result
 
-      # 3. Manually project the event
+      # 3. Manually project the event (integration test helper)
       {:ok, [%{data: event, event_number: num}]} =
         Nexus.EventStore.read_stream_forward("forecast-" <> @org_id)
 
@@ -75,8 +75,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
       assert snapshot.currency == @currency
       assert length(snapshot.data_points) == 30
 
-      # Verify downward trend carries through (prediction < last historical point)
-      # Oldest was 1600, newest was 1010, next should be 1000 or 990.
+      # Verify trend carries through
       [first_pred | _] = snapshot.data_points
       {val, _} = Float.parse(to_string(first_pred["predicted_amount"]))
       assert val < 1010
@@ -87,7 +86,6 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
     metadata = %{handler_name: handler_name, event_number: event_number}
 
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
-      Ecto.Adapters.SQL.query!(Nexus.Repo, "DELETE FROM projection_versions")
       projector_module.handle(event, metadata)
     end)
   end

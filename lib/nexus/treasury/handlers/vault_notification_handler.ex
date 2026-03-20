@@ -9,6 +9,10 @@ defmodule Nexus.Treasury.Handlers.VaultNotificationHandler do
 
   alias Nexus.Treasury.Events.{VaultRegistered, VaultBalanceSynced, VaultDebited, VaultCredited}
 
+  @spec handle(
+          VaultRegistered.t() | VaultBalanceSynced.t() | VaultDebited.t() | VaultCredited.t(),
+          map()
+        ) :: :ok
   def handle(%VaultRegistered{} = event, _metadata) do
     broadcast(event)
   end

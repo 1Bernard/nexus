@@ -5,7 +5,6 @@ defmodule Nexus.Identity.BiometricVerificationTest do
   @moduletag :feature
 
   alias Nexus.Identity.AuthChallengeStore
-  alias Nexus.Identity.Events.BiometricVerified
   alias Nexus.Repo
 
   setup do

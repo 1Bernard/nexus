@@ -4,6 +4,22 @@ defmodule Nexus.ERP.Projections.Invoice do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :org_id,
+             :entity_id,
+             :currency,
+             :amount,
+             :subsidiary,
+             :line_items,
+             :sap_document_number,
+             :sap_status,
+             :due_date,
+             :status
+           ]}
   schema "erp_invoices" do
     # Explicitly defined for multi-tenancy as per rule
     field :org_id, :binary_id
@@ -21,6 +37,7 @@ defmodule Nexus.ERP.Projections.Invoice do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, attrs) do
     struct
     |> cast(attrs, [

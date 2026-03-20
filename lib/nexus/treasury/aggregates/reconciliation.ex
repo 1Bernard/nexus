@@ -17,6 +17,8 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
     :status
   ]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Commands.ReconcileTransaction
   alias Nexus.Treasury.Commands.ReverseReconciliation
   alias Nexus.Treasury.Commands.ProposeReconciliation
@@ -28,6 +30,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
   alias Nexus.Treasury.Events.ReconciliationRejected
 
   # Commands
+  @spec execute(t(), struct()) :: [struct()] | struct() | {:error, atom()}
   def execute(%__MODULE__{reconciliation_id: nil}, %ProposeReconciliation{} = cmd) do
     amount =
       if is_binary(cmd.amount), do: Decimal.new(cmd.amount), else: Decimal.new("#{cmd.amount}")
@@ -136,6 +139,7 @@ defmodule Nexus.Treasury.Aggregates.Reconciliation do
   end
 
   # State Mutation
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %ReconciliationProposed{} = event) do
     %__MODULE__{
       state

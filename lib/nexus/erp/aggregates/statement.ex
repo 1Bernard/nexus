@@ -7,11 +7,14 @@ defmodule Nexus.ERP.Aggregates.Statement do
   @derive Jason.Encoder
   defstruct [:id, :org_id, :status]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.ERP.Commands.UploadStatement
   alias Nexus.ERP.Events.{StatementUploaded, StatementRejected}
   alias Nexus.ERP.Services.StatementParser
 
   # Idempotency: already processed
+  @spec execute(t(), UploadStatement.t()) :: struct() | [struct()]
   def execute(%__MODULE__{status: status}, %UploadStatement{}) when not is_nil(status) do
     []
   end
@@ -50,6 +53,7 @@ defmodule Nexus.ERP.Aggregates.Statement do
     end
   end
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %StatementUploaded{} = event) do
     %__MODULE__{state | id: event.statement_id, org_id: event.org_id, status: :uploaded}
   end

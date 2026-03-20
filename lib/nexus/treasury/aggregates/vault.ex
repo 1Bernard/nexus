@@ -3,13 +3,25 @@ defmodule Nexus.Treasury.Aggregates.Vault do
   Aggregate to manage physical bank accounts (Vaults) and their balances.
   """
   @derive Jason.Encoder
-  defstruct [:id, :org_id, :currency, :balance, :status, :daily_withdrawal_limit, :requires_multi_sig]
+  defstruct [
+    :id,
+    :org_id,
+    :currency,
+    :balance,
+    :status,
+    :daily_withdrawal_limit,
+    :requires_multi_sig
+  ]
+
+  @type t :: %__MODULE__{}
 
   alias Nexus.Treasury.Commands.{RegisterVault, SyncVaultBalance, DebitVault, CreditVault}
   alias Nexus.Treasury.Events.{VaultRegistered, VaultBalanceSynced, VaultDebited, VaultCredited}
 
   # --- Command Handlers ---
 
+  @spec execute(t(), RegisterVault.t() | SyncVaultBalance.t() | DebitVault.t() | CreditVault.t()) ::
+          Commanded.Aggregate.Multi.t() | [struct()] | struct() | {:error, atom()}
   def execute(%__MODULE__{id: nil}, %RegisterVault{} = cmd) do
     %VaultRegistered{
       vault_id: cmd.vault_id,
@@ -63,6 +75,7 @@ defmodule Nexus.Treasury.Aggregates.Vault do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %VaultRegistered{} = event) do
     %__MODULE__{
       state

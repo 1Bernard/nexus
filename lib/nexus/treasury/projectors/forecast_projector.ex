@@ -5,8 +5,7 @@ defmodule Nexus.Treasury.Projectors.ForecastProjector do
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
-    name: "Treasury.ForecastProjector",
-    consistency: :strong
+    name: "Treasury.ForecastProjector"
 
   alias Nexus.Treasury.Events.ForecastGenerated
   alias Nexus.Treasury.Projections.ForecastSnapshot

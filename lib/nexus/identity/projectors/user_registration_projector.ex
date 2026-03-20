@@ -21,7 +21,7 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
           org_id: event.org_id,
           email: event.email,
           display_name: event.display_name,
-          role: event.role,
+          role: event.role || "trader",
           status: event.status || "active",
           cose_key: safe_decode64(event.cose_key),
           credential_id: safe_decode64(event.credential_id)

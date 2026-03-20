@@ -7,9 +7,11 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
 
   alias Nexus.Organization.Projections.Tenant
 
-  @doc "Base query for Invoice."
-  @spec base() :: Ecto.Query.t()
-  def base, do: from(i in Invoice)
+  @doc "Base query for Invoice, scoped by organization."
+  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  def base(org_id) do
+    from(i in Invoice, where: i.org_id == ^org_id)
+  end
 
   @doc "Enriches invoice query with Tenant information."
   @spec with_tenant(Ecto.Query.t()) :: Ecto.Query.t()
@@ -24,6 +26,7 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
   @doc "Filters invoices by organization ID."
   @spec for_org(Ecto.Query.t(), Nexus.Types.org_id()) :: Ecto.Query.t()
   def for_org(query, :all), do: query
+
   def for_org(query, org_id) do
     where(query, [i], i.org_id == ^org_id)
   end
@@ -31,9 +34,8 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
   @doc "High-level builder for listing unmatched invoices."
   @spec unmatched_query(Nexus.Types.org_id()) :: Ecto.Query.t()
   def unmatched_query(org_id) do
-    base()
+    base(org_id)
     |> with_tenant()
-    |> for_org(org_id)
     |> with_status("ingested")
     |> newest_first()
   end
@@ -41,9 +43,8 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
   @doc "High-level builder for listing all invoices for an organization."
   @spec activity_query(Nexus.Types.org_id()) :: Ecto.Query.t()
   def activity_query(org_id) do
-    base()
+    base(org_id)
     |> with_tenant()
-    |> for_org(org_id)
     |> newest_first()
   end
 

@@ -5,6 +5,8 @@ defmodule Nexus.Treasury.Events.ReconciliationReversed do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           reconciliation_id: Types.binary_id(),
@@ -13,15 +15,7 @@ defmodule Nexus.Treasury.Events.ReconciliationReversed do
           actor_email: String.t() | nil,
           timestamp: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [
-    :org_id,
-    :reconciliation_id,
-    :invoice_id,
-    :statement_line_id,
-    :actor_email,
-    :timestamp
-  ]
+
   defstruct [
     :org_id,
     :reconciliation_id,

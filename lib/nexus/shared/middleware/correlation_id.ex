@@ -7,6 +7,7 @@ defmodule Nexus.Shared.Middleware.CorrelationId do
 
   alias Commanded.Middleware.Pipeline
 
+  @spec before_dispatch(Pipeline.t()) :: Pipeline.t()
   def before_dispatch(%Pipeline{} = pipeline) do
     metadata = pipeline.metadata || %{}
 
@@ -25,6 +26,9 @@ defmodule Nexus.Shared.Middleware.CorrelationId do
     %{pipeline | metadata: updated_metadata}
   end
 
+  @spec after_dispatch(Pipeline.t()) :: Pipeline.t()
   def after_dispatch(%Pipeline{} = pipeline), do: pipeline
+
+  @spec after_failure(Pipeline.t()) :: Pipeline.t()
   def after_failure(%Pipeline{} = pipeline), do: pipeline
 end

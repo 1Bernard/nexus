@@ -5,19 +5,23 @@ defmodule Nexus.Identity.Projections.User do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:id, :org_id, :email, :display_name, :status, :role]}
   schema "users" do
     field :org_id, :binary_id
     field :email, :string
     field :display_name, :string
-    field :role, :string, default: "trader"
     field :status, :string, default: "active"
     field :cose_key, :binary
     field :credential_id, :binary
+    field :role, :string
     field :org_name, :string, virtual: true
 
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
     |> cast(attrs, [

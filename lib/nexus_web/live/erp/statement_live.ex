@@ -21,7 +21,7 @@ defmodule NexusWeb.ERP.StatementLive do
     end
 
     org_id_for_query =
-      if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+      if Enum.member?(socket.assigns.current_user.role, "system_admin"), do: :all, else: org_id
 
     socket =
       socket
@@ -118,7 +118,8 @@ defmodule NexusWeb.ERP.StatementLive do
     if socket.assigns.expanded_statement_id == id do
       {:noreply, assign(socket, expanded_statement_id: nil, expanded_lines: [])}
     else
-      lines = ERP.list_statement_lines(id)
+      org_id = socket.assigns.current_user.org_id
+      lines = ERP.list_statement_lines(org_id, id)
       {:noreply, assign(socket, expanded_statement_id: id, expanded_lines: lines)}
     end
   end
@@ -145,7 +146,8 @@ defmodule NexusWeb.ERP.StatementLive do
     if statement do
       # In a real app, this would be a proper send_download or a link to a controller.
       # For the demo, we'll push an event that the hooks can handle to download a blob.
-      raw_content = ERP.get_statement_content(id)
+      org_id = socket.assigns.current_user.org_id
+      raw_content = ERP.get_statement_content(org_id, id)
 
       socket =
         push_event(socket, "download-file", %{

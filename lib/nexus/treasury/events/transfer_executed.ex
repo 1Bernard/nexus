@@ -4,6 +4,8 @@ defmodule Nexus.Treasury.Events.TransferExecuted do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           transfer_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -13,9 +15,12 @@ defmodule Nexus.Treasury.Events.TransferExecuted do
           recipient_data: map() | nil,
           executed_at: Types.datetime()
         }
-  @derive [Jason.Encoder]
-  @enforce_keys [:transfer_id, :org_id, :amount, :from_currency, :to_currency, :executed_at]
-  defstruct [:transfer_id, :org_id, :amount,    :from_currency,
+
+  defstruct [
+    :transfer_id,
+    :org_id,
+    :amount,
+    :from_currency,
     :to_currency,
     :recipient_data,
     :executed_at

@@ -79,17 +79,9 @@ defmodule NexusWeb.Treasury.Components.VaultRegistrationModal do
                 required
               />
 
-              <.nx_select
-                field={@form[:currency]}
-                label="Currency"
-                options={@currencies}
-              />
+              <.nx_select field={@form[:currency]} label="Currency" options={@currencies} />
 
-              <.nx_select
-                field={@form[:provider]}
-                label="Provider"
-                options={@providers}
-              />
+              <.nx_select field={@form[:provider]} label="Provider" options={@providers} />
 
               <.nx_input
                 field={@form[:account_number]}
@@ -115,7 +107,9 @@ defmodule NexusWeb.Treasury.Components.VaultRegistrationModal do
                     </div>
                     <div>
                       <h5 class="text-sm font-bold text-white">Enforce Multi-Signature Approval</h5>
-                      <p class="text-[10px] text-slate-500">Requires multiple authorizers for any fund movement.</p>
+                      <p class="text-[10px] text-slate-500">
+                        Requires multiple authorizers for any fund movement.
+                      </p>
                     </div>
                   </div>
                   <.input

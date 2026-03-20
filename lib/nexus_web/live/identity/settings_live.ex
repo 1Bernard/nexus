@@ -12,14 +12,18 @@ defmodule NexusWeb.Identity.SettingsLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    settings = SettingsQuery.get_settings(user.id) || %UserSettings{
-      user_id: user.id,
-      org_id: user.org_id,
-      locale: "en",
-      timezone: "UTC",
-      notifications_enabled: true
-    }
-    sessions = SettingsQuery.list_active_sessions(user.id)
+
+    settings =
+      SettingsQuery.get_settings(user.org_id, user.id) ||
+        %UserSettings{
+          user_id: user.id,
+          org_id: user.org_id,
+          locale: "en",
+          timezone: "UTC",
+          notifications_enabled: true
+        }
+
+    sessions = SettingsQuery.list_active_sessions(user.org_id, user.id)
 
     socket =
       socket
@@ -85,10 +89,16 @@ defmodule NexusWeb.Identity.SettingsLive do
         <div class="max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
           <.dark_card class="p-8">
             <h3 class="text-sm font-bold text-white mb-6 flex items-center gap-2">
-              <span class="hero-cog-6-tooth w-4 h-4 text-indigo-400"></span> Localization & Preferences
+              <span class="hero-cog-6-tooth w-4 h-4 text-indigo-400"></span>
+              Localization & Preferences
             </h3>
 
-            <.form for={@form} phx-change="validate_settings" phx-submit="save_settings" class="space-y-6">
+            <.form
+              for={@form}
+              phx-change="validate_settings"
+              phx-submit="save_settings"
+              class="space-y-6"
+            >
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <.label class="text-[10px] uppercase tracking-widest text-slate-500 mb-2 block">
@@ -97,7 +107,12 @@ defmodule NexusWeb.Identity.SettingsLive do
                   <.input
                     type="select"
                     field={@form[:locale]}
-                    options={[{"English", "en"}, {"French", "fr"}, {"German", "de"}, {"Japanese", "ja"}]}
+                    options={[
+                      {"English", "en"},
+                      {"French", "fr"},
+                      {"German", "de"},
+                      {"Japanese", "ja"}
+                    ]}
                     class="bg-slate-900 border-white/10 text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
@@ -109,7 +124,13 @@ defmodule NexusWeb.Identity.SettingsLive do
                   <.input
                     type="select"
                     field={@form[:timezone]}
-                    options={[{"UTC", "UTC"}, {"Europe/London", "Europe/London"}, {"Europe/Paris", "Europe/Paris"}, {"America/New_York", "America/New_York"}, {"Asia/Tokyo", "Asia/Tokyo"}]}
+                    options={[
+                      {"UTC", "UTC"},
+                      {"Europe/London", "Europe/London"},
+                      {"Europe/Paris", "Europe/Paris"},
+                      {"America/New_York", "America/New_York"},
+                      {"Asia/Tokyo", "Asia/Tokyo"}
+                    ]}
                     class="bg-slate-900 border-white/10 text-white rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
@@ -118,8 +139,12 @@ defmodule NexusWeb.Identity.SettingsLive do
               <div class="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 mb-6 flex items-start gap-3">
                 <span class="hero-shield-check w-5 h-5 text-indigo-400 mt-0.5"></span>
                 <div>
-                  <p class="text-xs font-bold text-white uppercase tracking-wider">Passkey Secured Account</p>
-                  <p class="text-[10px] text-slate-500 mt-1">Your preferences are cryptographically bound to your hardware security key.</p>
+                  <p class="text-xs font-bold text-white uppercase tracking-wider">
+                    Passkey Secured Account
+                  </p>
+                  <p class="text-[10px] text-slate-500 mt-1">
+                    Your preferences are cryptographically bound to your hardware security key.
+                  </p>
                 </div>
               </div>
 
@@ -128,11 +153,18 @@ defmodule NexusWeb.Identity.SettingsLive do
                   <p class="text-xs font-bold text-white">Notifications</p>
                   <p class="text-[10px] text-slate-500">Enable platform alerts and audit logs</p>
                 </div>
-                <.input type="checkbox" field={@form[:notifications_enabled]} class="w-5 h-5 border-white/10 bg-slate-900 rounded-md text-indigo-500" />
+                <.input
+                  type="checkbox"
+                  field={@form[:notifications_enabled]}
+                  class="w-5 h-5 border-white/10 bg-slate-900 rounded-md text-indigo-500"
+                />
               </div>
 
               <div class="pt-4">
-                <.button phx-disable-with="Syncing..." class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/10">
+                <.button
+                  phx-disable-with="Syncing..."
+                  class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/10"
+                >
                   Save Changes
                 </.button>
               </div>
@@ -146,7 +178,9 @@ defmodule NexusWeb.Identity.SettingsLive do
           <div class="max-w-4xl">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div class="lg:col-span-1">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Security Overview</h3>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">
+                  Security Overview
+                </h3>
                 <p class="text-xs text-slate-500 mb-6 leading-relaxed">
                   Monitor and manage your active account sessions across all devices. If you suspect any unauthorized access, revoke the session immediately.
                 </p>
@@ -189,8 +223,10 @@ defmodule NexusWeb.Identity.SettingsLive do
                               <%= if session.id == @current_session_id do %>
                                 <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                                   <span class="relative flex h-1.5 w-1.5">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75">
+                                    </span>
+                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500">
+                                    </span>
                                   </span>
                                   <span class="text-[8px] font-black uppercase tracking-widest text-emerald-400">
                                     Active Now
@@ -199,7 +235,10 @@ defmodule NexusWeb.Identity.SettingsLive do
                               <% end %>
                             </div>
                             <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-medium">
-                              {session.ip_address || "Unknown IP"} • Last active {Calendar.strftime(session.last_active_at, "%b %d, %H:%M")}
+                              {session.ip_address || "Unknown IP"} • Last active {Calendar.strftime(
+                                session.last_active_at,
+                                "%b %d, %H:%M"
+                              )}
                             </p>
                           </div>
                         </div>
@@ -268,6 +307,7 @@ defmodule NexusWeb.Identity.SettingsLive do
     case App.dispatch(command) do
       :ok ->
         sessions = Enum.reject(socket.assigns.sessions, &(&1.id == session_id))
+
         {:noreply,
          socket
          |> put_flash(:info, "Session revoked")
@@ -279,6 +319,7 @@ defmodule NexusWeb.Identity.SettingsLive do
   end
 
   defp parse_user_agent(nil), do: "Unknown Device"
+
   defp parse_user_agent(ua) do
     cond do
       String.contains?(ua, "Chrome") -> "Google Chrome"

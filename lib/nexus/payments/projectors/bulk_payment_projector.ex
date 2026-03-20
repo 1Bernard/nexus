@@ -26,7 +26,7 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
   end)
 
   project(
-    %TransferInitiated{transfer_id: transfer_id, bulk_payment_id: bulk_id},
+    %TransferInitiated{transfer_id: transfer_id, bulk_payment_id: bulk_id, org_id: org_id},
     _metadata,
     fn multi ->
       case bulk_id do
@@ -41,6 +41,7 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
             %BulkPaymentProcessedTransfer{
               bulk_payment_id: bulk_id,
               transfer_id: transfer_id,
+              org_id: org_id,
               created_at: Nexus.Schema.utc_now() |> DateTime.truncate(:microsecond)
             },
             on_conflict: :nothing,
@@ -58,15 +59,19 @@ defmodule Nexus.Payments.Projectors.BulkPaymentProjector do
       nil ->
         {:ok, :skipped_idempotent}
 
-      _processed_record ->
-        query = from(b in BulkPayment, where: b.id == ^bulk_id)
+      processed_record ->
+        query =
+          from(b in BulkPayment, where: b.id == ^bulk_id and b.org_id == ^processed_record.org_id)
+
         repo.update_all(query, inc: [processed_items: 1])
         {:ok, :incremented}
     end
   end
 
   project(%BulkPaymentCompleted{} = event, _metadata, fn multi ->
-    query = from(b in BulkPayment, where: b.id == ^event.bulk_payment_id)
+    query =
+      from(b in BulkPayment, where: b.id == ^event.bulk_payment_id and b.org_id == ^event.org_id)
+
     Ecto.Multi.update_all(multi, :complete_bulk, query, set: [status: "completed"])
   end)
 

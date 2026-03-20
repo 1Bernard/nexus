@@ -6,8 +6,7 @@ defmodule Nexus.Treasury.Projectors.LiquidityProjector do
   use Commanded.Projections.Ecto,
     application: Nexus.App,
     repo: Nexus.Repo,
-    name: "Treasury.LiquidityProjector",
-    consistency: :strong
+    name: "Treasury.LiquidityProjector"
 
   import Ecto.Query
   alias Nexus.Treasury.Events.TransferExecuted
@@ -26,7 +25,11 @@ defmodule Nexus.Treasury.Projectors.LiquidityProjector do
   end)
 
   defp update_balance(multi, event, currency, delta, side) do
-    id = "#{event.org_id}-#{currency}"
+    # Generate a deterministic UUIDv5 for the liquidity position (org_id + currency)
+    # This ensures it is a valid binary_id and compliant with Rule 6.
+    # DNS Namespace or custom
+    namespace = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    id = Uniq.UUID.uuid5(namespace, "#{event.org_id}-#{currency}")
     # Use unique name per transfer, currency, AND side
     # This prevents collisions even when from_currency == to_currency
     op_name = {:liquidity_position, event.transfer_id, currency, side}
@@ -41,7 +44,7 @@ defmodule Nexus.Treasury.Projectors.LiquidityProjector do
         amount: delta
       },
       on_conflict: [set: [amount: dynamic([p], p.amount + ^delta)]],
-      conflict_target: [:id]
+      conflict_target: [:org_id, :currency]
     )
   end
 

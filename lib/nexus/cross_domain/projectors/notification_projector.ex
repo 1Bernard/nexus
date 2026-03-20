@@ -13,16 +13,19 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
   alias Nexus.CrossDomain.Projections.Notification
 
   project(%NotificationCreated{} = event, _metadata, fn multi ->
-    Ecto.Multi.insert(multi, :notification, %Notification{
-      id: event.id,
-      org_id: event.org_id,
-      user_id: event.user_id,
-      type: event.type,
-      title: event.title,
-      body: event.body,
-      metadata: event.metadata,
-      created_at: Nexus.Schema.parse_datetime(event.timestamp)
-    }, on_conflict: :nothing)
+    Ecto.Multi.insert(
+      multi,
+      :notification,
+      %Notification{
+        id: event.id,
+        org_id: event.org_id,
+        user_id: event.user_id,
+        type: event.type,
+        title: event.title,
+        body: event.body,
+        metadata: event.metadata,
+        created_at: Nexus.Schema.parse_datetime(event.timestamp)
+      }, on_conflict: :nothing)
     |> Ecto.Multi.run(:broadcast_unread, fn _repo, _changes ->
       broadcast_unread_count(event.org_id, event.user_id)
       {:ok, nil}
@@ -30,10 +33,11 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
   end)
 
   project(%NotificationRead{} = event, _metadata, fn multi ->
-    Ecto.Multi.update_all(multi, :notification,
-      NotificationQuery.base() |> where([n], n.id == ^event.id),
-      set: [read_at: event.read_at]
-    )
+    query =
+      NotificationQuery.base(event.org_id)
+      |> where([n], n.id == ^event.id)
+
+    Ecto.Multi.update_all(multi, :notification, query, set: [read_at: event.read_at])
     |> Ecto.Multi.run(:broadcast_unread, fn _repo, _changes ->
       broadcast_unread_count(event.org_id, event.user_id)
       {:ok, nil}
@@ -45,8 +49,8 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
 
   defp broadcast_unread_count(org_id, user_id) do
     count =
-      NotificationQuery.base()
-      |> where([n], n.org_id == ^org_id and n.user_id == ^user_id and is_nil(n.read_at))
+      NotificationQuery.base(org_id)
+      |> where([n], n.user_id == ^user_id and is_nil(n.read_at))
       |> Nexus.Repo.aggregate(:count, :id)
 
     Phoenix.PubSub.broadcast(Nexus.PubSub, "unread_count:user:#{user_id}", {:unread_count, count})

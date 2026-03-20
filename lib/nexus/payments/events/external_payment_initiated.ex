@@ -5,7 +5,6 @@ defmodule Nexus.Payments.Events.ExternalPaymentInitiated do
   alias Nexus.Types
 
   @derive Jason.Encoder
-  defstruct [:payment_id, :org_id, :transfer_id, :amount, :currency, :recipient_data, :external_reference, :initiated_at]
 
   @type t :: %__MODULE__{
           payment_id: Types.binary_id(),
@@ -17,4 +16,15 @@ defmodule Nexus.Payments.Events.ExternalPaymentInitiated do
           external_reference: String.t(),
           initiated_at: Types.datetime()
         }
+
+  defstruct [
+    :payment_id,
+    :org_id,
+    :transfer_id,
+    :amount,
+    :currency,
+    :recipient_data,
+    :external_reference,
+    :initiated_at
+  ]
 end

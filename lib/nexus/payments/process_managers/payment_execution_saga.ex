@@ -12,9 +12,15 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSaga do
 
   alias Nexus.Treasury.Events.TransferExecuted
   alias Nexus.Payments.Commands.InitiateExternalPayment
-  alias Nexus.Payments.Events.{ExternalPaymentInitiated, ExternalPaymentSettled, ExternalPaymentFailed}
+
+  alias Nexus.Payments.Events.{
+    ExternalPaymentInitiated,
+    ExternalPaymentSettled,
+    ExternalPaymentFailed
+  }
 
   # 1. Start the saga when a transfer is executed in Treasury
+  @spec interested?(struct()) :: {:start | :continue, binary()} | false
   def interested?(%TransferExecuted{transfer_id: id}), do: {:start, id}
 
   # 2. Continue for follow-up events in the Payments domain
@@ -27,6 +33,7 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSaga do
 
   # --- Command Dispatch ---
 
+  @spec handle(t(), struct()) :: [struct()] | struct() | []
   def handle(%__MODULE__{status: nil}, %TransferExecuted{} = event) do
     # Generate a unique payment_id derived from transfer_id
     payment_id = "pay-#{event.transfer_id}"
@@ -42,6 +49,7 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSaga do
     }
   end
 
+  @type t :: %__MODULE__{}
   # The saga stops once the payment is settled or failed.
   def handle(%__MODULE__{}, %ExternalPaymentSettled{} = _event), do: []
   def handle(%__MODULE__{}, %ExternalPaymentFailed{} = _event), do: []
@@ -50,8 +58,14 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSaga do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = saga, %TransferExecuted{} = event) do
-    %__MODULE__{saga | transfer_id: event.transfer_id, org_id: event.org_id, status: :transfer_executed}
+    %__MODULE__{
+      saga
+      | transfer_id: event.transfer_id,
+        org_id: event.org_id,
+        status: :transfer_executed
+    }
   end
 
   def apply(%__MODULE__{} = saga, %ExternalPaymentInitiated{} = event) do
@@ -68,6 +82,7 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSaga do
 
   # --- Stop Condition ---
 
+  @spec stop?(t()) :: boolean()
   def stop?(%__MODULE__{status: status}), do: status in [:settled, :failed]
   def stop?(_), do: false
 end

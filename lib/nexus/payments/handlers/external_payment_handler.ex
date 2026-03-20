@@ -13,8 +13,11 @@ defmodule Nexus.Payments.Handlers.ExternalPaymentHandler do
   alias Nexus.Payments.Gateways.PaystackGateway
   require Logger
 
+  @spec handle(ExternalPaymentInitiated.t(), map()) :: :ok
   def handle(%ExternalPaymentInitiated{} = event, _metadata) do
-    Logger.info("[Payments] [Handler] Initiating Paystack transfer for Payment: #{event.payment_id}")
+    Logger.info(
+      "[Payments] [Handler] Initiating Paystack transfer for Payment: #{event.payment_id}"
+    )
 
     case PaystackGateway.execute_transfer(
            event.transfer_id,

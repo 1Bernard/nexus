@@ -288,7 +288,9 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         on_close={JS.push("clear_selection")}
         class="max-w-xl"
       >
-        <% inv = @selected_invoice_id && Enum.find(@unmatched_invoices, &(&1.id == @selected_invoice_id))
+        <% inv =
+          @selected_invoice_id && Enum.find(@unmatched_invoices, &(&1.id == @selected_invoice_id))
+
         line = @selected_line_id && Enum.find(@unmatched_lines, &(&1.id == @selected_line_id)) %>
         <div :if={inv && line} class="relative z-10">
           <% inv_amount = Decimal.new(inv.amount)
@@ -305,26 +307,41 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
           <div class="flex flex-col gap-8">
             <div class="grid grid-cols-1 gap-6 py-6 border-y border-white/5">
               <div class="flex flex-col gap-4">
-                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Pair Selection</span>
+                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                  Pair Selection
+                </span>
                 <div class="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                   <div class="flex flex-col">
-                    <span class="text-[10px] text-indigo-400 font-mono italic">SAP BELNR: {inv.sap_document_number}</span>
-                    <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}</span>
+                    <span class="text-[10px] text-indigo-400 font-mono italic">
+                      SAP BELNR: {inv.sap_document_number}
+                    </span>
+                    <span class="text-sm font-bold text-white">
+                      {Decimal.round(Decimal.new(inv.amount), 2)} {inv.currency}
+                    </span>
                   </div>
                   <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
                     <span class="hero-arrows-right-left w-4 h-4 text-slate-40" />
                   </div>
                   <div class="flex flex-col text-right">
-                    <span class="text-[10px] text-amber-400 font-mono italic">BNK REF: {line.ref}</span>
-                    <span class="text-sm font-bold text-white">{Decimal.round(Decimal.new(line.amount), 2)} {line.currency}</span>
+                    <span class="text-[10px] text-amber-400 font-mono italic">
+                      BNK REF: {line.ref}
+                    </span>
+                    <span class="text-sm font-bold text-white">
+                      {Decimal.round(Decimal.new(line.amount), 2)} {line.currency}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div class="flex flex-col gap-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Variance</span>
-                  <span class={["text-sm font-mono font-bold", if(is_exact, do: "text-emerald-400", else: "text-rose-400")]}>
+                  <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                    Variance
+                  </span>
+                  <span class={[
+                    "text-sm font-mono font-bold",
+                    if(is_exact, do: "text-emerald-400", else: "text-rose-400")
+                  ]}>
                     {Decimal.round(variance, 2)} {line.currency}
                   </span>
                 </div>
@@ -333,19 +350,34 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   <%= if is_exact do %>
                     <div class="flex items-center gap-2">
                       <span class="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span class="text-xs text-emerald-400 font-bold uppercase tracking-tight">Exact Match Confirmed</span>
+                      <span class="text-xs text-emerald-400 font-bold uppercase tracking-tight">
+                        Exact Match Confirmed
+                      </span>
                     </div>
                   <% else %>
                     <div class="flex flex-col gap-3 w-full">
                       <div class="flex items-center justify-between">
-                        <span class="text-[10px] text-rose-400 font-black uppercase tracking-widest">Needs Reason</span>
+                        <span class="text-[10px] text-rose-400 font-black uppercase tracking-widest">
+                          Needs Reason
+                        </span>
                       </div>
-                      <select phx-change="set_variance_reason" class="w-full bg-slate-900 border-white/10 text-sm text-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all">
+                      <select
+                        phx-change="set_variance_reason"
+                        class="w-full bg-slate-900 border-white/10 text-sm text-slate-300 rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                      >
                         <option value="">Select variance reason...</option>
-                        <option value="bank_fee" selected={@variance_reason == "bank_fee"}>Bank Fee</option>
-                        <option value="fx_diff" selected={@variance_reason == "fx_diff"}>FX Difference</option>
-                        <option value="overpayment" selected={@variance_reason == "overpayment"}>Overpayment</option>
-                        <option value="underpayment" selected={@variance_reason == "underpayment"}>Underpayment</option>
+                        <option value="bank_fee" selected={@variance_reason == "bank_fee"}>
+                          Bank Fee
+                        </option>
+                        <option value="fx_diff" selected={@variance_reason == "fx_diff"}>
+                          FX Difference
+                        </option>
+                        <option value="overpayment" selected={@variance_reason == "overpayment"}>
+                          Overpayment
+                        </option>
+                        <option value="underpayment" selected={@variance_reason == "underpayment"}>
+                          Underpayment
+                        </option>
                         <option value="other" selected={@variance_reason == "other"}>Other</option>
                       </select>
                     </div>
@@ -355,10 +387,18 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
             </div>
 
             <div class="flex items-center gap-3">
-              <button phx-click="match_selected" disabled={!is_exact && is_nil(@variance_reason)} class="flex-1 py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
+              <button
+                :if={can?(@current_user, :trade, :treasury_ops)}
+                phx-click="match_selected"
+                disabled={!is_exact && is_nil(@variance_reason)}
+                class="flex-1 py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
+              >
                 Confirm Reconciliation
               </button>
-              <button phx-click={JS.push("clear_selection")} class="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-sm transition-all">
+              <button
+                phx-click={JS.push("clear_selection")}
+                class="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-sm transition-all"
+              >
                 Cancel
               </button>
             </div>
@@ -530,8 +570,9 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                   Matched
                 </span>
                 <button
+                  :if={can?(@current_user, :trade, :treasury_ops)}
                   phx-click="reverse_match"
-                  phx-value-id={recon.reconciliation_id}
+                  phx-value-id={recon.id}
                   class="text-[9px] font-bold text-slate-500 hover:text-rose-400 transition-colors uppercase tracking-widest"
                 >
                   Reverse Match
@@ -542,17 +583,17 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
                 <span class="text-[9px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-widest border border-amber-500/20 animate-pulse">
                   Pending Approval
                 </span>
-                <div class="flex items-center gap-2">
+                <div :if={can?(@current_user, :trade, :treasury_ops)} class="flex items-center gap-2">
                   <button
                     phx-click="approve_match"
-                    phx-value-id={recon.reconciliation_id}
+                    phx-value-id={recon.id}
                     class="px-2 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded transition-colors uppercase tracking-wider"
                   >
                     Approve
                   </button>
                   <button
                     phx-click="reject_match"
-                    phx-value-id={recon.reconciliation_id}
+                    phx-value-id={recon.id}
                     class="px-2 py-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded transition-colors uppercase tracking-wider"
                   >
                     Reject
@@ -868,7 +909,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         records =
           query
           |> where([r], r.matched_at >= ^cursor_before)
-          |> order_by([r], asc: r.matched_at, asc: r.reconciliation_id)
+          |> order_by([r], asc: r.matched_at, asc: r.id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
           |> Enum.reverse()
@@ -883,7 +924,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
         records =
           query
           |> where([r], r.matched_at <= ^cursor_after)
-          |> order_by([r], desc: r.matched_at, desc: r.reconciliation_id)
+          |> order_by([r], desc: r.matched_at, desc: r.id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
 
@@ -898,7 +939,7 @@ defmodule NexusWeb.Treasury.ReconciliationLive do
       true ->
         records =
           query
-          |> order_by([r], desc: r.matched_at, desc: r.reconciliation_id)
+          |> order_by([r], desc: r.matched_at, desc: r.id)
           |> limit(^(limit + 1))
           |> Nexus.Repo.all()
 

@@ -12,6 +12,7 @@ defmodule Nexus.Shared.Middleware.TenantGate do
   alias Commanded.Middleware.Pipeline
 
   # We allow system/genesis commands to bypass the gate.
+  @spec before_dispatch(Pipeline.t()) :: Pipeline.t()
   def before_dispatch(%Pipeline{command: cmd} = pipeline)
       when is_struct(cmd, Nexus.Organization.Commands.ProvisionTenant) or
              is_struct(cmd, Nexus.Treasury.Commands.RecordMarketTick) do
@@ -27,6 +28,9 @@ defmodule Nexus.Shared.Middleware.TenantGate do
     end
   end
 
+  @spec after_dispatch(Pipeline.t()) :: Pipeline.t()
   def after_dispatch(pipeline), do: pipeline
+
+  @spec after_failure(Pipeline.t()) :: Pipeline.t()
   def after_failure(pipeline), do: pipeline
 end

@@ -9,14 +9,21 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     repo: Nexus.Repo,
     consistency: :strong
 
-  alias Nexus.Identity.Events.{UserRoleChanged, UserStatusChanged, SettingsUpdated, SessionStarted, SessionExpired}
+  alias Nexus.Identity.Events.{
+    UserRoleChanged,
+    UserStatusChanged,
+    SettingsUpdated,
+    SessionStarted,
+    SessionExpired
+  }
+
   alias Nexus.Identity.Projections.{User, UserSettings, UserSession}
   import Ecto.Query
 
   project(%UserRoleChanged{} = event, _metadata, fn multi ->
     multi
     |> Ecto.Multi.update_all(
-      :update_role,
+      :update_roles,
       from(u in User, where: u.id == ^event.user_id),
       set: [role: event.role, updated_at: Nexus.Schema.utc_now() |> DateTime.truncate(:second)]
     )
@@ -27,7 +34,10 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     |> Ecto.Multi.update_all(
       :update_status,
       from(u in User, where: u.id == ^event.user_id),
-      set: [status: event.status, updated_at: Nexus.Schema.utc_now() |> DateTime.truncate(:second)]
+      set: [
+        status: event.status,
+        updated_at: Nexus.Schema.utc_now() |> DateTime.truncate(:second)
+      ]
     )
   end)
 

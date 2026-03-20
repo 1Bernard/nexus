@@ -18,6 +18,7 @@ defmodule Nexus.Release do
   Uses EventStore's own initialisation task without requiring Mix.
   Idempotent — will skip tables that already exist.
   """
+  @spec init_event_store() :: :ok
   def init_event_store do
     Application.ensure_all_started(:ssl)
     Application.ensure_loaded(@app)
@@ -64,6 +65,7 @@ defmodule Nexus.Release do
   Run via:
     docker compose exec app /app/bin/nexus eval "Nexus.Release.seed"
   """
+  @spec seed() :: :ok
   def seed do
     # Start the full OTP application so Commanded and EventStore supervisors
     # are up — required for dispatch/1 to work.
@@ -103,6 +105,7 @@ defmodule Nexus.Release do
   end
 
   @doc "Runs all pending Ecto migrations."
+  @spec migrate() :: [any()]
   def migrate do
     load_app()
 
@@ -112,6 +115,7 @@ defmodule Nexus.Release do
   end
 
   @doc "Rolls back an Ecto migration to a specific version."
+  @spec rollback(module(), integer()) :: {:ok, any(), any()}
   def rollback(repo, version) do
     load_app()
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))

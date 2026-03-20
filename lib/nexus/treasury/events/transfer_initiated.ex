@@ -4,6 +4,8 @@ defmodule Nexus.Treasury.Events.TransferInitiated do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           transfer_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -16,17 +18,7 @@ defmodule Nexus.Treasury.Events.TransferInitiated do
           recipient_data: map() | nil,
           requested_at: Types.datetime()
         }
-  @derive [Jason.Encoder]
-  @enforce_keys [
-    :transfer_id,
-    :org_id,
-    :user_id,
-    :from_currency,
-    :to_currency,
-    :amount,
-    :status,
-    :requested_at
-  ]
+
   defstruct [
     :transfer_id,
     :org_id,

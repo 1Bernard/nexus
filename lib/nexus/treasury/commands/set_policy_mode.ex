@@ -14,6 +14,7 @@ defmodule Nexus.Treasury.Commands.SetPolicyMode do
           actor_email: String.t(),
           changed_at: Types.datetime()
         }
+
   @enforce_keys [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
   defstruct [:policy_id, :org_id, :mode, :threshold, :actor_email, :changed_at]
 end

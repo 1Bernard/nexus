@@ -4,6 +4,18 @@ defmodule Nexus.Organization.Projections.Tenant do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :org_id,
+             :name,
+             :status,
+             :suspended_at,
+             :modules_enabled,
+             :initial_admin_email
+           ]}
   schema "organization_tenants" do
     field :org_id, :binary_id
     field :name, :string
@@ -17,6 +29,7 @@ defmodule Nexus.Organization.Projections.Tenant do
   end
 
   @doc false
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(tenant, attrs) do
     tenant
     |> cast(attrs, [:id, :org_id, :name, :status, :suspended_at, :modules_enabled])

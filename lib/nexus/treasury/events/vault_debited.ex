@@ -5,7 +5,6 @@ defmodule Nexus.Treasury.Events.VaultDebited do
   alias Nexus.Types
 
   @derive Jason.Encoder
-  defstruct [:vault_id, :org_id, :amount, :currency, :transfer_id, :debited_at]
 
   @type t :: %__MODULE__{
           vault_id: Types.vault_id(),
@@ -15,4 +14,6 @@ defmodule Nexus.Treasury.Events.VaultDebited do
           transfer_id: Types.binary_id() | nil,
           debited_at: Types.datetime()
         }
+
+  defstruct [:vault_id, :org_id, :amount, :currency, :transfer_id, :debited_at]
 end

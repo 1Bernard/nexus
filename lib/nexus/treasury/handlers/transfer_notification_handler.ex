@@ -10,6 +10,8 @@ defmodule Nexus.Treasury.Handlers.TransferNotificationHandler do
 
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
 
+  @spec handle(TransferInitiated.t() | TransferAuthorized.t() | TransferExecuted.t(), map()) ::
+          :ok
   def handle(%TransferInitiated{} = event, _metadata) do
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,

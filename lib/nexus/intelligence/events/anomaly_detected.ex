@@ -2,7 +2,17 @@ defmodule Nexus.Intelligence.Events.AnomalyDetected do
   @moduledoc """
   Emitted when the AI Sentinel flags an invoice as an anomaly.
   """
+  alias Nexus.Types
+
   @derive Jason.Encoder
-  @enforce_keys [:analysis_id, :org_id, :invoice_id, :score, :reason, :flagged_at]
+
+  @type t :: %__MODULE__{
+          analysis_id: Types.binary_id(),
+          org_id: Types.org_id(),
+          invoice_id: Types.binary_id(),
+          score: float(),
+          reason: String.t(),
+          flagged_at: Types.datetime()
+        }
   defstruct [:analysis_id, :org_id, :invoice_id, :score, :reason, :flagged_at]
 end

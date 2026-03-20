@@ -15,5 +15,13 @@ defmodule Nexus.Identity.Commands.StartSession do
         }
 
   @enforce_keys [:org_id, :user_id, :session_id, :session_token, :started_at]
-  defstruct [:org_id, :user_id, :session_id, :session_token, :user_agent, :ip_address, :started_at]
+  defstruct [
+    :org_id,
+    :user_id,
+    :session_id,
+    :session_token,
+    :user_agent,
+    :ip_address,
+    :started_at
+  ]
 end

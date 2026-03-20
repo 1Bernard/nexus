@@ -10,6 +10,8 @@ defmodule Nexus.Organization.Aggregates.Tenant do
     invitations: MapSet.new()
   ]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Organization.Commands.ProvisionTenant
   alias Nexus.Organization.Commands.InviteUser
   alias Nexus.Organization.Commands.RedeemInvitation
@@ -24,6 +26,14 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 
   # --- Provisioning ---
 
+  @spec execute(
+          t(),
+          InviteUser.t()
+          | ProvisionTenant.t()
+          | RedeemInvitation.t()
+          | SuspendTenant.t()
+          | ToggleTenantModule.t()
+        ) :: term()
   def execute(%__MODULE__{id: nil}, %ProvisionTenant{} = cmd) do
     # Name must be present
     if is_nil(cmd.name) || String.trim(cmd.name) == "" do
@@ -124,6 +134,7 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 
   # --- State Mutators ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %TenantProvisioned{} = event) do
     %{state | id: event.org_id, name: event.name}
   end
@@ -149,6 +160,8 @@ defmodule Nexus.Organization.Aggregates.Tenant do
 end
 
 defimpl Jason.Encoder, for: Nexus.Organization.Aggregates.Tenant do
+  @spec encode(Nexus.Organization.Aggregates.Tenant.t(), Jason.Encode.opts()) ::
+          Jason.Encode.json()
   def encode(struct, opts) do
     struct
     |> Map.from_struct()

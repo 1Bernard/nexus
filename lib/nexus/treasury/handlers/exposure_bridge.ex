@@ -14,6 +14,7 @@ defmodule Nexus.Treasury.Handlers.ExposureBridge do
   alias Nexus.Treasury.Commands.CalculateExposure
   alias Nexus.ERP
 
+  @spec handle(InvoiceIngested.t(), map()) :: :ok
   def handle(%InvoiceIngested{} = event, _metadata) do
     Logger.info(
       "[Treasury] [ExposureBridge] Ingested Invoice detected for #{event.subsidiary} / #{event.currency}. Recalculating exposure..."

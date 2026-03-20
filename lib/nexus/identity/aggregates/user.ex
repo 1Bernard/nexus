@@ -4,7 +4,20 @@ defmodule Nexus.Identity.Aggregates.User do
   Responsible for validating Biometric Handshakes and emitting Facts.
   """
   @derive Jason.Encoder
-  defstruct [:id, :org_id, :email, :display_name, :role, :status, :cose_key, :credential_id]
+  defstruct [
+    :id,
+    :org_id,
+    :email,
+    :display_name,
+    :role,
+    :status,
+    :cose_key,
+    :credential_id,
+    :settings,
+    :sessions
+  ]
+
+  @type t :: %__MODULE__{}
 
   alias Nexus.Identity.Commands.{
     RegisterUser,
@@ -49,19 +62,7 @@ defmodule Nexus.Identity.Aggregates.User do
     {:error, :already_registered}
   end
 
-  def execute(%__MODULE__{id: nil}, %RegisterUser{} = cmd) do
-    %UserRegistered{
-      user_id: cmd.user_id,
-      org_id: cmd.org_id,
-      email: cmd.email,
-      display_name: cmd.display_name,
-      role: cmd.role,
-      cose_key: cmd.cose_key,
-      credential_id: cmd.credential_id,
-      registered_at: cmd.registered_at,
-      status: "active"
-    }
-  end
+  @spec execute(t(), struct()) :: term()
 
   def execute(%__MODULE__{id: _exists}, %RegisterUser{}) do
     {:error, :already_registered}
@@ -90,16 +91,6 @@ defmodule Nexus.Identity.Aggregates.User do
       org_id: cmd.org_id,
       action_id: cmd.action_id,
       verified_at: cmd.verified_at
-    }
-  end
-
-  def execute(%__MODULE__{id: id}, %ChangeUserRole{} = cmd) when not is_nil(id) do
-    %UserRoleChanged{
-      user_id: cmd.user_id,
-      org_id: cmd.org_id,
-      role: cmd.role,
-      actor_id: cmd.actor_id,
-      changed_at: cmd.changed_at
     }
   end
 
@@ -157,6 +148,7 @@ defmodule Nexus.Identity.Aggregates.User do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %UserRegistered{} = event) do
     %__MODULE__{
       state
@@ -167,7 +159,13 @@ defmodule Nexus.Identity.Aggregates.User do
         role: event.role,
         cose_key: event.cose_key,
         credential_id: event.credential_id,
-        status: :registered
+        status: :registered,
+        settings: %{
+          locale: "en",
+          timezone: "UTC",
+          notifications_enabled: true
+        },
+        sessions: %{}
     }
   end
 
@@ -197,7 +195,34 @@ defmodule Nexus.Identity.Aggregates.User do
     %__MODULE__{state | status: status}
   end
 
-  def apply(%__MODULE__{} = state, %SettingsUpdated{}), do: state
-  def apply(%__MODULE__{} = state, %SessionStarted{}), do: state
-  def apply(%__MODULE__{} = state, %SessionExpired{}), do: state
+  def apply(%__MODULE__{} = state, %SettingsUpdated{} = event) do
+    %__MODULE__{
+      state
+      | settings: %{
+          locale: event.locale,
+          timezone: event.timezone,
+          notifications_enabled: event.notifications_enabled
+        }
+    }
+  end
+
+  def apply(%__MODULE__{} = state, %SessionStarted{} = event) do
+    sessions = state.sessions || %{}
+
+    new_sessions =
+      Map.put(sessions, event.session_id, %{
+        user_agent: event.user_agent,
+        ip_address: event.ip_address,
+        started_at: event.started_at,
+        last_active_at: event.started_at
+      })
+
+    %__MODULE__{state | sessions: new_sessions}
+  end
+
+  def apply(%__MODULE__{} = state, %SessionExpired{} = event) do
+    sessions = state.sessions || %{}
+    new_sessions = Map.delete(sessions, event.session_id)
+    %__MODULE__{state | sessions: new_sessions}
+  end
 end

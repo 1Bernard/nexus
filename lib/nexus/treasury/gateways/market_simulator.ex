@@ -13,11 +13,13 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
   # 2 seconds
   @tick_interval 2000
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
+  @spec init(any()) :: {:ok, map()}
   def init(_opts) do
     Logger.info("[Treasury] [SIMULATOR] Starting FX Market Simulator...")
     # Seed base prices as Decimals
@@ -32,6 +34,7 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
   end
 
   @impl true
+  @spec handle_info(atom(), map()) :: {:noreply, map()}
   def handle_info(:tick, state) do
     # Pick a random pair to update
     pair = Enum.random(@pairs)
@@ -40,10 +43,16 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     # Generate a realistic fluctuation (0.01% - 0.05%) using Decimal
     # fluctuation_factor = 1 + (random_value * 0.0005 * direction)
     direction = if :rand.uniform() > 0.5, do: 1, else: -1
-    random_factor = :rand.uniform() |> Decimal.from_float() |> Decimal.mult(Decimal.new("0.0005")) |> Decimal.mult(Decimal.new(direction))
+
+    random_factor =
+      :rand.uniform()
+      |> Decimal.from_float()
+      |> Decimal.mult(Decimal.new("0.0005"))
+      |> Decimal.mult(Decimal.new(direction))
 
     # new_price = old_price * (1 + random_factor)
-    new_price = Decimal.mult(old_price, Decimal.add(Decimal.new(1), random_factor)) |> Decimal.round(4)
+    new_price =
+      Decimal.mult(old_price, Decimal.add(Decimal.new(1), random_factor)) |> Decimal.round(4)
 
     # Smart Yielding: Only skip if a LIVE tick was received within the last 5 seconds.
     case PriceCache.get_last_tick(pair) do
@@ -66,6 +75,7 @@ defmodule Nexus.Treasury.Gateways.MarketSimulator do
     {:noreply, new_state}
   end
 
+  @spec process_simulated_tick(String.t(), Decimal.t()) :: :ok
   defp process_simulated_tick(pair, %Decimal{} = decimal_price) do
     timestamp = Nexus.Schema.utc_now()
     # Format for UI/Logging

@@ -8,10 +8,14 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
   @derive Jason.Encoder
   defstruct [:id, :org_id]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment, ResolveAnomaly}
   alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
 
   # For anomaly detection, we only emit an event if it's an anomaly (score > 0.8)
+  @spec execute(t(), AnalyzeInvoice.t() | AnalyzeSentiment.t() | ResolveAnomaly.t()) ::
+          Commanded.Aggregate.Multi.t() | struct() | [struct()]
   def execute(%__MODULE__{} = _state, %AnalyzeInvoice{} = cmd) do
     Logger.debug("[AI Sentinel] Executing AnalyzeInvoice for #{cmd.invoice_id}")
 
@@ -76,6 +80,7 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
   end
 
   # Apply functions
+  @spec apply(t(), AnomalyDetected.t() | SentimentScored.t() | AnomalyResolved.t()) :: t()
   def apply(%__MODULE__{} = state, %AnomalyDetected{analysis_id: id, org_id: org_id}) do
     %__MODULE__{state | id: id, org_id: org_id}
   end

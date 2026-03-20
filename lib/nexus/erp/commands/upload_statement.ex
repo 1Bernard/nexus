@@ -12,6 +12,7 @@ defmodule Nexus.ERP.Commands.UploadStatement do
           raw_content: String.t(),
           uploaded_at: Types.datetime()
         }
+
   @enforce_keys [:statement_id, :org_id, :filename, :format, :raw_content, :uploaded_at]
   defstruct [:statement_id, :org_id, :filename, :format, :raw_content, :uploaded_at]
 end

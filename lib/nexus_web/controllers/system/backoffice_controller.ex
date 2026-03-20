@@ -13,8 +13,8 @@ defmodule NexusWeb.System.BackofficeController do
   This action is protected by the `require_system_admin` plug in the router.
   """
   def impersonate(conn, %{"id" => user_id}) do
-    # Fetch the target user we want to impersonate
-    case UserQuery.get_user(user_id) do
+    # Fetch the target user we want to impersonate using the system fetcher
+    case UserQuery.get_user_system(user_id) do
       nil ->
         conn
         |> put_flash(:error, "User not found.")

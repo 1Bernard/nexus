@@ -5,6 +5,9 @@ defmodule Nexus.Reporting.Projections.ControlMetric do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:id, :org_id, :metric_key, :score, :metadata]}
   schema "reporting_control_metrics" do
     field :org_id, :binary_id
     field :metric_key, :string
@@ -14,6 +17,7 @@ defmodule Nexus.Reporting.Projections.ControlMetric do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, attrs) do
     struct
     |> cast(attrs, [:id, :org_id, :metric_key, :score, :metadata])

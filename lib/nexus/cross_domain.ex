@@ -19,9 +19,8 @@ defmodule Nexus.CrossDomain do
   def list_notifications(_org_id, nil, _limit), do: []
 
   def list_notifications(org_id, user_id, limit) do
-    NotificationQuery.base()
+    NotificationQuery.base(org_id)
     |> NotificationQuery.with_context()
-    |> NotificationQuery.for_org(org_id)
     |> NotificationQuery.for_user(user_id)
     |> NotificationQuery.newest_first()
     |> NotificationQuery.limit_results(limit)

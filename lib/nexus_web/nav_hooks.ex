@@ -56,7 +56,9 @@ defmodule NexusWeb.NavHooks do
       socket
       |> assign(:command_palette_open, new_state)
       |> then(fn socket ->
-        if new_state, do: push_event(socket, "focus_search", %{}), else: assign(socket, :command_results, [])
+        if new_state,
+          do: push_event(socket, "focus_search", %{}),
+          else: assign(socket, :command_results, [])
       end)
 
     {:halt, socket}
@@ -87,7 +89,7 @@ defmodule NexusWeb.NavHooks do
 
     cond do
       is_nil(user) -> :all
-      user.role == "system_admin" -> :all
+      Enum.member?(user.role, "system_admin") -> :all
       true -> user.org_id
     end
   end

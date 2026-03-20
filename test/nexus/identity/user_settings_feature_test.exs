@@ -33,7 +33,7 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
       org_id: org_id,
       email: email,
       display_name: "Bernard",
-      role: "treasurer",
+      role: "admin",
       cose_key: Base.encode64("mock"),
       credential_id: Base.encode64("mock"),
       registered_at: DateTime.utc_now()
@@ -49,6 +49,7 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
 
   defgiven ~r/^I have an active secure session$/, _vars, state do
     session_id = Ecto.UUID.generate()
+
     command = %StartSession{
       org_id: state.org_id,
       user_id: state.user_id,
@@ -74,8 +75,11 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
     {:ok, state}
   end
 
-  defgiven ~r/^there is an active session from a "(?<device>[^"]+)" device$/, %{device: "Mobile"}, state do
+  defgiven ~r/^there is an active session from a "(?<device>[^"]+)" device$/,
+           %{device: "Mobile"},
+           state do
     mobile_session_id = Ecto.UUID.generate()
+
     command = %StartSession{
       org_id: state.org_id,
       user_id: state.user_id,
@@ -143,7 +147,7 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
     # Wait for projection
     Process.sleep(500)
 
-    settings = SettingsQuery.get_settings(state.user_id)
+    settings = SettingsQuery.get_settings(state.org_id, state.user_id)
 
     assert settings, "Settings should have been projected"
     assert settings.locale == locale
@@ -156,7 +160,7 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
     Process.sleep(200)
 
     # Domain test: verify the current session is not expired
-    sessions = SettingsQuery.list_active_sessions(state.user_id)
+    sessions = SettingsQuery.list_active_sessions(state.org_id, state.user_id)
     current = Enum.find(sessions, &(&1.id == state.session_id))
     assert current, "Current session should be listed"
     refute current.is_expired
@@ -174,7 +178,7 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
   defthen ~r/^the session should be terminated$/, _vars, state do
     Process.sleep(500)
 
-    sessions = SettingsQuery.list_active_sessions(state.user_id)
+    sessions = SettingsQuery.list_active_sessions(state.org_id, state.user_id)
 
     refute Enum.any?(sessions, &(&1.id == state.mobile_session_id))
     {:ok, state}

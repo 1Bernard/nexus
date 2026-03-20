@@ -9,6 +9,7 @@ defmodule Nexus.Treasury.Commands.RecordMarketTick do
           price: Types.money(),
           timestamp: Types.datetime()
         }
+
   @enforce_keys [:pair, :price, :timestamp]
   defstruct [:pair, :price, :timestamp]
 end

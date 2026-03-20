@@ -11,6 +11,7 @@ defmodule Nexus.ERP.Adapters.SapAdapter do
   @doc """
   Enriches a local invoice with data from the SAP master record.
   """
+  @spec enrich_invoice(String.t(), String.t()) :: {:ok, map()} | {:error, any()}
   def enrich_invoice(entity_id, invoice_id) do
     with :ok <- RateLimiter.check_quota(entity_id),
          {:ok, response} <- call_sap_api(entity_id, invoice_id) do

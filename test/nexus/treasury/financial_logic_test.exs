@@ -22,8 +22,10 @@ defmodule Nexus.Treasury.FinancialLogicTest do
   end
 
   property "Currency conversion idempotency (A -> B -> A with fixed rates)" do
-    check all(amount <- money_generator(),
-              rate <- rate_generator()) do
+    check all(
+            amount <- money_generator(),
+            rate <- rate_generator()
+          ) do
       # A -> B
       amount_b = D.mult(amount, rate) |> D.round(8)
       # B -> A
@@ -37,8 +39,10 @@ defmodule Nexus.Treasury.FinancialLogicTest do
   end
 
   property "Sum of parts equals the whole (no pennies lost in distribution)" do
-    check all(total <- money_generator(),
-              shares <- integer_generator(2, 10)) do
+    check all(
+            total <- money_generator(),
+            shares <- integer_generator(2, 10)
+          ) do
       # Divide total into N equal parts (rounded to 2)
       share_amount = D.div(total, D.new(shares)) |> D.round(2)
 

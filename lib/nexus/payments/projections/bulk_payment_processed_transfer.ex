@@ -5,10 +5,11 @@ defmodule Nexus.Payments.Projections.BulkPaymentProcessedTransfer do
   """
   use Nexus.Schema
 
-  @primary_key false
+  @derive {Jason.Encoder, only: [:bulk_payment_id, :transfer_id, :org_id]}
   schema "bulk_payment_processed_transfers" do
     field :bulk_payment_id, :binary_id, primary_key: true
     field :transfer_id, :binary_id, primary_key: true
+    field :org_id, :binary_id
 
     timestamps(updated_at: false)
   end

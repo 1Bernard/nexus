@@ -5,13 +5,19 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
   @derive Jason.Encoder
   defstruct [:id, :org_id, :status, :total_items, :processed_items]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Payments.Commands.InitiateBulkPayment
   alias Nexus.Payments.Commands.FinalizeBulkPayment
   alias Nexus.Payments.Events.BulkPaymentInitiated
   alias Nexus.Payments.Events.BulkPaymentCompleted
 
+  require Logger
+
   # --- Command Handlers ---
 
+  @spec execute(t(), InitiateBulkPayment.t() | FinalizeBulkPayment.t()) ::
+          Commanded.Aggregate.Multi.t() | struct() | [struct()]
   def execute(%__MODULE__{id: nil}, %InitiateBulkPayment{} = cmd) do
     total_amount =
       Enum.reduce(cmd.payments, Decimal.new(0), fn p, acc ->
@@ -41,6 +47,7 @@ defmodule Nexus.Payments.Aggregates.BulkPayment do
   # Idempotency: If already completed, do nothing
   def execute(%__MODULE__{status: :completed}, %FinalizeBulkPayment{}), do: []
 
+  @spec apply(t(), BulkPaymentInitiated.t() | BulkPaymentCompleted.t()) :: t()
   def apply(%__MODULE__{} = state, %BulkPaymentInitiated{} = event) do
     %__MODULE__{
       state

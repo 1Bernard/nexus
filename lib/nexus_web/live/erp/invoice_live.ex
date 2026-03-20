@@ -5,6 +5,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
   use NexusWeb, :live_view
 
   alias Nexus.ERP.Projections.Invoice
+  alias Nexus.ERP.Queries.InvoiceQuery
   alias Nexus.Repo
   import Ecto.Query
 
@@ -22,7 +23,11 @@ defmodule NexusWeb.ERP.InvoiceLive do
       socket
       |> assign(page_title: "ERP Talk Back - Nexus")
       |> assign(
-        org_id: if(socket.assigns.current_user.role == "system_admin", do: :all, else: org_id)
+        org_id:
+          if(Enum.member?(socket.assigns.current_user.role, "system_admin"),
+            do: :all,
+            else: org_id
+          )
       )
       |> assign(show_manual_modal: false)
       # Initialize with placeholders
@@ -66,7 +71,8 @@ defmodule NexusWeb.ERP.InvoiceLive do
 
   @impl true
   def handle_event("select_invoice", %{"id" => id}, socket) do
-    invoice = Repo.get(Invoice, id)
+    org_id = socket.assigns.org_id
+    invoice = Repo.get_by(Invoice, [id: id] ++ if(org_id == :all, do: [], else: [org_id: org_id]))
     {:noreply, assign(socket, selected_invoice: invoice)}
   end
 
@@ -171,42 +177,30 @@ defmodule NexusWeb.ERP.InvoiceLive do
       cursor_after: cursor_after
     } = socket.assigns
 
-    base_query =
-      if org_id == :all do
-        from(i in Invoice,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: i.org_id == t.org_id,
-          select: %{i | org_name: t.name}
-        )
-      else
-        from(i in Invoice,
-          left_join: t in Nexus.Organization.Projections.Tenant,
-          on: i.org_id == t.org_id,
-          where: i.org_id == ^org_id,
-          select: %{i | org_name: t.name}
-        )
-      end
+    query =
+      InvoiceQuery.base(org_id)
+      |> InvoiceQuery.with_tenant()
 
     query =
       if search && String.trim(search) != "" do
         search_term = "%#{search}%"
 
         where(
-          base_query,
+          query,
           [i],
           ilike(i.entity_id, ^search_term) or ilike(i.sap_document_number, ^search_term)
         )
       else
-        base_query
+        query
       end
 
     query =
       case status_filter do
         "Synced" ->
-          where(query, [i], i.status == "ingested")
+          InvoiceQuery.with_status(query, "ingested")
 
         "Paid" ->
-          where(query, [i], i.status == "matched")
+          InvoiceQuery.with_status(query, "matched")
 
         "Pending" ->
           where(query, [i], i.status not in ["ingested", "matched"])
@@ -278,38 +272,21 @@ defmodule NexusWeb.ERP.InvoiceLive do
   end
 
   defp get_total_count(org_id) do
-    query =
-      if org_id == :all do
-        from(i in Invoice)
-      else
-        from(i in Invoice, where: i.org_id == ^org_id)
-      end
-
-    Nexus.Repo.aggregate(query, :count, :id)
+    InvoiceQuery.base(org_id)
+    |> Repo.aggregate(:count, :id)
   end
 
   defp get_pending_count(org_id) do
-    query =
-      if org_id == :all do
-        from(i in Invoice, where: i.status not in ["ingested", "matched"])
-      else
-        from(i in Invoice, where: i.org_id == ^org_id and i.status not in ["ingested", "matched"])
-      end
-
-    Nexus.Repo.aggregate(query, :count, :id)
+    InvoiceQuery.base(org_id)
+    |> where([i], i.status not in ["ingested", "matched"])
+    |> Repo.aggregate(:count, :id)
   end
 
   defp get_total_volume(org_id) do
-    query =
-      if org_id == :all do
-        from(i in Invoice, select: i.amount)
-      else
-        from(i in Invoice, where: i.org_id == ^org_id, select: i.amount)
-      end
-
-    invoices = Repo.all(query)
-
-    Enum.reduce(invoices, 0.0, fn amount, acc ->
+    InvoiceQuery.base(org_id)
+    |> select([i], i.amount)
+    |> Repo.all()
+    |> Enum.reduce(0.0, fn amount, acc ->
       acc + parse_amount(amount)
     end)
   end
@@ -319,17 +296,9 @@ defmodule NexusWeb.ERP.InvoiceLive do
     day = 86400
 
     query =
-      if org_id == :all do
-        from(i in Invoice,
-          where: i.status != "matched",
-          select: %{amount: i.amount, due_date: i.due_date}
-        )
-      else
-        from(i in Invoice,
-          where: i.org_id == ^org_id and i.status != "matched",
-          select: %{amount: i.amount, due_date: i.due_date}
-        )
-      end
+      InvoiceQuery.base(org_id)
+      |> where([i], i.status != "matched")
+      |> select([i], %{amount: i.amount, due_date: i.due_date})
 
     invoices = Repo.all(query)
 
@@ -390,7 +359,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </.nx_button>
         </:actions>
       </.page_header>
-
+      
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -415,7 +384,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-document-magnifying-glass"
         />
       </div>
-
+      
     <!-- Aging Buckets - Visual Risk Indicator -->
       <div class="bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl p-6 mb-8 relative overflow-hidden group">
         <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none">
@@ -455,7 +424,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </div>
-
+      
     <!-- High-Density Data Table Card -->
       <NexusWeb.NexusComponents.data_grid
         id="invoices-table"
@@ -622,7 +591,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </:action>
       </NexusWeb.NexusComponents.data_grid>
-
+      
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.nx_modal
         id="manual-entry-modal"
@@ -644,7 +613,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.nx_modal>
-
+      
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.nx_modal
         :if={@selected_invoice}

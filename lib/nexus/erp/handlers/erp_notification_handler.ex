@@ -20,6 +20,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
   @rabbitmq_url "amqp://guest:guest@localhost"
   @webhook_exchange "erp_webhooks"
 
+  @spec handle(struct(), map()) :: :ok | {:error, any()}
   def handle(%InvoiceIngested{} = event, _metadata) do
     # 1. UI Reactivity: Notify LiveViews instantly
     Phoenix.PubSub.broadcast(

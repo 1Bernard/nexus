@@ -5,7 +5,6 @@ defmodule Nexus.Treasury.Events.VaultBalanceSynced do
   alias Nexus.Types
 
   @derive Jason.Encoder
-  defstruct [:vault_id, :org_id, :amount, :currency, :synced_at]
 
   @type t :: %__MODULE__{
           vault_id: Types.vault_id(),
@@ -14,4 +13,6 @@ defmodule Nexus.Treasury.Events.VaultBalanceSynced do
           currency: Types.currency(),
           synced_at: Types.datetime()
         }
+
+  defstruct [:vault_id, :org_id, :amount, :currency, :synced_at]
 end

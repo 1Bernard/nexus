@@ -18,9 +18,14 @@ defmodule Nexus.Reporting.Projectors.ControlProjector do
 
   # --- Segregation of Duties ---
   project(%UserRoleChanged{} = event, _metadata, fn multi ->
-    # In a real system, we might run a complex query here.
-    # For now, we'll just upsert the metric row to ensure it exists.
-    upsert_metric(multi, event.org_id, "sod_cleanliness", 1.0, %{last_updated: event.changed_at})
+    # Calculate SoD cleanliness score based on real conflicts
+    conflicts = Nexus.Reporting.list_sod_conflicts(event.org_id)
+    score = if Enum.empty?(conflicts), do: 100, else: 0
+
+    upsert_metric(multi, event.org_id, "sod_cleanliness", score, %{
+      last_updated: event.changed_at,
+      conflict_count: length(conflicts)
+    })
   end)
 
   # --- Auth Integrity ---
@@ -42,12 +47,27 @@ defmodule Nexus.Reporting.Projectors.ControlProjector do
   end)
 
   defp upsert_metric(multi, org_id, key, score, metadata) do
-    Ecto.Multi.insert(multi, :"metric_#{key}", %ControlMetric{
-      id: Schema.generate_uuidv7(),
-      org_id: org_id,
-      metric_key: key,
-      score: score,
-      metadata: metadata
-    }, on_conflict: [set: [score: score, metadata: metadata, updated_at: Schema.utc_now()]], conflict_target: [:org_id, :metric_key])
+    multi
+    |> Ecto.Multi.insert(
+      :"metric_#{key}",
+      %ControlMetric{
+        id: Schema.generate_uuidv7(),
+        org_id: org_id,
+        metric_key: key,
+        score: score,
+        metadata: metadata
+      },
+      on_conflict: [set: [score: score, metadata: metadata, updated_at: Schema.utc_now()]],
+      conflict_target: [:org_id, :metric_key]
+    )
+    |> Ecto.Multi.run(:"broadcast_#{key}", fn _repo, _ ->
+      Phoenix.PubSub.broadcast(
+        Nexus.PubSub,
+        "reporting:compliance_updates",
+        {:compliance_updated, org_id}
+      )
+
+      {:ok, nil}
+    end)
   end
 end

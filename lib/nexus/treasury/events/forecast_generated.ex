@@ -4,6 +4,8 @@ defmodule Nexus.Treasury.Events.ForecastGenerated do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           currency: Types.currency(),
@@ -11,8 +13,7 @@ defmodule Nexus.Treasury.Events.ForecastGenerated do
           predictions: [map()],
           generated_at: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:org_id, :currency, :horizon_days, :predictions, :generated_at]
+
   defstruct [
     :org_id,
     :currency,

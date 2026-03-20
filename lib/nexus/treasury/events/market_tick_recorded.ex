@@ -4,12 +4,13 @@ defmodule Nexus.Treasury.Events.MarketTickRecorded do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           pair: String.t(),
           price: Types.money(),
           timestamp: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:pair, :price, :timestamp]
+
   defstruct [:pair, :price, :timestamp]
 end

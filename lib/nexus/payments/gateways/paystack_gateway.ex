@@ -11,6 +11,8 @@ defmodule Nexus.Payments.Gateways.PaystackGateway do
   Initiates a transfer via Paystack.
   """
   @impl true
+  @spec execute_transfer(String.t(), Decimal.t(), String.t(), map()) ::
+          {:ok, String.t()} | {:error, any()}
   def execute_transfer(transfer_id, amount, currency, recipient_data) do
     # Use a configured secret key or fall back to mock mode
     api_key = Application.get_env(:nexus, :paystack_secret_key)
@@ -26,6 +28,7 @@ defmodule Nexus.Payments.Gateways.PaystackGateway do
   Verifies a transfer status via Paystack.
   """
   @impl true
+  @spec verify_transfer(String.t()) :: {:ok, :success} | {:error, any()}
   def verify_transfer(_transfer_id) do
     api_key = Application.get_env(:nexus, :paystack_secret_key)
 

@@ -43,7 +43,9 @@ defmodule NexusWeb.Identity.SessionController do
 
     admin =
       Nexus.Repo.one(
-        from u in Nexus.Identity.Projections.User, where: u.role == "admin", limit: 1
+        from u in Nexus.Identity.Projections.User,
+          where: fragment("? @> ?", u.role, ^["admin"]),
+          limit: 1
       )
 
     if admin do

@@ -16,14 +16,22 @@ defmodule Nexus.Treasury.Aggregates.VaultTest do
         registered_at: DateTime.utc_now()
       }
 
-      assert %VaultRegistered{vault_id: "v1", currency: "USD"} = Vault.execute(%Vault{id: nil}, cmd)
+      assert %VaultRegistered{vault_id: "v1", currency: "USD"} =
+               Vault.execute(%Vault{id: nil}, cmd)
     end
   end
 
   describe "SyncVaultBalance" do
     test "updates balance" do
       state = %Vault{id: "v1", balance: Decimal.new(0)}
-      cmd = %SyncVaultBalance{vault_id: "v1", amount: Decimal.new(500), currency: "USD"}
+
+      cmd = %SyncVaultBalance{
+        vault_id: "v1",
+        org_id: "org-1",
+        amount: Decimal.new(500),
+        currency: "USD",
+        synced_at: DateTime.utc_now()
+      }
 
       assert %VaultBalanceSynced{amount: amount} = Vault.execute(state, cmd)
       assert Decimal.equal?(amount, 500)

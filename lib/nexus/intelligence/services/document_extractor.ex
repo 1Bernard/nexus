@@ -21,10 +21,22 @@ defmodule Nexus.Intelligence.Services.DocumentExtractor do
     field :confidence_score, :float
   end
 
+  @type t :: %__MODULE__{
+          vendor_name: String.t() | nil,
+          invoice_number: String.t() | nil,
+          amount: Decimal.t() | nil,
+          currency: String.t() | nil,
+          invoice_date: Date.t() | nil,
+          due_date: Date.t() | nil,
+          line_items: [String.t()],
+          confidence_score: float() | nil
+        }
+
   @doc """
   Extracts invoice details from raw text.
   Requires an LLM provider configured (Ollama/OpenAI) for Instructor.
   """
+  @spec extract(String.t()) :: {:ok, __MODULE__.t()} | {:error, any()}
   def extract(text) do
     # In a production offline environment, this would target a local
     # vLLM/Ollama instance running a model like Mistral or Llama-3.

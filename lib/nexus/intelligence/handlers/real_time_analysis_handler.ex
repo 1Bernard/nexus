@@ -10,6 +10,7 @@ defmodule Nexus.Intelligence.Handlers.RealTimeAnalysisHandler do
 
   alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
 
+  @spec handle(AnomalyDetected.t() | SentimentScored.t() | AnomalyResolved.t(), map()) :: :ok
   def handle(%AnomalyDetected{} = event, _metadata) do
     # Note: The projector normally provides the 'analysis' struct in after_update.
     # Since we are decoupled, we broadcast the event itself or the ID.

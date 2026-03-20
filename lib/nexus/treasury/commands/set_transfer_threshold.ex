@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Commands.SetTransferThreshold do
           threshold: Types.money(),
           set_at: Types.datetime()
         }
+
   @enforce_keys [:policy_id, :org_id, :threshold, :set_at]
   defstruct [:policy_id, :org_id, :threshold, :set_at]
 end

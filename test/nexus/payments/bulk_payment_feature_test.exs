@@ -259,19 +259,4 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     assert transfer != nil, "Expected transfer of #{amount} #{currency} to be dispatched"
     {:ok, state}
   end
-
-  # --- Helpers ---
-
-  defp project_event(event, event_number, handler_name, projector_module) do
-    # When using :no_sandbox, we might clash with background projectors.
-    # We use a unique handler_name suffix to isolate the test from the environment.
-    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
-      metadata = %{
-        handler_name: "#{handler_name}-test-#{:erlang.unique_integer([:positive])}",
-        event_number: event_number
-      }
-
-      projector_module.handle(event, metadata)
-    end)
-  end
 end

@@ -4,6 +4,8 @@ defmodule Nexus.CrossDomain.Events.NotificationCreated do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -14,7 +16,5 @@ defmodule Nexus.CrossDomain.Events.NotificationCreated do
           metadata: map(),
           timestamp: Types.datetime()
         }
-
-  @derive Jason.Encoder
   defstruct [:id, :org_id, :user_id, :type, :title, :body, :metadata, :timestamp]
 end

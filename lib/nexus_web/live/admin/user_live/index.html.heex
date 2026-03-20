@@ -19,29 +19,46 @@
         title="Active Members"
         subtitle="Full access to treasury operations"
         rows={@users}
-        total={Enum.count(@users)}
+        total={@total_count}
       >
-
         <:filters>
           <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-700/50 min-w-max">
             <button
               phx-click="filter-role"
               phx-value-role="all"
-              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "all", do: "bg-slate-800 text-white shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+              class={[
+                "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                if(@role_filter == "all",
+                  do: "bg-slate-800 text-white shadow-sm",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
             >
               All
             </button>
             <button
               phx-click="filter-role"
               phx-value-role="admin"
-              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "admin", do: "bg-emerald-500/20 text-emerald-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+              class={[
+                "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                if(@role_filter == "admin",
+                  do: "bg-emerald-500/20 text-emerald-400 shadow-sm",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
             >
               Admins
             </button>
             <button
               phx-click="filter-role"
               phx-value-role="trader"
-              class={"px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all #{if @role_filter == "trader", do: "bg-indigo-500/20 text-indigo-400 shadow-sm", else: "text-slate-500 hover:text-slate-300"}"}
+              class={[
+                "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                if(@role_filter == "trader",
+                  do: "bg-indigo-500/20 text-indigo-400 shadow-sm",
+                  else: "text-slate-500 hover:text-slate-300"
+                )
+              ]}
             >
               Traders
             </button>
@@ -79,13 +96,14 @@
           <.badge
             variant={
               case user.role do
+                "system_admin" -> "danger"
                 "admin" -> "success"
                 "trader" -> "info"
                 "viewer" -> "neutral"
-                _ -> "danger"
+                _ -> "neutral"
               end
             }
-            label={String.capitalize(user.role)}
+            label={String.capitalize(user.role || "unknown")}
           />
         </:col>
 
@@ -201,8 +219,19 @@
     <%= if is_nil(@generated_invite_url) do %>
       <form phx-submit="confirm-generate-invite" class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <.nx_input name="display_name" label="Display Name" placeholder="e.g. Sarah Connor" required />
-          <.nx_input name="email" type="email" label="Email Address" placeholder="sarah@nexus.io" required />
+          <.nx_input
+            name="display_name"
+            label="Display Name"
+            placeholder="e.g. Sarah Connor"
+            required
+          />
+          <.nx_input
+            name="email"
+            type="email"
+            label="Email Address"
+            placeholder="sarah@nexus.io"
+            required
+          />
         </div>
 
         <div>
@@ -212,12 +241,23 @@
           <div class="grid grid-cols-3 gap-3">
             <%= for role <- ["admin", "trader", "viewer"] do %>
               <label class={"cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center gap-2 transition-all hover:border-slate-700 #{if @invite_role == role, do: "bg-indigo-500/10 border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.1)]", else: "bg-slate-950/40 text-slate-500"}"}>
-                <input type="radio" name="role" value={role} class="hidden" checked={@invite_role == role} phx-click="set-invite-role" phx-value-role={role} />
+                <input
+                  type="radio"
+                  name="role"
+                  value={role}
+                  class="hidden"
+                  checked={@invite_role == role}
+                  phx-click="set-invite-role"
+                  phx-value-role={role}
+                />
                 <span class={[
                   "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                   if(@invite_role == role, do: "border-indigo-500", else: "border-slate-800")
                 ]}>
-                  <div :if={@invite_role == role} class="w-2 h-2 bg-indigo-400 rounded-full shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
+                  <div
+                    :if={@invite_role == role}
+                    class="w-2 h-2 bg-indigo-400 rounded-full shadow-[0_0_8px_rgba(129,140,248,0.8)]"
+                  />
                 </span>
                 <span class="text-[10px] font-black uppercase tracking-widest">{role}</span>
               </label>
@@ -226,7 +266,9 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-6 border-t border-white/5">
-          <.nx_button variant="ghost" type="button" phx-click="close-invite-modal">Cancel</.nx_button>
+          <.nx_button variant="ghost" type="button" phx-click="close-invite-modal">
+            Cancel
+          </.nx_button>
           <.nx_button variant="primary" type="submit">Generate Link</.nx_button>
         </div>
       </form>
@@ -239,17 +281,33 @@
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
           </div>
-          <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3">Single-Use Secure Link</p>
+          <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3">
+            Single-Use Secure Link
+          </p>
           <div class="flex items-center gap-3">
-            <input type="text" readonly value={@generated_invite_url} class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2.5 px-4 text-xs font-mono text-slate-300 focus:outline-none shadow-inner" id="invite-link-input" />
-            <button onclick={"navigator.clipboard.writeText('#{@generated_invite_url}')"} class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 active:scale-95" title="Copy to Clipboard">
+            <input
+              type="text"
+              readonly
+              value={@generated_invite_url}
+              class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg py-2.5 px-4 text-xs font-mono text-slate-300 focus:outline-none shadow-inner"
+              id="invite-link-input"
+            />
+            <button
+              onclick={"navigator.clipboard.writeText('#{@generated_invite_url}')"}
+              class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all border border-slate-700 active:scale-95"
+              title="Copy to Clipboard"
+            >
               <span class="hero-clipboard-document w-4 h-4" />
             </button>
           </div>
         </div>
         <div class="flex justify-center flex-col items-center gap-2">
-          <p class="text-[10px] text-slate-500 text-center italic">This link will expire in 24 hours. Once used, it cannot be reused.</p>
-          <.nx_button variant="ghost" class="mt-4" phx-click="close-invite-modal">Done</.nx_button>
+          <p class="text-[10px] text-slate-500 text-center italic">
+            This link will expire in 24 hours. Once used, it cannot be reused.
+          </p>
+          <.nx_button variant="ghost" class="mt-4" phx-click="close-invite-modal">
+            Done
+          </.nx_button>
         </div>
       </div>
     <% end %>
@@ -304,9 +362,13 @@
                 </div>
               </div>
               <%= if @editing_user.credential_id do %>
-                <span class="text-[9px] font-black text-emerald-500 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10 tracking-widest font-mono">ENROLLED</span>
+                <span class="text-[9px] font-black text-emerald-500 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10 tracking-widest font-mono">
+                  ENROLLED
+                </span>
               <% else %>
-                <span class="text-[9px] font-black text-amber-500 bg-amber-500/5 px-2.5 py-1.5 rounded-lg border border-amber-500/10 tracking-widest font-mono">NOT SET</span>
+                <span class="text-[9px] font-black text-amber-500 bg-amber-500/5 px-2.5 py-1.5 rounded-lg border border-amber-500/10 tracking-widest font-mono">
+                  NOT SET
+                </span>
               <% end %>
             </div>
           </div>
@@ -320,18 +382,40 @@
             <div class="flex flex-col gap-4">
               <div>
                 <p class="text-sm font-bold text-slate-100 tracking-tight">Operational Status</p>
-                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Toggle account availability across the platform.</p>
+                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">
+                  Toggle account availability across the platform.
+                </p>
               </div>
               <div class="grid grid-cols-2 bg-slate-950 p-1 rounded-2xl border border-slate-800/50 shadow-2xl">
                 <%= for status <- ["active", "suspended"] do %>
-                  <button type="button" phx-click="set-editing-status" phx-value-status={status} class={["py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all", if(@editing_status == status, do: "bg-slate-800 text-white shadow-xl ring-1 ring-white/5", else: "text-slate-500 hover:text-slate-300")]}>
+                  <button
+                    type="button"
+                    phx-click="set-editing-status"
+                    phx-value-status={status}
+                    class={[
+                      "py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                      if(@editing_status == status,
+                        do: "bg-slate-800 text-white shadow-xl ring-1 ring-white/5",
+                        else: "text-slate-500 hover:text-slate-300"
+                      )
+                    ]}
+                  >
                     {status}
                   </button>
                 <% end %>
               </div>
             </div>
-            <div :if={@editing_status != @editing_user.status} class="pt-6 border-t border-white/5 animate-in slide-in-from-top-4 duration-500">
-              <.nx_button variant="primary" class="w-full py-4 shadow-[0_0_30px_rgba(99,102,241,0.2)] rounded-2xl" phx-click="update-user-status" phx-value-status={@editing_status} phx-value-user_id={@editing_user.id}>
+            <div
+              :if={@editing_status != @editing_user.status}
+              class="pt-6 border-t border-white/5 animate-in slide-in-from-top-4 duration-500"
+            >
+              <.nx_button
+                variant="primary"
+                class="w-full py-4 shadow-[0_0_30px_rgba(99,102,241,0.2)] rounded-2xl"
+                phx-click="update-user-status"
+                phx-value-status={@editing_status}
+                phx-value-user_id={@editing_user.id}
+              >
                 Commit Status Initialization
               </.nx_button>
             </div>
@@ -343,23 +427,32 @@
             <div class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20 group-hover/lock:scale-110 transition-transform">
               <span class="hero-lock-closed w-4 h-4" />
             </div>
-            <h4 class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">Identity Revocation</h4>
+            <h4 class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em]">
+              Identity Revocation
+            </h4>
           </div>
-          <p class="text-[11px] text-rose-200/50 leading-relaxed mb-6 font-medium">Instantly revoke all active sessions, invalidate current JWTs, and block all API access for this identity.</p>
-          <.nx_button variant="ghost" class="w-full text-rose-400 border-rose-500/20 hover:bg-rose-500/10 py-3 rounded-2xl transition-all active:scale-[0.98]" phx-click="set-editing-status" phx-value-status="blocked">
+          <p class="text-[11px] text-rose-200/50 leading-relaxed mb-6 font-medium">
+            Instantly revoke all active sessions, invalidate current JWTs, and block all API access for this identity.
+          </p>
+          <.nx_button
+            variant="ghost"
+            class="w-full text-rose-400 border-rose-500/20 hover:bg-rose-500/10 py-3 rounded-2xl transition-all active:scale-[0.98]"
+            phx-click="set-editing-status"
+            phx-value-status="blocked"
+          >
             EXECUTE LOCKDOWN
           </.nx_button>
         </section>
       </div>
-
-      <!-- Right Column: Role Management -->
+      
+<!-- Right Column: Role Management -->
       <div class="space-y-8">
         <div>
           <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
             Role & Entitlements
           </h4>
-          <form phx-submit="update-user-role" class="space-y-4">
+          <form phx-submit="update-user-roles" class="space-y-4">
             <input type="hidden" name="user_id" value={@editing_user.id} />
             <div class="space-y-3">
               <%= for role <- ["system_admin", "admin", "trader", "viewer"] do %>
@@ -367,7 +460,11 @@
                   <div class="flex items-center gap-5">
                     <div class={[
                       "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-                      if(@editing_role == role, do: "bg-indigo-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.4)]", else: "bg-slate-900 text-slate-500 group-hover:text-slate-300 border border-slate-800/50")
+                      if(@editing_role == role,
+                        do: "bg-indigo-500 text-white shadow-[0_10px_30px_rgba(99,102,241,0.4)]",
+                        else:
+                          "bg-slate-900 text-slate-500 group-hover:text-slate-300 border border-slate-800/50"
+                      )
                     ]}>
                       <span class={[
                         case role do
@@ -380,27 +477,66 @@
                       ]} />
                     </div>
                     <div class="min-w-0">
-                      <p class={["text-base font-bold tracking-tight mb-0.5 transition-colors", if(@editing_role == role, do: "text-white", else: "text-slate-300 group-hover:text-white")]}>{String.capitalize(role) |> String.replace("_", " ")}</p>
-                       <p class="text-[11px] text-slate-500 leading-tight font-medium opacity-80">
-                        {(case role do
+                      <p class={[
+                        "text-base font-bold tracking-tight mb-0.5 transition-colors",
+                        if(@editing_role == role,
+                          do: "text-white",
+                          else: "text-slate-300 group-hover:text-white"
+                        )
+                      ]}>
+                        {String.capitalize(role) |> String.replace("_", " ")}
+                      </p>
+                      <p class="text-[11px] text-slate-500 leading-tight font-medium opacity-80">
+                        {case role do
                           "system_admin" -> "Global Platform Administration"
                           "admin" -> "Organizational access & team management"
                           "trader" -> "Market operations & execution"
                           "viewer" -> "Read-only audit & reporting"
-                        end)}
+                        end}
                       </p>
                     </div>
                   </div>
-                  <input type="radio" name="role" value={role} checked={@editing_role == role} phx-click="set-editing-role" phx-value-role={role} class="hidden" />
-                  <div class={["w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0", if(@editing_role == role, do: "border-indigo-500 bg-indigo-500/5", else: "border-slate-800/50")]}>
-                    <div :if={@editing_role == role} class="w-2.5 h-2.5 bg-indigo-400 rounded-full shadow-[0_0_12px_rgba(129,140,248,0.8)]" />
+                  <input
+                    type="radio"
+                    name="role"
+                    value={role}
+                    checked={@editing_role == role}
+                    phx-click="select-editing-role"
+                    phx-value-role={role}
+                    class="hidden"
+                  />
+                  <div class={[
+                    "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                    if(@editing_role == role,
+                      do: "border-indigo-500 bg-indigo-500/5",
+                      else: "border-slate-800/50"
+                    )
+                  ]}>
+                    <span
+                      :if={@editing_role == role}
+                      class="hero-check w-4 h-4 text-white shadow-[0_0_12px_rgba(129,140,248,0.8)]"
+                    />
                   </div>
                 </label>
               <% end %>
             </div>
             <div class="flex justify-end gap-4 pt-8 border-t border-white/5">
-              <.nx_button variant="ghost" type="button" phx-click="close-edit-modal" class="px-8 py-3 rounded-2xl">Dismiss</.nx_button>
-              <.nx_button variant="primary" type="submit" disabled={@editing_role == @editing_user.role} class="px-8 py-3 rounded-2xl shadow-xl shadow-indigo-500/10">Update Clearance Level</.nx_button>
+              <.nx_button
+                variant="ghost"
+                type="button"
+                phx-click="close-edit-modal"
+                class="px-8 py-3 rounded-2xl"
+              >
+                Dismiss
+              </.nx_button>
+              <.nx_button
+                variant="primary"
+                type="submit"
+                disabled={@editing_role == @editing_user.role}
+                class="px-8 py-3 rounded-2xl shadow-xl shadow-indigo-500/10"
+              >
+                Update Clearance Level
+              </.nx_button>
             </div>
           </form>
         </div>

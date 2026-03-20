@@ -68,7 +68,11 @@ defmodule NexusWeb.System.BackofficeLive do
   def render(assigns) do
     ~H"""
     <.page_container class="px-4 sm:px-6 lg:px-8 animate-fade-in pb-12">
-      <.page_header title="PLATFORM BACKOFFICE" subtitle="System Administrator Zone" is_backoffice={true}>
+      <.page_header
+        title="PLATFORM BACKOFFICE"
+        subtitle="System Administrator Zone"
+        is_backoffice={true}
+      >
         <:actions>
           <.nx_button
             variant="danger"
@@ -90,7 +94,7 @@ defmodule NexusWeb.System.BackofficeLive do
         <.stat_card label="Event Store Lag" value={"#{@health.event_store_lag}ms"} icon="hero-clock" />
         <.stat_card label="System Health" value={@health.system_health} icon="hero-heart" />
       </div>
-
+      
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-6 w-full mt-4">
         <.tab_button
@@ -116,7 +120,6 @@ defmodule NexusWeb.System.BackofficeLive do
           rows={@tenants}
           total={Enum.count(@tenants)}
         >
-
           <:col :let={tenant} label="Tenant Name">
             <span class="font-bold text-slate-200">{tenant.name}</span>
           </:col>

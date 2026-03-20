@@ -187,16 +187,18 @@ defmodule NexusWeb.NexusComponents do
         "flex-1 flex flex-col min-h-screen transition-all duration-300 w-full overflow-x-hidden",
         if(!@is_backoffice, do: "lg:ml-[var(--nx-sidebar-w)]")
       ]}>
-        <.topbar
-          current_user={@current_user}
-          session_id={@session_id}
-          notifications={@notifications}
-          unread_count={@unread_count}
-        >
-          <:title>{render_slot(@topbar_title)}</:title>
-          <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
-          <:actions>{render_slot(@topbar_actions)}</:actions>
-        </.topbar>
+        <div class="sticky top-0 z-40">
+          <.topbar
+            current_user={@current_user}
+            session_id={@session_id}
+            notifications={@notifications}
+            unread_count={@unread_count}
+          >
+            <:title>{render_slot(@topbar_title)}</:title>
+            <:subtitle>{render_slot(@topbar_subtitle)}</:subtitle>
+            <:actions>{render_slot(@topbar_actions)}</:actions>
+          </.topbar>
+        </div>
 
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
           {render_slot(@content)}
@@ -221,34 +223,131 @@ defmodule NexusWeb.NexusComponents do
   attr :current_user, :any, required: true
 
   def sidebar(assigns) do
+    # Grouped navigation definition with RBAC metadata
     core_nav = [
-      %{path: "/dashboard", label: "Dashboard", icon: "hero-chart-bar-square"},
-      %{path: "/intelligence", label: "Smart Insights", icon: "hero-sparkles"}
+      %{
+        path: "/dashboard",
+        label: "Dashboard",
+        icon: "hero-chart-bar-square",
+        action: :view,
+        resource: :dashboard
+      },
+      %{
+        path: "/intelligence",
+        label: "Smart Insights",
+        icon: "hero-sparkles",
+        action: :view,
+        resource: :intelligence
+      }
     ]
 
     ops_nav = [
-      %{path: "/invoices", label: "Your Invoices", icon: "hero-document-text"},
-      %{path: "/statements", label: "Upload Statements", icon: "hero-arrow-up-tray"},
-      %{path: "/reconciliation", label: "Match Engine", icon: "hero-arrows-right-left"},
-      %{path: "/forecast", label: "Cash Flow Outlook", icon: "hero-presentation-chart-line"},
-      %{path: "/vaults", label: "Vault Center", icon: "hero-building-library"},
-      %{path: "/payments", label: "Bulk Payments", icon: "hero-credit-card"}
+      %{
+        path: "/invoices",
+        label: "Your Invoices",
+        icon: "hero-document-text",
+        action: :view,
+        resource: :treasury_ops
+      },
+      %{
+        path: "/statements",
+        label: "Upload Statements",
+        icon: "hero-arrow-up-tray",
+        action: :create,
+        resource: :treasury_ops
+      },
+      %{
+        path: "/reconciliation",
+        label: "Match Engine",
+        icon: "hero-arrows-right-left",
+        action: :trade,
+        resource: :treasury_ops
+      },
+      %{
+        path: "/forecast",
+        label: "Cash Flow Outlook",
+        icon: "hero-presentation-chart-line",
+        action: :view,
+        resource: :treasury_ops
+      },
+      %{
+        path: "/vaults",
+        label: "Vault Center",
+        icon: "hero-building-library",
+        action: :view,
+        resource: :treasury_ops
+      },
+      %{
+        path: "/payments",
+        label: "Bulk Payments",
+        icon: "hero-credit-card",
+        action: :trade,
+        resource: :treasury_ops
+      }
     ]
 
-    admin_nav = [
-      %{path: "/admin/users", label: "Manage Users", icon: "hero-users"},
-      %{path: "/compliance", label: "Compliance Hub", icon: "hero-shield-check"},
-      %{path: "/activity", label: "Activity Logs", icon: "hero-list-bullet"},
-      %{path: "/admin/analysis", label: "AI Sentinel", icon: "hero-cpu-chip"},
-      %{path: "/admin/policy", label: "Policy Settings", icon: "hero-adjustments-horizontal"},
-      %{path: "/backoffice", label: "Backoffice", icon: "hero-server-stack"}
+    manage_nav = [
+      %{
+        path: "/admin/users",
+        label: "Manage Users",
+        icon: "hero-users",
+        action: :view,
+        resource: :org_management
+      },
+      %{
+        path: "/admin/policy",
+        label: "Policy Settings",
+        icon: "hero-adjustments-horizontal",
+        action: :edit,
+        resource: :org_management
+      }
     ]
+
+    compliance_nav = [
+      %{
+        path: "/compliance",
+        label: "Compliance Hub",
+        icon: "hero-shield-check",
+        action: :view,
+        resource: :compliance
+      },
+      %{
+        path: "/activity",
+        label: "Activity Logs",
+        icon: "hero-list-bullet",
+        action: :view,
+        resource: :compliance
+      },
+      %{
+        path: "/admin/analysis",
+        label: "AI Sentinel",
+        icon: "hero-cpu-chip",
+        action: :view,
+        resource: :compliance
+      }
+    ]
+
+    system_nav = [
+      %{
+        path: "/backoffice",
+        label: "Backoffice",
+        icon: "hero-server-stack",
+        action: :view,
+        resource: :backoffice
+      }
+    ]
+
+    # Filter navigation based on user permissions
+    user = assigns.current_user
+    import NexusWeb.UserAuth, only: [can?: 3]
 
     assigns =
       assigns
-      |> assign(:core_nav, core_nav)
-      |> assign(:ops_nav, ops_nav)
-      |> assign(:admin_nav, admin_nav)
+      |> assign(:core_nav, Enum.filter(core_nav, &can?(user, &1.action, &1.resource)))
+      |> assign(:ops_nav, Enum.filter(ops_nav, &can?(user, &1.action, &1.resource)))
+      |> assign(:manage_nav, Enum.filter(manage_nav, &can?(user, &1.action, &1.resource)))
+      |> assign(:compliance_nav, Enum.filter(compliance_nav, &can?(user, &1.action, &1.resource)))
+      |> assign(:system_nav, Enum.filter(system_nav, &can?(user, &1.action, &1.resource)))
 
     ~H"""
     <aside class="fixed top-0 left-0 h-screen w-[var(--nx-sidebar-w)] bg-[var(--nx-surface)] border-r border-[var(--nx-border)] flex flex-col z-50 overflow-hidden transition-all duration-300 -translate-x-full lg:translate-x-0 [&.mobile-open]:translate-x-0 [&_#rail-logo]:[.sidebar-collapsed_&]:block [&_#full-logo]:[.sidebar-collapsed_&]:hidden [&_.nav-label]:[.sidebar-collapsed_&]:hidden [&_.nav-header]:[.sidebar-collapsed_&]:opacity-0 [&_#session-full]:[.sidebar-collapsed_&]:hidden [&_#session-rail]:[.sidebar-collapsed_&]:flex">
@@ -276,10 +375,9 @@ defmodule NexusWeb.NexusComponents do
         </div>
       </div>
 
-      <%!-- Navigation --%>
       <nav class="flex-1 px-3 py-6 space-y-8 overflow-y-auto hidden-scrollbar">
         <%!-- Core Group --%>
-        <div>
+        <div :if={@core_nav != []}>
           <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
             Core
           </h3>
@@ -297,11 +395,7 @@ defmodule NexusWeb.NexusComponents do
                 )
               ]}
             >
-              <span class={[
-                item.icon,
-                "w-5 h-5 shrink-0 transition-colors"
-              ]}>
-              </span>
+              <span class={[item.icon, "w-5 h-5 shrink-0 transition-colors"]}></span>
               <span class="nav-label whitespace-nowrap transition-opacity duration-200">
                 {item.label}
               </span>
@@ -310,7 +404,7 @@ defmodule NexusWeb.NexusComponents do
         </div>
 
         <%!-- Operations Group --%>
-        <div>
+        <div :if={@ops_nav != []}>
           <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
             Operations
           </h3>
@@ -328,11 +422,7 @@ defmodule NexusWeb.NexusComponents do
                 )
               ]}
             >
-              <span class={[
-                item.icon,
-                "w-5 h-5 shrink-0 transition-colors"
-              ]}>
-              </span>
+              <span class={[item.icon, "w-5 h-5 shrink-0 transition-colors"]}></span>
               <span class="nav-label whitespace-nowrap transition-opacity duration-200">
                 {item.label}
               </span>
@@ -340,14 +430,14 @@ defmodule NexusWeb.NexusComponents do
           </div>
         </div>
 
-        <%!-- Admin Group (Conditional) --%>
-        <div :if={@current_user.role in ["admin", "system_admin"]}>
+        <%!-- Management Group --%>
+        <div :if={@manage_nav != []}>
           <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
-            Admin
+            Management
           </h3>
           <div class="space-y-1">
             <.link
-              :for={item <- @admin_nav}
+              :for={item <- @manage_nav}
               navigate={item.path}
               title={item.label}
               class={[
@@ -359,11 +449,61 @@ defmodule NexusWeb.NexusComponents do
                 )
               ]}
             >
-              <span class={[
-                item.icon,
-                "w-5 h-5 shrink-0 transition-colors"
-              ]}>
+              <span class={[item.icon, "w-5 h-5 shrink-0 transition-colors"]}></span>
+              <span class="nav-label whitespace-nowrap transition-opacity duration-200">
+                {item.label}
               </span>
+            </.link>
+          </div>
+        </div>
+
+        <%!-- Compliance Group --%>
+        <div :if={@compliance_nav != []}>
+          <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
+            Audit & Compliance
+          </h3>
+          <div class="space-y-1">
+            <.link
+              :for={item <- @compliance_nav}
+              navigate={item.path}
+              title={item.label}
+              class={[
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group/item overflow-hidden",
+                if(item.path == @current_path,
+                  do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
+                  else:
+                    "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
+                )
+              ]}
+            >
+              <span class={[item.icon, "w-5 h-5 shrink-0 transition-colors"]}></span>
+              <span class="nav-label whitespace-nowrap transition-opacity duration-200">
+                {item.label}
+              </span>
+            </.link>
+          </div>
+        </div>
+
+        <%!-- System Group --%>
+        <div :if={@system_nav != []}>
+          <h3 class="nav-header px-3 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3 transition-opacity duration-200">
+            System
+          </h3>
+          <div class="space-y-1">
+            <.link
+              :for={item <- @system_nav}
+              navigate={item.path}
+              title={item.label}
+              class={[
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group/item overflow-hidden",
+                if(item.path == @current_path,
+                  do: "bg-indigo-500/10 text-indigo-300 border-l-2 border-indigo-500 font-medium",
+                  else:
+                    "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-l-2 border-transparent"
+                )
+              ]}
+            >
+              <span class={[item.icon, "w-5 h-5 shrink-0 transition-colors"]}></span>
               <span class="nav-label whitespace-nowrap transition-opacity duration-200">
                 {item.label}
               </span>
@@ -480,10 +620,7 @@ defmodule NexusWeb.NexusComponents do
 
         <div class="flex items-center gap-5 pl-5 border-l border-[var(--nx-border)]">
           <%!-- Notifications --%>
-          <.notification_dropdown
-            notifications={@notifications}
-            unread_count={@unread_count}
-          />
+          <.notification_dropdown notifications={@notifications} unread_count={@unread_count} />
 
           <%!-- User Profile Dropdown Toggle --%>
           <.profile_menu
@@ -1042,7 +1179,7 @@ defmodule NexusWeb.NexusComponents do
 
   def kpi_card(assigns) do
     ~H"""
-    <.dark_card class={["p-5 flex flex-col justify-between relative overflow-hidden", @class]}>
+    <.dark_card class={["p-6 flex flex-col justify-between relative overflow-hidden", @class]}>
       <p class="text-[10px] text-slate-500 uppercase tracking-[0.1em]">{@title}</p>
       <div class="mt-2 flex items-baseline gap-2">
         <p class={[
@@ -1572,14 +1709,20 @@ defmodule NexusWeb.NexusComponents do
     ~H"""
     <div class={["flex items-center justify-between gap-4 mb-8", @class]}>
       <div class="flex items-center gap-4">
-        <div class={["w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0", @theme_classes]}>
+        <div class={[
+          "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0",
+          @theme_classes
+        ]}>
           <span class={[@icon, "w-6 h-6"]}></span>
         </div>
         <div>
           <h3 class="text-xl font-serif italic font-bold text-slate-100 tracking-tight">
             {@title}
           </h3>
-          <p :if={@subtitle} class="text-[10px] text-slate-500 uppercase tracking-[0.15em] font-bold mt-0.5">
+          <p
+            :if={@subtitle}
+            class="text-[10px] text-slate-500 uppercase tracking-[0.15em] font-bold mt-0.5"
+          >
             {@subtitle}
           </p>
         </div>
@@ -2101,7 +2244,11 @@ defmodule NexusWeb.NexusComponents do
           </div>
 
           <%!-- Results Section --%>
-          <div :if={assigns[:command_results] && @command_results != []} class="mb-4" id="cmd-pal-results">
+          <div
+            :if={assigns[:command_results] && @command_results != []}
+            class="mb-4"
+            id="cmd-pal-results"
+          >
             <h3 class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
               Search Results
             </h3>
@@ -2118,7 +2265,8 @@ defmodule NexusWeb.NexusComponents do
                 ]}>
                 </span>
                 <span class="flex-1">
-                  {result.label} <span :if={result.detail} class="text-slate-500 ml-2">{result.detail}</span>
+                  {result.label}
+                  <span :if={result.detail} class="text-slate-500 ml-2">{result.detail}</span>
                 </span>
                 <span class="text-[10px] text-slate-500 font-mono tracking-wider group-hover:text-indigo-300 hidden group-hover:block">
                   JUMP

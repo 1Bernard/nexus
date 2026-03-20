@@ -10,6 +10,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   @doc """
   Returns the Bumblebee serving to be started by the application supervisor.
   """
+  @spec serving() :: Nx.Serving.t()
   def serving do
     # In test, we always use a no-op mock
     if @env == :test do
@@ -52,6 +53,7 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   @doc """
   Runs synchronous sentiment inference using the globally supervised serving.
   """
+  @spec analyze(String.t()) :: {:ok, map()} | {:error, any()}
   def analyze(text) do
     if @env == :test do
       # Deterministic results for tests

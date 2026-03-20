@@ -4,6 +4,9 @@ defmodule Nexus.Treasury.Projections.PolicyAuditLog do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:org_id, :actor_email, :mode, :threshold, :changed_at]}
   schema "treasury_policy_audit_logs" do
     field :org_id, :binary_id
     field :actor_email, :string
@@ -15,6 +18,7 @@ defmodule Nexus.Treasury.Projections.PolicyAuditLog do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(log, attrs) do
     log
     |> cast(attrs, [:org_id, :actor_email, :mode, :threshold, :changed_at])

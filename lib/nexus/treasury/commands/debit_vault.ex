@@ -4,8 +4,6 @@ defmodule Nexus.Treasury.Commands.DebitVault do
   """
   alias Nexus.Types
 
-  defstruct [:vault_id, :org_id, :amount, :currency, :transfer_id, :debited_at]
-
   @type t :: %__MODULE__{
           vault_id: Types.vault_id(),
           org_id: Types.org_id(),
@@ -14,4 +12,7 @@ defmodule Nexus.Treasury.Commands.DebitVault do
           transfer_id: Types.binary_id() | nil,
           debited_at: Types.datetime()
         }
+
+  @enforce_keys [:vault_id, :org_id, :amount, :currency, :debited_at]
+  defstruct [:vault_id, :org_id, :amount, :currency, :transfer_id, :debited_at]
 end

@@ -5,7 +5,6 @@ defmodule Nexus.Payments.Events.ExternalPaymentFailed do
   alias Nexus.Types
 
   @derive Jason.Encoder
-  defstruct [:payment_id, :org_id, :external_reference, :reason, :failed_at]
 
   @type t :: %__MODULE__{
           payment_id: Types.binary_id(),
@@ -14,4 +13,6 @@ defmodule Nexus.Payments.Events.ExternalPaymentFailed do
           reason: String.t(),
           failed_at: Types.datetime()
         }
+
+  defstruct [:payment_id, :org_id, :external_reference, :reason, :failed_at]
 end

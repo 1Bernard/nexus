@@ -264,7 +264,8 @@ defmodule NexusWeb.Identity.BiometricComponents do
         class="w-full py-4 shadow-xl shadow-indigo-600/20 group"
       >
         <span>Begin identity verification</span>
-        <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform ml-2"></span>
+        <span class="hero-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform ml-2">
+        </span>
       </.nx_button>
       <p class="text-[9px] text-center text-slate-600 mt-4">
         🔒 Nexus encrypted session · end-to-end

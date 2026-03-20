@@ -6,6 +6,9 @@ defmodule Nexus.Treasury.Projections.MarketTick do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:id, :pair, :price, :tick_time]}
   schema "treasury_market_ticks" do
     field :pair, :string
     field :price, :decimal
@@ -14,6 +17,7 @@ defmodule Nexus.Treasury.Projections.MarketTick do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(market_tick, attrs) do
     market_tick
     |> cast(attrs, [:pair, :price, :tick_time])

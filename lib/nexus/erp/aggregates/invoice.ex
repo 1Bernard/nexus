@@ -8,7 +8,11 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   @derive Jason.Encoder
   defstruct [:id, :status]
 
+  @type t :: %__MODULE__{}
+
   # Idempotency: If the invoice is already ingested or rejected, we silently accept the duplicate payload
+  @spec execute(t(), IngestInvoice.t() | MatchInvoice.t()) ::
+          struct() | [struct()] | {:error, any()}
   def execute(%__MODULE__{status: status}, %IngestInvoice{}) when not is_nil(status) do
     []
   end
@@ -73,6 +77,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   end
 
   # State Mutators
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %InvoiceIngested{} = event) do
     %{state | id: event.invoice_id, status: :ingested}
   end

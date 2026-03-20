@@ -6,9 +6,11 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   alias Nexus.ERP.Projections.Statement
   alias Nexus.Organization.Projections.Tenant
 
-  @doc "Base query for Statement."
-  @spec base() :: Ecto.Query.t()
-  def base, do: from(s in Statement)
+  @doc "Base query for Statement, scoped by organization."
+  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  def base(org_id) do
+    from(s in Statement, where: s.org_id == ^org_id)
+  end
 
   @doc "Enriches statement query with Tenant information."
   @spec with_tenant(Ecto.Query.t()) :: Ecto.Query.t()
@@ -23,6 +25,7 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   @doc "Filters statements by organization ID."
   @spec for_org(Ecto.Query.t(), Nexus.Types.org_id()) :: Ecto.Query.t()
   def for_org(query, :all), do: query
+
   def for_org(query, org_id) do
     where(query, [s], s.org_id == ^org_id)
   end
@@ -36,6 +39,7 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   @doc "Filters statements by filename (fuzzy match)."
   @spec filter_by_filename(Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   def filter_by_filename(query, ""), do: query
+
   def filter_by_filename(query, filename) do
     where(query, [s], ilike(s.filename, ^"%#{filename}%"))
   end
@@ -43,6 +47,7 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   @doc "Filters statements by upload date string (fuzzy match)."
   @spec filter_by_date(Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   def filter_by_date(query, ""), do: query
+
   def filter_by_date(query, date) do
     where(query, [s], fragment("?::text", s.uploaded_at) |> ilike(^"#{date}%"))
   end
@@ -56,18 +61,17 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   @doc "High-level builder for listing statements with filters."
   @spec list_query(Nexus.Types.org_id(), String.t(), String.t()) :: Ecto.Query.t()
   def list_query(org_id, filename \\ "", date \\ "") do
-    base()
+    base(org_id)
     |> with_tenant()
-    |> for_org(org_id)
     |> newest_first()
     |> filter_by_filename(filename)
     |> filter_by_date(date)
   end
 
-  @doc "High-level builder for fetching statement content."
-  @spec content_query(Nexus.Types.binary_id()) :: Ecto.Query.t()
-  def content_query(id) do
-    base()
+  @doc "High-level builder for fetching statement content, scoped by organization."
+  @spec content_query(Nexus.Types.org_id(), Nexus.Types.binary_id()) :: Ecto.Query.t()
+  def content_query(org_id, id) do
+    base(org_id)
     |> by_id(id)
     |> select_raw_content()
   end

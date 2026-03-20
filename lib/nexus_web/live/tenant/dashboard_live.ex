@@ -42,7 +42,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
     org_id = socket.assigns.current_user.org_id
 
     org_id_for_query =
-      if socket.assigns.current_user.role == "system_admin", do: :all, else: org_id
+      if Enum.member?(socket.assigns.current_user.role, "system_admin"), do: :all, else: org_id
 
     saved_policy = Treasury.get_policy_mode(org_id_for_query)
 
@@ -136,14 +136,14 @@ defmodule NexusWeb.Tenant.DashboardLive do
       <%!-- KPI Header Row --%>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 w-full">
         <.link navigate={~p"/reconciliation"} class="block group">
-          <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/40 transition-all h-full">
+          <.dark_card class="p-6 flex flex-col justify-between relative overflow-hidden bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/40 transition-all h-full min-h-[140px]">
             <div>
               <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
                 Engine Status
               </h2>
               <p class="text-xs text-slate-300 font-medium tracking-wide">Payment Matching</p>
             </div>
-            <div class="flex items-center gap-2 mt-4">
+            <div class="flex items-center gap-2 mt-auto">
               <span class="relative flex h-2 w-2">
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
@@ -188,7 +188,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
         </.link>
 
         <.link navigate={~p"/reconciliation"} class="block group">
-          <.dark_card class="p-5 flex flex-col justify-between relative overflow-hidden bg-indigo-500/5 hover:border-indigo-500/40 transition-colors border-indigo-500/20 cursor-pointer h-full">
+          <.dark_card class="p-6 flex flex-col justify-between relative overflow-hidden bg-indigo-500/5 hover:border-indigo-500/40 transition-colors border-indigo-500/20 cursor-pointer h-full min-h-[140px]">
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-[10px] text-indigo-400 uppercase tracking-[0.1em] mb-1">Match Rate</p>
@@ -200,7 +200,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
               </span>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+            <div class="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
               <div class="flex flex-col">
                 <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">
                   Velocity
@@ -219,11 +219,10 @@ defmodule NexusWeb.Tenant.DashboardLive do
           </.dark_card>
         </.link>
       </div>
-
       <%!-- Main Content: Real-time FX & Risk --%>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full mt-6">
         <div class="lg:col-span-2 flex flex-col">
-          <.dark_card class="p-0 h-full min-h-[400px] flex flex-col relative overflow-hidden group">
+          <.dark_card class="p-0 h-[600px] flex flex-col relative overflow-hidden group">
             <div class="flex items-center justify-between p-6 border-b border-white/5">
               <div>
                 <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-2">
@@ -251,7 +250,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
             <%!-- ECharts Visualization Bridge --%>
             <div
               id="market-chart"
-              class="flex-1 w-full"
+              class="flex-1 w-full translate-y-2"
               phx-update="ignore"
               phx-hook="ECharts"
               data-pair={@current_pair}
@@ -273,13 +272,13 @@ defmodule NexusWeb.Tenant.DashboardLive do
           </.dark_card>
         </div>
 
-        <div class="lg:col-span-1 flex flex-col gap-6">
-          <.dark_card class="p-6 h-full flex flex-col">
+        <div class="lg:col-span-1 flex flex-col">
+          <.dark_card class="p-6 h-[600px] flex flex-col">
             <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
               Your Currencies
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             </h2>
-            <div class="space-y-4">
+            <div class="space-y-4 overflow-y-auto pr-2 scroll-soft flex-1">
               <%= for tick <- @market_ticks do %>
                 <div class="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-all">
                   <div class="flex items-center gap-3">
@@ -383,12 +382,19 @@ defmodule NexusWeb.Tenant.DashboardLive do
       </div>
 
       <%!-- Middle Row: Massive Risk Heatmap (Full Width) --%>
-      <div class="grid grid-cols-1 gap-6">
-        <.dark_card class="p-4 md:p-6 min-h-[320px]">
-          <h2 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">
-            Risk Overview (Exposure Map)
-          </h2>
-          <div class="overflow-x-auto scroll-soft -mx-4 px-4 md:mx-0 md:px-0">
+      <div class="grid grid-cols-1 gap-6 w-full mt-6">
+        <.dark_card class="p-6 h-[600px] flex flex-col">
+          <div class="flex items-center justify-between mb-8">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
+              Risk Overview (Exposure Map)
+            </h2>
+            <div class="px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+              <span class="text-[10px] font-bold text-rose-400 uppercase tracking-widest">
+                Live Metrics
+              </span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-auto scroll-soft pr-2">
             <div class="matrix-container mb-4 min-w-[700px] pt-12">
               <%!-- Headers --%>
               <div class="col-span-1"></div>
@@ -438,9 +444,9 @@ defmodule NexusWeb.Tenant.DashboardLive do
       </div>
 
       <%!-- Lower Row: Trends & Activity (2/3 & 1/3) --%>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full mt-6">
         <div class="lg:col-span-2 flex flex-col">
-          <.dark_card class="p-4 md:p-6 h-[460px] flex flex-col relative overflow-hidden group">
+          <.dark_card class="p-6 h-[600px] flex flex-col relative overflow-hidden group">
             <div class="flex items-center justify-between mb-6 shrink-0">
               <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
                 Cash Flow Outlook
@@ -515,40 +521,36 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
         <div class="lg:col-span-1 flex flex-col">
           <%!-- Section E: Recent Activity Feed --%>
-          <.dark_card class="p-4 md:p-6 h-[460px] flex flex-col">
-            <div class="flex flex-col flex-1 min-h-0">
-              <div class="flex items-center justify-between mb-6 shrink-0">
-                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
-                  Recent Activity
-                </h2>
-                <.link
-                  navigate={~p"/activity"}
-                  class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold"
-                >
-                  View All
-                </.link>
-              </div>
+          <.dark_card class="p-6 h-[600px] flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between mb-8 shrink-0">
+              <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">
+                Recent Activity
+              </h2>
+              <.link
+                navigate={~p"/activity"}
+                class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider font-semibold"
+              >
+                View All
+              </.link>
+            </div>
 
-              <div class="space-y-5 relative flex-1 min-h-0 overflow-y-auto pr-2 scroll-soft">
-                <div class="absolute left-[11px] top-2 bottom-2 w-px bg-white/5"></div>
+            <div class="space-y-6 overflow-y-auto scroll-soft pr-2 flex-1">
+              <%= for item <- @recent_activity do %>
+                <.activity_item
+                  icon={item.icon}
+                  color={item.color}
+                  title={item.title}
+                  subtitle={item.subtitle}
+                  time_ago={item.time}
+                />
+              <% end %>
 
-                <%= for item <- @recent_activity do %>
-                  <.activity_item
-                    icon={item.icon}
-                    color={item.color}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    time_ago={item.time}
-                  />
-                <% end %>
-
-                <%= if Enum.empty?(@recent_activity) do %>
-                  <div class="flex flex-col items-center justify-center h-32 opacity-30">
-                    <span class="hero-inbox w-8 h-8 mb-2"></span>
-                    <p class="text-[10px] uppercase tracking-widest font-bold">No Recent Activity</p>
-                  </div>
-                <% end %>
-              </div>
+              <%= if Enum.empty?(@recent_activity) do %>
+                <div class="flex flex-col items-center justify-center h-full opacity-30">
+                  <span class="hero-inbox w-8 h-8 mb-2"></span>
+                  <p class="text-[10px] uppercase tracking-widest font-bold">No Recent Activity</p>
+                </div>
+              <% end %>
             </div>
 
             <%!-- Nested Policy Audit Feed --%>

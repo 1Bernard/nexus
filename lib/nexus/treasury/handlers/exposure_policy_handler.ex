@@ -12,6 +12,7 @@ defmodule Nexus.Treasury.Handlers.ExposurePolicyHandler do
   alias Nexus.Treasury.Events.ExposureCalculated
   alias Nexus.Treasury.Commands.EvaluateExposurePolicy
 
+  @spec handle(ExposureCalculated.t(), map()) :: :ok
   def handle(%ExposureCalculated{} = event, _metadata) do
     # Currency pair for policy evaluation
     pair = "#{event.currency}/USD"

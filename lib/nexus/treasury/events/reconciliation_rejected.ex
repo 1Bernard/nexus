@@ -4,13 +4,14 @@ defmodule Nexus.Treasury.Events.ReconciliationRejected do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           reconciliation_id: Types.binary_id(),
           rejector_email: String.t(),
           timestamp: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:org_id, :reconciliation_id, :rejector_email, :timestamp]
+
   defstruct [:org_id, :reconciliation_id, :rejector_email, :timestamp]
 end

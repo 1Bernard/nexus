@@ -1,14 +1,20 @@
 defmodule Nexus.Treasury.Services.ForecastEngine do
   @moduledoc """
-  Predictive engine for liquidity forecasting using Nx and Scholar.
+  Predictive engine for liquidity forecasting.
+  Coordinates Data I/O and delegates math to ForecastMath (Rule 5).
   """
   import Ecto.Query
   alias Nexus.Repo
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
+  alias Nexus.Treasury.Services.ForecastMath
+  alias Nexus.Types
 
   @doc """
-  Generates a forecast for the given organization and currency over the specified horizon.
+  Generates a forecast for the given organization and currency.
+  Uses deep type alignment for org_id (Rule 14).
   """
+  @spec calculate(Types.org_id(), Types.currency(), integer()) ::
+          {:ok, list(map())} | {:error, atom()}
   def calculate(org_id, currency, horizon_days \\ 30) do
     # 1. Fetch historical daily net cash flow (last 60 days)
     end_date = Date.utc_today()
@@ -19,19 +25,10 @@ defmodule Nexus.Treasury.Services.ForecastEngine do
     if Enum.empty?(data_points) do
       {:error, :insufficient_data}
     else
-      # 2. Prepare data for Scholar (X = days since start, Y = net amount)
-      {x_list, y_list} = prepare_tensors(data_points, start_date)
+      # 2. Delegate math to PURE module (Rule 5)
+      predictions = ForecastMath.generate_predictions(data_points, start_date, horizon_days)
 
-      x = Nx.tensor(x_list, type: :f32) |> Nx.reshape({:auto, 1})
-      y = Nx.tensor(y_list, type: :f32)
-
-      # 3. Fit Linear Regression
-      model = Scholar.Linear.LinearRegression.fit(x, y)
-
-      # 4. Predict next 'horizon_days'
-      predictions = predict_future(model, length(x_list), horizon_days)
-
-      # 5. Merge with known invoice outflows
+      # 3. Merge with known invoice outflows
       invoices = fetch_upcoming_invoices(org_id, currency, end_date, horizon_days)
       merged_predictions = merge_invoices_into_predictions(predictions, invoices)
 
@@ -50,33 +47,6 @@ defmodule Nexus.Treasury.Services.ForecastEngine do
     |> Repo.all()
     |> Enum.map(fn {date_str, amount} ->
       {Date.from_iso8601!(date_str), Decimal.to_float(amount)}
-    end)
-  end
-
-  defp prepare_tensors(data_points, start_date) do
-    data_points
-    |> Enum.map(fn {date, amount} ->
-      {Date.diff(date, start_date), amount}
-    end)
-    |> Enum.unzip()
-  end
-
-  defp predict_future(model, last_day_index, horizon_days) do
-    future_x =
-      (last_day_index + 1)..(last_day_index + horizon_days)
-      |> Enum.map(&[&1 * 1.0])
-      |> Nx.tensor(type: :f32)
-
-    predictions = Scholar.Linear.LinearRegression.predict(model, future_x)
-
-    predictions
-    |> Nx.to_flat_list()
-    |> Enum.with_index(1)
-    |> Enum.map(fn {val, i} ->
-      %{
-        date: Date.to_iso8601(Date.add(Date.utc_today(), i)),
-        predicted_amount: val |> Float.round(2) |> Float.to_string()
-      }
     end)
   end
 
@@ -103,10 +73,6 @@ defmodule Nexus.Treasury.Services.ForecastEngine do
       pred_amt = String.to_float(p.predicted_amount)
       inv_amt = Map.get(invoices, date, 0.0)
 
-      # Invoices are outflows (negative impact on cash)
-      # In bank statements, outflows are negative.
-      # Ifpred_amt is -500 (historical trend) and inv_amt is 1000 (invoice due),
-      # total outflow is -1500.
       total = pred_amt - inv_amt
 
       %{p | predicted_amount: Float.round(total, 2) |> Float.to_string()}

@@ -4,8 +4,6 @@ defmodule Nexus.Payments.Commands.FailExternalPayment do
   """
   alias Nexus.Types
 
-  defstruct [:payment_id, :org_id, :external_reference, :reason, :failed_at]
-
   @type t :: %__MODULE__{
           payment_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -13,4 +11,7 @@ defmodule Nexus.Payments.Commands.FailExternalPayment do
           reason: String.t(),
           failed_at: Types.datetime()
         }
+
+  @enforce_keys [:payment_id, :org_id, :reason, :failed_at]
+  defstruct [:payment_id, :org_id, :external_reference, :reason, :failed_at]
 end

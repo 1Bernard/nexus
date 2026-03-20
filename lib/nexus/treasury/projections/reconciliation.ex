@@ -5,12 +5,28 @@ defmodule Nexus.Treasury.Projections.Reconciliation do
   """
   use Nexus.Schema
 
-  @primary_key {:reconciliation_id, :string, autogenerate: false}
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :org_id,
+             :invoice_id,
+             :statement_id,
+             :statement_line_id,
+             :amount,
+             :variance,
+             :variance_reason,
+             :actor_email,
+             :currency,
+             :status,
+             :matched_at
+           ]}
   schema "treasury_reconciliations" do
-    field :org_id, :string
-    field :invoice_id, :string
-    field :statement_id, :string
-    field :statement_line_id, :string
+    field :org_id, :binary_id
+    field :invoice_id, :binary_id
+    field :statement_id, :binary_id
+    field :statement_line_id, :binary_id
     field :amount, :decimal
     field :variance, :decimal
     field :variance_reason, :string

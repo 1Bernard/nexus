@@ -4,10 +4,12 @@ defmodule Nexus.ERP.Events.InvoiceIngested do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           invoice_id: Types.binary_id(),
-          entity_id: String.t(),
+          entity_id: Types.binary_id(),
           currency: Types.currency(),
           amount: Types.money(),
           due_date: String.t(),
@@ -17,19 +19,7 @@ defmodule Nexus.ERP.Events.InvoiceIngested do
           sap_status: String.t(),
           ingested_at: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [
-    :org_id,
-    :invoice_id,
-    :entity_id,
-    :currency,
-    :amount,
-    :due_date,
-    :subsidiary,
-    :line_items,
-    :sap_document_number,
-    :sap_status
-  ]
+
   defstruct [
     :org_id,
     :invoice_id,

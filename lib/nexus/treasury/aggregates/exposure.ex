@@ -5,12 +5,15 @@ defmodule Nexus.Treasury.Aggregates.Exposure do
   @derive Jason.Encoder
   defstruct [:id, :org_id, :subsidiary, :currency, :last_exposure_amount]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Commands.CalculateExposure
   alias Nexus.Treasury.Events.ExposureCalculated
 
   @doc """
   Executes the CalculateExposure command.
   """
+  @spec execute(t(), CalculateExposure.t()) :: [struct()] | struct()
   def execute(%__MODULE__{} = _state, %CalculateExposure{} = cmd) do
     %ExposureCalculated{
       org_id: cmd.org_id,
@@ -24,6 +27,7 @@ defmodule Nexus.Treasury.Aggregates.Exposure do
   @doc """
   Applies the ExposureCalculated event to mutate the aggregate state.
   """
+  @spec apply(t(), ExposureCalculated.t()) :: t()
   def apply(%__MODULE__{} = state, %ExposureCalculated{} = event) do
     %{
       state

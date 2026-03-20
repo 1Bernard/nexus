@@ -4,7 +4,9 @@ defmodule Nexus.Treasury.Projections.LiquidityPosition do
   """
   use Nexus.Schema
 
-  @primary_key {:id, :string, autogenerate: false}
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:id, :org_id, :currency, :amount]}
   schema "treasury_liquidity_positions" do
     field :org_id, :binary_id
     field :currency, :string
@@ -13,6 +15,7 @@ defmodule Nexus.Treasury.Projections.LiquidityPosition do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(position, attrs) do
     position
     |> cast(attrs, [:id, :org_id, :currency, :amount])

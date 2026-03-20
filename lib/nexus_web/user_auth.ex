@@ -78,7 +78,7 @@ defmodule NexusWeb.UserAuth do
     # First, rely on the base mount to get the user
     case on_mount(:mount_current_user, params, session, socket) do
       {:cont, socket} ->
-        if socket.assigns.current_user.role == "system_admin" do
+        if Enum.member?(socket.assigns.current_user.role, "system_admin") do
           {:cont, socket}
         else
           # If not system admin, kick them back to their dashboard
@@ -99,7 +99,10 @@ defmodule NexusWeb.UserAuth do
   def on_mount(:require_auditor, params, session, socket) do
     case on_mount(:mount_current_user, params, session, socket) do
       {:cont, socket} ->
-        if socket.assigns.current_user.role in ["system_admin", "org_admin", "auditor"] do
+        if Enum.any?(
+             socket.assigns.current_user.role,
+             &(&1 in ["system_admin", "org_admin", "auditor"])
+           ) do
           {:cont, socket}
         else
           {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
@@ -114,7 +117,7 @@ defmodule NexusWeb.UserAuth do
   def on_mount(:redirect_if_user_is_authenticated, _params, session, socket) do
     if user_id = session["user_id"] do
       # Only redirect if the user actually exists in the read-side DB
-      case Repo.get(User, user_id) do
+      case Nexus.Identity.Queries.UserQuery.get_user_system(user_id) do
         nil ->
           # Session exists but user doesn't (or projector hasn't caught up).
           # We allow them to mount the auth page so they aren't trapped in a redirect loop.
@@ -141,13 +144,51 @@ defmodule NexusWeb.UserAuth do
   def can?(nil, _action, _resource), do: false
 
   def can?(user, action, resource) do
-    case {user.role, action, resource} do
-      {"admin", _, _} -> true
-      {"trader", action, _} when action in [:view, :create, :edit, :trade] -> true
-      {"trader", :admin, _} -> false
-      {"viewer", :view, _} -> true
-      {"viewer", _, _} -> false
-      _ -> false
+    # Normalize: If resource is nil and action is a known resource atom, swap them
+    {action, resource} =
+      if is_nil(resource) and
+           action in [:backoffice, :org_management, :dashboard, :settings, :compliance, :erp] do
+        {:access, action}
+      else
+        {action, resource}
+      end
+
+    case resource do
+      # --- Treasury Domain ---
+      res when res in [:vault, :reconciliation, :treasury_ops] ->
+        Nexus.Treasury.Policies.TreasuryPolicy.can?(user, action, res)
+
+      # --- Identity Domain ---
+      res when res in [:backoffice, :dashboard, :settings] ->
+        Nexus.Identity.Policies.IdentityPolicy.can?(user, action, res)
+
+      # --- Organization Domain ---
+      :org_management ->
+        Nexus.Organization.Policies.OrganizationPolicy.can?(user, action, resource)
+
+      # --- Intelligence Domain ---
+      :compliance ->
+        Nexus.Intelligence.Policies.IntelligencePolicy.can?(user, action, resource)
+
+      # --- ERP Domain ---
+      :erp ->
+        Nexus.ERP.Policies.ERPPolicy.can?(user, action, resource)
+
+      # --- Payments Domain ---
+      :payments ->
+        Nexus.Payments.Policies.PaymentsPolicy.can?(user, action, resource)
+
+      # --- Reporting Domain ---
+      :audit_logs ->
+        Nexus.Reporting.Policies.ReportingPolicy.can?(user, action, resource)
+
+      # --- CrossDomain Domain ---
+      :notifications ->
+        Nexus.CrossDomain.Policies.CrossDomainPolicy.can?(user, action, resource)
+
+      # Fallback
+      _ ->
+        false
     end
   end
 end

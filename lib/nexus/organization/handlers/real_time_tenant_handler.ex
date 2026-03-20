@@ -10,6 +10,8 @@ defmodule Nexus.Organization.Handlers.RealTimeTenantHandler do
 
   alias Nexus.Organization.Events.{TenantProvisioned, TenantSuspended, TenantModuleToggled}
 
+  @spec handle(TenantProvisioned.t() | TenantSuspended.t() | TenantModuleToggled.t(), map()) ::
+          :ok
   def handle(%TenantProvisioned{} = event, _metadata) do
     Phoenix.PubSub.broadcast(Nexus.PubSub, "tenants", {:tenant_updated, event})
     :ok

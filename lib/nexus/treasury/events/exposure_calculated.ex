@@ -4,6 +4,8 @@ defmodule Nexus.Treasury.Events.ExposureCalculated do
   """
   alias Nexus.Types
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           org_id: Types.org_id(),
           subsidiary: String.t(),
@@ -11,7 +13,6 @@ defmodule Nexus.Treasury.Events.ExposureCalculated do
           exposure_amount: Types.money(),
           timestamp: Types.datetime()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:org_id, :subsidiary, :currency, :exposure_amount, :timestamp]
+
   defstruct [:org_id, :subsidiary, :currency, :exposure_amount, :timestamp]
 end

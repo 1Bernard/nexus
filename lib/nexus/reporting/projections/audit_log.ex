@@ -5,6 +5,20 @@ defmodule Nexus.Reporting.Projections.AuditLog do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :event_type,
+             :actor_email,
+             :org_id,
+             :tenant_name,
+             :details,
+             :correlation_id,
+             :causation_id,
+             :recorded_at
+           ]}
   schema "reporting_audit_logs" do
     field :event_type, :string
     field :actor_email, :string
@@ -16,5 +30,22 @@ defmodule Nexus.Reporting.Projections.AuditLog do
     field :recorded_at, :utc_datetime_usec
 
     timestamps()
+  end
+
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(struct, attrs) do
+    struct
+    |> cast(attrs, [
+      :id,
+      :event_type,
+      :actor_email,
+      :org_id,
+      :tenant_name,
+      :details,
+      :correlation_id,
+      :causation_id,
+      :recorded_at
+    ])
+    |> validate_required([:id, :event_type, :org_id, :recorded_at])
   end
 end

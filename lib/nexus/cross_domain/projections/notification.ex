@@ -4,6 +4,10 @@ defmodule Nexus.CrossDomain.Projections.Notification do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [:id, :org_id, :user_id, :type, :title, :body, :metadata, :read_at]}
   schema "cross_domain_notifications" do
     field :org_id, :binary_id
     field :user_id, :binary_id
@@ -18,6 +22,7 @@ defmodule Nexus.CrossDomain.Projections.Notification do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(notification, attrs) do
     notification
     |> cast(attrs, [:id, :org_id, :user_id, :type, :title, :body, :metadata, :read_at])

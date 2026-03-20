@@ -4,20 +4,6 @@ defmodule Nexus.Treasury.Commands.RegisterVault do
   """
   alias Nexus.Types
 
-  defstruct [
-    :vault_id,
-    :org_id,
-    :name,
-    :bank_name,
-    :account_number,
-    :iban,
-    :currency,
-    :provider,
-    :registered_at,
-    :daily_withdrawal_limit,
-    :requires_multi_sig
-  ]
-
   @type t :: %__MODULE__{
           vault_id: Types.vault_id(),
           org_id: Types.org_id(),
@@ -31,4 +17,19 @@ defmodule Nexus.Treasury.Commands.RegisterVault do
           daily_withdrawal_limit: Types.money(),
           requires_multi_sig: boolean()
         }
+
+  @enforce_keys [:vault_id, :org_id, :name, :bank_name, :currency, :provider, :registered_at]
+  defstruct [
+    :vault_id,
+    :org_id,
+    :name,
+    :bank_name,
+    :account_number,
+    :iban,
+    :currency,
+    :provider,
+    :registered_at,
+    :daily_withdrawal_limit,
+    :requires_multi_sig
+  ]
 end

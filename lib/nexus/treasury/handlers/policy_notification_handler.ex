@@ -10,6 +10,7 @@ defmodule Nexus.Treasury.Handlers.PolicyNotificationHandler do
 
   alias Nexus.Treasury.Events.{PolicyModeChanged, PolicyAlertTriggered}
 
+  @spec handle(PolicyModeChanged.t() | PolicyAlertTriggered.t(), map()) :: :ok
   def handle(%PolicyModeChanged{} = event, _metadata) do
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,

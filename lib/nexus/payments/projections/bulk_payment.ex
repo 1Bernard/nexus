@@ -4,7 +4,8 @@ defmodule Nexus.Payments.Projections.BulkPayment do
   """
   use Nexus.Schema
 
-  @derive Jason.Encoder
+  @derive {Jason.Encoder,
+           only: [:id, :org_id, :user_id, :status, :total_items, :processed_items, :total_amount]}
   schema "payments_bulk_payments" do
     field :org_id, :binary_id
     field :user_id, :binary_id

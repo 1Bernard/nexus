@@ -10,9 +10,11 @@ defmodule Nexus.Identity.Queries.UserQuery do
   @doc """
   Lists users within an organization with support for search, role filtering, and pagination.
   """
+  @spec list_users_by_org(Nexus.Types.org_id(), map()) :: [User.t()]
   def list_users_by_org(:all, params) do
     list_all_users(params)
   end
+
   def list_users_by_org(org_id, params) do
     from(u in User,
       left_join: t in Nexus.Organization.Projections.Tenant,
@@ -26,6 +28,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
   @doc """
   Lists ALL users on the platform (System Admin only).
   """
+  @spec list_all_users(map()) :: [User.t()]
   def list_all_users(params \\ %{}) do
     from(u in User,
       left_join: t in Nexus.Organization.Projections.Tenant,
@@ -39,19 +42,32 @@ defmodule Nexus.Identity.Queries.UserQuery do
     base_query
     |> filter_by_search(params["search"])
     |> filter_by_role(params["role"])
-    |> paginate(params["after"], params["limit"] || 20)
+    |> paginate(params["cursor_after"], params["limit"] || 20)
     |> Repo.all()
   end
 
   @doc """
-  Fetches a single user by their unique ID.
+  Fetches a single user by their unique ID, scoped by organization.
   """
-  def get_user(id), do: Repo.get(User, id)
+  @spec get_user(Nexus.Types.org_id(), Nexus.Types.user_id()) :: User.t() | nil
+  def get_user(org_id, id) do
+    from(u in User, where: u.org_id == ^org_id and u.id == ^id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Internal system fetch by ID (unscoped by org).
+  ONLY use this in authentication hooks where org_id is not yet known.
+  """
+  @spec get_user_system(Nexus.Types.user_id()) :: User.t() | nil
+  def get_user_system(id), do: Repo.get(User, id)
 
   @doc """
   Returns the total count of users in an organization.
   """
+  @spec total_users_count(Nexus.Types.org_id()) :: integer()
   def total_users_count(:all), do: total_users_count()
+
   def total_users_count(org_id) do
     from(u in User, where: u.org_id == ^org_id)
     |> Repo.aggregate(:count, :id)
@@ -60,6 +76,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
   @doc """
   Returns the total count of all users on the platform.
   """
+  @spec total_users_count() :: integer()
   def total_users_count do
     Repo.aggregate(User, :count, :id)
   end

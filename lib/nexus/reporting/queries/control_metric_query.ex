@@ -7,6 +7,7 @@ defmodule Nexus.Reporting.Queries.ControlMetricQuery do
 
   @doc "Base query for ControlMetric."
   @spec base() :: Ecto.Query.t()
+  @spec base() :: Ecto.Query.t()
   def base, do: from(metric in ControlMetric)
 
   @doc "Builds a query for the compliance scorecard of an organization."

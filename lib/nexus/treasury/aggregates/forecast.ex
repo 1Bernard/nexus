@@ -5,9 +5,12 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
   @derive Jason.Encoder
   defstruct [:id, :org_id, :currency, :last_forecast]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Commands.GenerateForecast
   alias Nexus.Treasury.Events.ForecastGenerated
 
+  @spec execute(t(), GenerateForecast.t()) :: [struct()] | struct()
   def execute(%__MODULE__{} = _state, %GenerateForecast{} = cmd) do
     %ForecastGenerated{
       org_id: cmd.org_id,
@@ -18,6 +21,7 @@ defmodule Nexus.Treasury.Aggregates.Forecast do
     }
   end
 
+  @spec apply(t(), ForecastGenerated.t()) :: t()
   def apply(%__MODULE__{} = state, %ForecastGenerated{} = event) do
     %__MODULE__{
       state

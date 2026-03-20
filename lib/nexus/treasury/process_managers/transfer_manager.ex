@@ -10,10 +10,13 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
   @derive Jason.Encoder
   defstruct [:transfer_id, :org_id, :status]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
   alias Nexus.Identity.Events.StepUpVerified
   alias Nexus.Treasury.Commands.{AuthorizeTransfer, ExecuteTransfer}
 
+  @spec interested?(struct()) :: {:start | :continue | :stop, binary()} | false
   def interested?(%TransferInitiated{transfer_id: id}), do: {:start, id}
   def interested?(%StepUpVerified{action_id: id}), do: {:continue, id}
   def interested?(%TransferAuthorized{transfer_id: id}), do: {:continue, id}
@@ -21,6 +24,7 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
 
   # --- Handle Events (Emit Commands) ---
 
+  @spec handle(t(), struct()) :: [struct()] | struct() | []
   def handle(%__MODULE__{}, %TransferInitiated{status: "authorized"} = event) do
     %ExecuteTransfer{
       transfer_id: event.transfer_id,
@@ -52,6 +56,7 @@ defmodule Nexus.Treasury.ProcessManagers.TransferManager do
 
   # --- Mutate State ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = pm, %TransferInitiated{} = event) do
     %__MODULE__{pm | transfer_id: event.transfer_id, org_id: event.org_id, status: event.status}
   end

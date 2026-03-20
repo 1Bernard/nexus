@@ -5,7 +5,6 @@ defmodule Nexus.ERP.StatementUploadTest do
   @moduletag :no_sandbox
 
   alias Nexus.App
-  alias Nexus.ERP
   alias Nexus.ERP.Projectors.StatementProjector
   alias Nexus.ERP.Projections.{Statement, StatementLine}
 

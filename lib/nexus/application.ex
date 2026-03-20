@@ -11,6 +11,8 @@ defmodule Nexus.Application do
   @env Mix.env()
 
   @impl true
+  @spec start(Application.start_type(), any()) ::
+          {:ok, pid()} | {:ok, pid(), any()} | {:error, any()}
   def start(_type, _args) do
     Logger.info("[Nexus] Application starting in #{@env} environment")
 
@@ -106,6 +108,7 @@ defmodule Nexus.Application do
             Nexus.Treasury.Projectors.VaultProjector,
             Nexus.Treasury.Projectors.ForecastProjector,
             Nexus.Treasury.Projectors.ReconciliationProjector,
+            Nexus.Treasury.Projectors.TransferProjector,
             Nexus.Payments.Projectors.BulkPaymentProjector,
             # --- Bridge Handlers ---
             Nexus.Treasury.Handlers.ExposureBridge,
@@ -118,6 +121,7 @@ defmodule Nexus.Application do
             Nexus.Organization.Handlers.RealTimeTenantHandler,
             Nexus.Treasury.Handlers.PolicyNotificationHandler,
             Nexus.Treasury.Handlers.TransferNotificationHandler,
+            Nexus.Treasury.Handlers.TransferExecutionHandler,
             Nexus.Treasury.Handlers.VaultNotificationHandler,
             Nexus.ERP.Handlers.ERPNotificationHandler,
             # --- Process Managers ---
@@ -151,6 +155,7 @@ defmodule Nexus.Application do
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
   @impl true
+  @spec config_change(keyword(), [atom()], [atom()]) :: :ok
   def config_change(changed, _new, removed) do
     NexusWeb.Endpoint.config_change(changed, removed)
     :ok

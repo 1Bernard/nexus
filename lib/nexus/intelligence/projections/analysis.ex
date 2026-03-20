@@ -5,6 +5,8 @@ defmodule Nexus.Intelligence.Projections.Analysis do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
   @derive {Jason.Encoder,
            only: [
              :id,
@@ -35,6 +37,7 @@ defmodule Nexus.Intelligence.Projections.Analysis do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(analysis, attrs) do
     analysis
     |> cast(attrs, [

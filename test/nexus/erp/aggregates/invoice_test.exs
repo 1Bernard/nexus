@@ -2,8 +2,8 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
   use ExUnit.Case, async: true
 
   alias Nexus.ERP.Aggregates.Invoice
-  alias Nexus.ERP.Commands.{IngestInvoice, MatchInvoice}
-  alias Nexus.ERP.Events.{InvoiceIngested, InvoiceMatched}
+  alias Nexus.ERP.Commands.MatchInvoice
+  alias Nexus.ERP.Events.InvoiceMatched
 
   @org_id "org-123"
   @invoice_id "inv-456"

@@ -49,7 +49,7 @@ defmodule Nexus.Intelligence.AISentinelTest do
   end
 
   defthen ~r/^the AI Sentinel should flag it with an "anomaly_score" greater than (?<score>[.\d]+)$/,
-          %{score: score},
+          %{score: _score},
           state do
     {:ok, state}
   end

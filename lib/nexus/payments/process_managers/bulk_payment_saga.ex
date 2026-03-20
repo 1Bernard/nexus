@@ -16,6 +16,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
   alias Nexus.ERP.Commands.MatchInvoice
 
   # 1. Start the saga when bulk payment is initiated
+  @spec interested?(struct()) :: {:start | :continue, binary()} | false
   def interested?(%BulkPaymentInitiated{bulk_payment_id: id}), do: {:start, id}
   # 2. Track progress for each individual transfer initiated in the context of this bulk
   def interested?(%TransferInitiated{transfer_id: _id} = event) do
@@ -32,6 +33,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   # --- Command Dispatch ---
 
+  @spec handle(t(), struct()) :: [struct()] | struct() | []
   def handle(%__MODULE__{} = _saga, %BulkPaymentInitiated{} = event) do
     # For each payment instruction, dispatch a RequestTransfer command.
     # We use a deterministic transfer_id based on bulk_payment_id and index to ensure
@@ -88,6 +90,8 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
     end
   end
 
+  @type t :: %__MODULE__{}
+
   defp generate_deterministic_id(bulk_id, index) do
     # Convert bulk_id to binary if it's a string, then hash with index
     seed = "#{bulk_id}-#{index}"
@@ -105,6 +109,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   # --- State Mutators ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = saga, %BulkPaymentInitiated{} = event) do
     %__MODULE__{
       saga
@@ -121,6 +126,7 @@ defmodule Nexus.Payments.ProcessManagers.BulkPaymentSaga do
 
   # --- Stop Condition ---
 
+  @spec stop?(t()) :: boolean()
   def stop?(%__MODULE__{processed_items: processed, total_items: total})
       when processed >= total and total > 0,
       do: true

@@ -15,5 +15,13 @@ defmodule Nexus.Identity.Events.SessionStarted do
           started_at: Types.datetime()
         }
 
-  defstruct [:org_id, :user_id, :session_id, :session_token, :user_agent, :ip_address, :started_at]
+  defstruct [
+    :org_id,
+    :user_id,
+    :session_id,
+    :session_token,
+    :user_agent,
+    :ip_address,
+    :started_at
+  ]
 end

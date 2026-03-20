@@ -10,13 +10,13 @@ defmodule NexusWeb.Organization.InvitesLive do
   def mount(%{"token" => token}, _session, socket) do
     # Verify the token. A secure token holds the org_id, role, and invited_by context.
     case Phoenix.Token.verify(NexusWeb.Endpoint, "user_invitation", token, max_age: 86400) do
-      {:ok, %{org_id: org_id, role: role, invited_by: _invited_by}} ->
+      {:ok, %{org_id: org_id, roles: roles, invited_by: _invited_by}} ->
         {:ok,
          socket
          |> assign(:page_title, "Accept Invitation")
          |> assign(:token, token)
          |> assign(:org_id, org_id)
-         |> assign(:role, role)
+         |> assign(:role, roles)
          |> assign(:valid_token, true)
          |> assign(:form, to_form(%{"display_name" => "", "email" => ""}))}
 
@@ -72,7 +72,7 @@ defmodule NexusWeb.Organization.InvitesLive do
               <p class="text-slate-400 text-sm">
                 You've been invited to join the organization as a
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider ml-1">
-                  {@role}
+                  {Enum.join(@roles, ", ")}
                 </span>
               </p>
             </div>
@@ -210,7 +210,7 @@ defmodule NexusWeb.Organization.InvitesLive do
       registration_token =
         Phoenix.Token.sign(NexusWeb.Endpoint, "biometric_registration", %{
           org_id: socket.assigns.org_id,
-          role: socket.assigns.role,
+          roles: socket.assigns.role,
           email: email,
           display_name: name
         })

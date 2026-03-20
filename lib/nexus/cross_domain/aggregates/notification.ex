@@ -17,6 +17,8 @@ defmodule Nexus.CrossDomain.Aggregates.Notification do
 
   # --- Execution ---
 
+  @spec execute(t(), CreateNotification.t() | MarkNotificationRead.t()) ::
+          struct() | [struct()]
   def execute(%__MODULE__{id: nil}, %CreateNotification{} = cmd) do
     %NotificationCreated{
       id: cmd.id,
@@ -43,6 +45,7 @@ defmodule Nexus.CrossDomain.Aggregates.Notification do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %NotificationCreated{} = event) do
     %{state | id: event.id, org_id: event.org_id, user_id: event.user_id, status: :unread}
   end

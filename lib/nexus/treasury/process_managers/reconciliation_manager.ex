@@ -21,6 +21,8 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
     matched_items: %{}
   ]
 
+  @type t :: %__MODULE__{}
+
   alias Nexus.ERP.Events.InvoiceIngested
   alias Nexus.ERP.Events.StatementUploaded
   alias Nexus.Treasury.Commands.ReconcileTransaction
@@ -33,6 +35,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   }
 
   # Route process managers by org_id so each tenant has an isolated matching engine
+  @spec interested?(struct()) :: {:start | :continue!, binary()} | false
   def interested?(%InvoiceIngested{org_id: org_id}), do: {:start, org_id}
   def interested?(%StatementUploaded{org_id: org_id}), do: {:start, org_id}
   def interested?(%TransactionReconciled{org_id: org_id}), do: {:continue!, org_id}
@@ -43,6 +46,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
 
   # --- Handle Events (Emit Commands) ---
 
+  @spec handle(t(), struct()) :: [struct()] | struct() | []
   def handle(%__MODULE__{} = process_manager, %InvoiceIngested{} = event) do
     event_amount =
       if is_binary(event.amount),
@@ -130,6 +134,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
 
   # --- Mutate State ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = process_manager, %InvoiceIngested{} = event) do
     amount =
       if is_binary(event.amount),

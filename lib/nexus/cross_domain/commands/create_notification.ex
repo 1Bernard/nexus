@@ -3,6 +3,7 @@ defmodule Nexus.CrossDomain.Commands.CreateNotification do
   Command to create a new global notification.
   """
   alias Nexus.Types
+
   @type t :: %__MODULE__{
           id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -12,6 +13,7 @@ defmodule Nexus.CrossDomain.Commands.CreateNotification do
           body: String.t() | nil,
           metadata: map()
         }
+
   @enforce_keys [:id, :org_id, :type, :title]
   defstruct [:id, :org_id, :user_id, :type, :title, :body, metadata: %{}]
 end

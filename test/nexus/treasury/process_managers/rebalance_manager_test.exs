@@ -34,6 +34,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManagerTest do
         predictions: [],
         generated_at: DateTime.utc_now()
       }
+
       state = RebalanceManager.apply(%RebalanceManager{}, event)
       assert state.org_id == "org1"
       assert state.target_currency == "USD"
@@ -50,6 +51,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManagerTest do
         status: "pending_authorization",
         requested_at: DateTime.utc_now()
       }
+
       state = RebalanceManager.apply(%RebalanceManager{}, event)
       assert state.completed == true
     end

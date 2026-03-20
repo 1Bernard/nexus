@@ -5,6 +5,8 @@ defmodule Nexus.ERP.Events.StatementUploaded do
   alias Nexus.Types
   alias Nexus.ERP.Services.StatementParser
 
+  @derive Jason.Encoder
+
   @type t :: %__MODULE__{
           statement_id: Types.binary_id(),
           org_id: Types.org_id(),
@@ -14,7 +16,6 @@ defmodule Nexus.ERP.Events.StatementUploaded do
           uploaded_at: Types.datetime(),
           content_hash: String.t()
         }
-  @derive Jason.Encoder
-  @enforce_keys [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at, :content_hash]
+
   defstruct [:statement_id, :org_id, :filename, :format, :lines, :uploaded_at, :content_hash]
 end

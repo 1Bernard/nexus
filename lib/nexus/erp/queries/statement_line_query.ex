@@ -6,9 +6,11 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
   alias Nexus.ERP.Projections.StatementLine
   alias Nexus.Organization.Projections.Tenant
 
-  @doc "Base query for StatementLine."
-  @spec base() :: Ecto.Query.t()
-  def base, do: from(line in StatementLine)
+  @doc "Base query for StatementLine, scoped by organization."
+  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  def base(org_id) do
+    from(line in StatementLine, where: line.org_id == ^org_id)
+  end
 
   @doc "Enriches statement line query with Tenant information."
   @spec with_tenant(Ecto.Query.t()) :: Ecto.Query.t()
@@ -23,9 +25,8 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
   @doc "High-level builder for listing unmatched statement lines."
   @spec unmatched_query(Nexus.Types.org_id()) :: Ecto.Query.t()
   def unmatched_query(org_id) do
-    base()
+    base(org_id)
     |> with_tenant()
-    |> for_org(org_id)
     |> with_status("unmatched")
     |> newest_first()
   end
@@ -33,6 +34,7 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
   @doc "Filters statement lines by organization ID."
   @spec for_org(Ecto.Query.t(), Nexus.Types.org_id()) :: Ecto.Query.t()
   def for_org(query, :all), do: query
+
   def for_org(query, org_id) do
     where(query, [line], line.org_id == ^org_id)
   end
@@ -67,11 +69,11 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
     where(query, [line], line.date >= ^start_dt and line.date <= ^end_dt)
   end
 
-  @doc "High-level builder for listing lines of a specific statement."
-  @spec for_statement_query(Nexus.Types.binary_id()) :: Ecto.Query.t()
-  def for_statement_query(statement_id) do
-    base()
-    |> for_statement(statement_id)
+  @doc "High-level builder for listing lines for a statement, scoped by organization."
+  @spec for_statement_query(Nexus.Types.org_id(), Nexus.Types.binary_id()) :: Ecto.Query.t()
+  def for_statement_query(org_id, statement_id) do
+    base(org_id)
+    |> where([line], line.statement_id == ^statement_id)
   end
 
   @doc "Filters statement lines by statement ID."
@@ -81,10 +83,14 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
   end
 
   @doc "High-level builder for historical cash flow data."
-  @spec historical_cash_flow_query(Nexus.Types.org_id(), Nexus.Types.currency(), String.t(), String.t()) :: Ecto.Query.t()
+  @spec historical_cash_flow_query(
+          Nexus.Types.org_id(),
+          Nexus.Types.currency(),
+          String.t(),
+          String.t()
+        ) :: Ecto.Query.t()
   def historical_cash_flow_query(org_id, currency, start_dt, end_dt) do
-    base()
-    |> for_org(org_id)
+    base(org_id)
     |> with_currency(currency)
     |> for_date_range(start_dt, end_dt)
     |> historical_cash_flow()

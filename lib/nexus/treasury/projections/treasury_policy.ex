@@ -4,6 +4,10 @@ defmodule Nexus.Treasury.Projections.TreasuryPolicy do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [:id, :org_id, :transfer_threshold, :mode, :mode_thresholds, :reporting_currency]}
   schema "treasury_policies" do
     field :org_id, :binary_id
     field :transfer_threshold, :decimal
@@ -16,6 +20,7 @@ defmodule Nexus.Treasury.Projections.TreasuryPolicy do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(policy, attrs) do
     policy
     |> cast(attrs, [

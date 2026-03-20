@@ -97,7 +97,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
       # Get the generated line id
       [line] =
         Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-          ERP.list_statement_lines(statement_id)
+          ERP.list_statement_lines(org_id, statement_id)
         end)
 
       # Reconcile the line

@@ -11,6 +11,7 @@ defmodule Nexus.Intelligence.Handlers.InvoiceAnalyzer do
   alias Nexus.Intelligence.Commands.AnalyzeInvoice
   require Logger
 
+  @spec handle(InvoiceIngested.t(), map()) :: :ok
   def handle(%InvoiceIngested{} = event, _metadata) do
     Logger.info(
       "[Intelligence] Triggering anomaly detection pipeline for invoice #{event.invoice_id}"

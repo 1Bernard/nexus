@@ -2,7 +2,7 @@ defmodule Nexus.Identity.UserSessionTest do
   use Nexus.DataCase, async: false
 
   alias Nexus.Identity.Commands.{StartSession, ExpireSession, UpdateSettings}
-  alias Nexus.Identity.Projections.{User, UserSession, UserSettings}
+  alias Nexus.Identity.Projections.{UserSession, UserSettings}
   alias Nexus.App
   alias Nexus.Repo
 
@@ -14,16 +14,17 @@ defmodule Nexus.Identity.UserSessionTest do
     org_id = Ecto.UUID.generate()
     user_id = Ecto.UUID.generate()
     # Register user in aggregate first
-    :ok = App.dispatch(%Nexus.Identity.Commands.RegisterUser{
-      org_id: org_id,
-      user_id: user_id,
-      email: "test@example.com",
-      role: "admin",
-      display_name: "Test User",
-      cose_key: "dummy",
-      credential_id: "dummy",
-      registered_at: DateTime.utc_now()
-    })
+    :ok =
+      App.dispatch(%Nexus.Identity.Commands.RegisterUser{
+        org_id: org_id,
+        user_id: user_id,
+        email: "test@example.com",
+        role: "admin",
+        display_name: "Test User",
+        cose_key: "dummy",
+        credential_id: "dummy",
+        registered_at: DateTime.utc_now()
+      })
 
     # Wait for projectors to catch up
     Process.sleep(200)
@@ -32,8 +33,12 @@ defmodule Nexus.Identity.UserSessionTest do
   end
 
   describe "Session Management" do
-    test "Starting a session creates a UserSession projection", %{org_id: org_id, user_id: user_id} do
+    test "Starting a session creates a UserSession projection", %{
+      org_id: org_id,
+      user_id: user_id
+    } do
       session_id = Ecto.UUID.generate()
+
       command = %StartSession{
         org_id: org_id,
         user_id: user_id,
@@ -58,7 +63,10 @@ defmodule Nexus.Identity.UserSessionTest do
       assert session.is_expired == false
     end
 
-    test "Expiring a session updates the UserSession projection", %{org_id: org_id, user_id: user_id} do
+    test "Expiring a session updates the UserSession projection", %{
+      org_id: org_id,
+      user_id: user_id
+    } do
       session_id = Ecto.UUID.generate()
       expired_at = DateTime.utc_now()
 
@@ -90,7 +98,10 @@ defmodule Nexus.Identity.UserSessionTest do
   end
 
   describe "User Settings" do
-    test "Updating settings modifies the UserSettings projection", %{org_id: org_id, user_id: user_id} do
+    test "Updating settings modifies the UserSettings projection", %{
+      org_id: org_id,
+      user_id: user_id
+    } do
       # Wait a bit more for initial settings creation from RegisterUser
       Process.sleep(500)
 

@@ -10,6 +10,7 @@ defmodule Nexus.ERP.Adapters.RateLimiter do
   Checks if we are allowed to 'Talk Back' to SAP.
   Limit: 100 requests per 60 seconds (Institutional Standard).
   """
+  @spec check_quota(String.t()) :: :ok | {:error, :rate_limited}
   def check_quota(sap_entity_id) do
     case Hammer.check_rate("sap_api:#{sap_entity_id}", 60_000, 100) do
       {:allow, _count} -> :ok

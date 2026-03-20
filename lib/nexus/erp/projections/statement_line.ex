@@ -4,6 +4,22 @@ defmodule Nexus.ERP.Projections.StatementLine do
   """
   use Nexus.Schema
 
+  @type t :: %__MODULE__{}
+
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :statement_id,
+             :org_id,
+             :date,
+             :ref,
+             :amount,
+             :currency,
+             :narrative,
+             :status,
+             :error_message,
+             :metadata
+           ]}
   schema "erp_statement_lines" do
     field :statement_id, :binary_id
     field :org_id, :binary_id
@@ -20,6 +36,7 @@ defmodule Nexus.ERP.Projections.StatementLine do
     timestamps()
   end
 
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(line, attrs) do
     line
     |> cast(attrs, [

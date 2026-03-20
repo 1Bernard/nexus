@@ -81,7 +81,7 @@ defmodule NexusWeb.Tenant.AnalysisLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.page_container>
+    <.page_container class="px-4 md:px-6">
       <.page_header title="Smart Insights" subtitle="AI-Powered Intelligence">
         <:actions>
           <div class="px-4 py-2 bg-slate-900/50 border border-white/5 rounded-xl text-right">

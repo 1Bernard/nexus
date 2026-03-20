@@ -25,11 +25,17 @@ defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSagaTest do
                currency: "EUR",
                recipient_data: %{recipient_code: "RCP_123"}
              } = command
+
       assert Decimal.equal?(amount, 1000)
     end
 
     test "handle/2 returns empty list on ExternalPaymentSettled" do
-      event = %ExternalPaymentSettled{payment_id: "pay-1", org_id: "org1", settled_at: DateTime.utc_now()}
+      event = %ExternalPaymentSettled{
+        payment_id: "pay-1",
+        org_id: "org1",
+        settled_at: DateTime.utc_now()
+      }
+
       assert [] == PaymentExecutionSaga.handle(%PaymentExecutionSaga{}, event)
     end
   end

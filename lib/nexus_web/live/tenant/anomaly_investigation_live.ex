@@ -10,7 +10,7 @@ defmodule NexusWeb.Tenant.AnomalyInvestigationLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    anomaly = AnalysisQuery.get_anomaly!(id)
+    anomaly = AnalysisQuery.get_anomaly!(socket.assigns.current_user.org_id, id)
     org_name = TenantQuery.get_name(anomaly.org_id)
 
     # Simulating fetching raw invoice data from ERP
@@ -124,7 +124,7 @@ defmodule NexusWeb.Tenant.AnomalyInvestigationLive do
               </div>
             </div>
           </.dark_card>
-
+          
     <!-- Resolution Actions -->
           <.dark_card class="p-8">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-white/5 pb-4">
@@ -167,7 +167,7 @@ defmodule NexusWeb.Tenant.AnomalyInvestigationLive do
             </div>
           </.dark_card>
         </div>
-
+        
     <!-- Right Pane: Source Context -->
         <div>
           <.dark_card class="p-0 h-full flex flex-col min-h-[500px]">

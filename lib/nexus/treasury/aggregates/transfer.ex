@@ -3,7 +3,18 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
   Aggregate to manage Fund Transfers and their authorization states.
   """
   @derive Jason.Encoder
-  defstruct [:id, :org_id, :user_id, :from_currency, :to_currency, :amount, :status, :recipient_data]
+  defstruct [
+    :id,
+    :org_id,
+    :user_id,
+    :from_currency,
+    :to_currency,
+    :amount,
+    :status,
+    :recipient_data
+  ]
+
+  @type t :: %__MODULE__{}
 
   alias Nexus.Treasury.Commands.{RequestTransfer, AuthorizeTransfer, ExecuteTransfer}
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
@@ -12,6 +23,8 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
 
   # --- Command Handlers ---
 
+  @spec execute(t(), RequestTransfer.t() | AuthorizeTransfer.t() | ExecuteTransfer.t()) ::
+          Commanded.Aggregate.Multi.t() | [struct()] | struct() | {:error, atom()}
   def execute(%__MODULE__{id: nil}, %RequestTransfer{} = cmd) do
     _amount = parse_decimal(cmd.amount)
     # Use the dynamic threshold from the command, or fall back to default
@@ -46,11 +59,19 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
       transfer_id: cmd.transfer_id,
       org_id: cmd.org_id,
       user_id: cmd.user_id,
+      actor_email: cmd.actor_email,
       authorized_at: cmd.authorized_at
     }
   end
 
-  def execute(%__MODULE__{status: "authorized", recipient_data: recipient} = state, %ExecuteTransfer{} = cmd) do
+  # Idempotency: If already authorized or executed, do nothing
+  def execute(%__MODULE__{status: "authorized"}, %AuthorizeTransfer{}), do: []
+  def execute(%__MODULE__{status: "executed"}, %AuthorizeTransfer{}), do: []
+
+  def execute(
+        %__MODULE__{status: "authorized", recipient_data: recipient} = state,
+        %ExecuteTransfer{} = cmd
+      ) do
     %TransferExecuted{
       transfer_id: cmd.transfer_id,
       org_id: cmd.org_id,
@@ -67,6 +88,7 @@ defmodule Nexus.Treasury.Aggregates.Transfer do
 
   # --- State Transitions ---
 
+  @spec apply(t(), struct()) :: t()
   def apply(%__MODULE__{} = state, %TransferInitiated{} = event) do
     %__MODULE__{
       state
