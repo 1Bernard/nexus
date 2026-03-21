@@ -10,7 +10,7 @@ defmodule Nexus.Identity.Policies.IdentityPolicy do
 
   # --- Backoffice Access ---
   def can?(user, _action, :backoffice) do
-    user.role in [:system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "admin")
   end
 
   # --- Dashboard & Settings ---

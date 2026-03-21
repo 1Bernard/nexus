@@ -11,7 +11,7 @@ defmodule Nexus.Organization.Projections.Invitation do
              :id,
              :org_id,
              :email,
-             :role,
+             :roles,
              :invited_by,
              :invitation_token,
              :status,
@@ -21,7 +21,7 @@ defmodule Nexus.Organization.Projections.Invitation do
   schema "organization_invitations" do
     field :org_id, :binary_id
     field :email, :string
-    field :role, :string, default: "trader"
+    field :roles, {:array, :string}, default: ["trader"]
     field :invited_by, :string
     field :invitation_token, :binary_id
     field :status, :string, default: "pending"
@@ -39,13 +39,13 @@ defmodule Nexus.Organization.Projections.Invitation do
       :id,
       :org_id,
       :email,
-      :role,
+      :roles,
       :invited_by,
       :invitation_token,
       :status,
       :invited_at,
       :claimed_at
     ])
-    |> validate_required([:id, :org_id, :email, :role, :invitation_token])
+    |> validate_required([:id, :org_id, :email, :roles, :invitation_token])
   end
 end

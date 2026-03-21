@@ -12,8 +12,8 @@ defmodule Nexus.Payments.Policies.PaymentsPolicy do
   def can?(_user, :view, :payments), do: true
 
   # Initiating and approving payments requires treasury_ops or system_admin
-  def can?(user, :initiate, :payments) do
-    user.role in [:treasury_ops, "treasury_ops", :system_admin, "system_admin"]
+  def can?(user, action, :payments) when action in [:initiate, :approve] do
+    Nexus.Shared.Policy.has_role?(user, "treasury_ops")
   end
 
   # Default fallback

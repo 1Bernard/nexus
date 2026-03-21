@@ -22,6 +22,5 @@ defmodule Nexus.Reporting.Projections.ControlMetric do
     struct
     |> cast(attrs, [:id, :org_id, :metric_key, :score, :metadata])
     |> validate_required([:id, :org_id, :metric_key])
-    |> unique_constraint([:org_id, :metric_key])
   end
 end

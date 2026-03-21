@@ -8,8 +8,8 @@ defmodule Nexus.Policies.TreasuryPolicyTest do
     end
 
     test "allows treasury_ops or system_admin for vault actions" do
-      trader = %{role: "treasury_ops", org_id: "org1"}
-      admin = %{role: "system_admin", org_id: "org1"}
+      trader = %{roles: ["treasury_ops"], org_id: "org1"}
+      admin = %{roles: ["system_admin"], org_id: "org1"}
       viewer = %{role: "viewer", org_id: "org1"}
 
       assert TreasuryPolicy.can?(trader, :register_vault, :vault)
@@ -18,7 +18,7 @@ defmodule Nexus.Policies.TreasuryPolicyTest do
     end
 
     test "allows treasury_ops for reconciliation actions" do
-      trader = %{role: "treasury_ops", org_id: "org1"}
+      trader = %{roles: ["treasury_ops"], org_id: "org1"}
       assert TreasuryPolicy.can?(trader, :confirm, :reconciliation)
       assert TreasuryPolicy.can?(trader, :approve, :reconciliation)
     end

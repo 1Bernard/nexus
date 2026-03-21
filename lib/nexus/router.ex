@@ -9,7 +9,6 @@ defmodule Nexus.Router do
   middleware(Nexus.Shared.Middleware.CorrelationId)
   middleware(Nexus.Shared.Middleware.TenantGate)
 
-  # --- Identity Domain ---
   dispatch(Nexus.Identity.Commands.RegisterUser,
     to: Nexus.Identity.Aggregates.User,
     identity: :user_id
@@ -121,8 +120,7 @@ defmodule Nexus.Router do
 
   dispatch(Nexus.Treasury.Commands.GenerateForecast,
     to: Nexus.Treasury.Aggregates.Forecast,
-    identity: :org_id,
-    identity_prefix: "forecast-"
+    identity: &__MODULE__.forecast_identity/1
   )
 
   dispatch(Nexus.Treasury.Commands.ReconcileTransaction,
@@ -203,4 +201,8 @@ defmodule Nexus.Router do
     to: Nexus.CrossDomain.Aggregates.Notification,
     identity: :id
   )
+
+  # --- Identity Helpers ---
+  @spec forecast_identity(map()) :: String.t()
+  def forecast_identity(%{org_id: org_id, currency: currency}), do: "forecast-#{org_id}-#{currency}"
 end

@@ -26,7 +26,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
         %{
           display_name: socket.assigns.current_user.display_name,
           email: socket.assigns.current_user.email,
-          role: socket.assigns.current_user.role,
+          roles: socket.assigns.current_user.roles,
           online_at: inspect(System.system_time(:second))
         }
       )
@@ -98,7 +98,7 @@ defmodule NexusWeb.Admin.UserLive.Index do
     token =
       Phoenix.Token.sign(NexusWeb.Endpoint, "user_invitation", %{
         org_id: socket.assigns.current_user.org_id,
-        role: role,
+        roles: [role],
         invited_by: socket.assigns.current_user.id,
         email: email,
         display_name: name
@@ -114,7 +114,11 @@ defmodule NexusWeb.Admin.UserLive.Index do
     user = Enum.find(socket.assigns.users, fn u -> u.id == id end)
 
     {:noreply,
-     assign(socket, editing_user: user, editing_role: user.role, editing_status: user.status)}
+     assign(socket,
+       editing_user: user,
+       editing_role: user.roles |> List.first(),
+       editing_status: user.status
+     )}
   end
 
   @impl true
@@ -249,14 +253,14 @@ defmodule NexusWeb.Admin.UserLive.Index do
     }
 
     users_page =
-      if Enum.member?(socket.assigns.current_user.role, "system_admin") do
+      if Enum.member?(socket.assigns.current_user.roles, "system_admin") do
         UserQuery.list_all_users(query_params)
       else
         UserQuery.list_users_by_org(org_id, query_params)
       end
 
     total_count =
-      if Enum.member?(socket.assigns.current_user.role, "system_admin") do
+      if Enum.member?(socket.assigns.current_user.roles, "system_admin") do
         UserQuery.total_users_count()
       else
         UserQuery.total_users_count(org_id)
@@ -295,9 +299,11 @@ defmodule NexusWeb.Admin.UserLive.Index do
     active_users =
       Enum.map(presences, fn {user_id, %{metas: metas}} ->
         meta = List.first(metas)
-        # Presence keys are always strings, but we ensure consistency here
+        # Presence payloads can sometimes have string keys due to internal serialization
+        roles = meta[:roles] || [meta[:role]] || []
+
         Map.put(meta, :id, to_string(user_id))
-        |> Map.put(:role, meta.roles)
+        |> Map.put(:roles, Enum.reject(roles, &is_nil/1))
       end)
 
     assign(socket, active_users: active_users)

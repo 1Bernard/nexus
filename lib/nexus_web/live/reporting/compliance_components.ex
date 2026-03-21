@@ -13,6 +13,7 @@ defmodule NexusWeb.Reporting.ComplianceComponents do
   attr :score, :integer, required: true
   attr :status, :string, default: "Healthy"
   attr :icon, :string, default: "hero-shield-check"
+  attr :trend, :any, default: nil # e.g. 0.05 for +5%
 
   def compliance_gauge(assigns) do
     ~H"""
@@ -49,6 +50,21 @@ defmodule NexusWeb.Reporting.ComplianceComponents do
         </svg>
         <div class="absolute inset-0 flex flex-col items-center justify-center">
           <span class="text-xl font-black text-slate-100 tracking-tighter">{@score}%</span>
+          <%= if @trend do %>
+            <div class={[
+              "flex items-center gap-0.5 mt-0.5",
+              Decimal.gt?(@trend, 0) && "text-emerald-400",
+              Decimal.lt?(@trend, 0) && "text-rose-400",
+              Decimal.eq?(@trend, 0) && "text-slate-500"
+            ]}>
+              <span class={[
+                "text-[8px] font-bold",
+                Decimal.gt?(@trend, 0) && "hero-arrow-trending-up w-2.5 h-2.5",
+                Decimal.lt?(@trend, 0) && "hero-arrow-trending-down w-2.5 h-2.5"
+              ]}></span>
+              <span class="text-[8px] font-bold">{abs(Decimal.to_float(@trend) * 100)}%</span>
+            </div>
+          <% end %>
         </div>
       </div>
       <div class="mt-4 text-center">
@@ -74,27 +90,29 @@ defmodule NexusWeb.Reporting.ComplianceComponents do
   Displays the Segregation of Duties (SoD) Matrix.
   """
   attr :conflicts, :list, default: []
+  attr :roles, :list, required: true # e.g. ["admin", "trader", "approver", "viewer"]
 
   def sod_matrix(assigns) do
-    # Define the base RBAC matrix for the UI
-    roles = [
-      %{name: "Admin", permissions: ["Authorize", "Policy", "Audit"]},
-      %{name: "Trader", permissions: ["Initiate"]},
-      %{name: "Auditor", permissions: ["Audit"]},
-      %{name: "Viewer", permissions: []}
-    ]
+    # Map roles to their theoretical permissions for highlighting
+    role_map = %{
+      "admin" => ["Initiate", "Authorize", "Policy", "Audit"],
+      "trader" => ["Initiate"],
+      "approver" => ["Authorize"],
+      "viewer" => ["Audit"],
+      "system_admin" => ["Authorize", "Policy", "Audit"]
+    }
 
     permissions = ["Initiate", "Authorize", "Policy", "Audit"]
 
-    assigns = assign(assigns, roles: roles, permissions: permissions)
+    assigns = assign(assigns, role_map: role_map, permissions: permissions)
 
     ~H"""
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="border-b border-white/5">
+          <tr class="border-b border-[var(--nx-border)]">
             <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              Role
+              Role Profile
             </th>
             <%= for perm <- @permissions do %>
               <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
@@ -103,26 +121,30 @@ defmodule NexusWeb.Reporting.ComplianceComponents do
             <% end %>
           </tr>
         </thead>
-        <tbody class="divide-y divide-white/5">
+        <tbody class="divide-y divide-[var(--nx-border)]">
           <%= for role <- @roles do %>
             <tr class="group hover:bg-white/[0.02] transition-colors">
               <td class="py-4 px-2">
-                <span class="text-xs font-bold text-slate-300">{role.name}</span>
+                <span class="text-xs font-bold text-slate-300 uppercase leading-none">{role}</span>
               </td>
               <%= for perm <- @permissions do %>
                 <td class="py-4 px-2 text-center">
+                  <% role_perms = Map.get(@role_map, role, []) %>
                   <div class={
                     [
-                      "mx-auto w-3 h-3 rounded-sm border",
-                      if(perm in role.permissions,
-                        do: "bg-emerald-500/20 border-emerald-500/40",
-                        else: "bg-slate-800/20 border-slate-800/50"
+                      "mx-auto w-3.5 h-3.5 rounded-sm border transition-all duration-500",
+                      if(perm in role_perms,
+                        do: "bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.1)]",
+                        else: "bg-slate-800/10 border-slate-800/50"
                       ),
-                      # Highlight toxic combination if user has both Initiate and Authorize/Policy
-                      role.name == "Admin" && perm == "Initiate" &&
-                        "bg-rose-500/20 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.3)] animate-pulse"
+                      # Toxic Combinations detection
+                      (role == "admin" || (role == "system_admin" && perm == "Authorize")) &&
+                        "border-amber-500/30 group-hover:border-amber-500/50"
                     ]
                   }>
+                    <%= if perm in role_perms do %>
+                      <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full mx-auto mt-0.5"></div>
+                    <% end %>
                   </div>
                 </td>
               <% end %>

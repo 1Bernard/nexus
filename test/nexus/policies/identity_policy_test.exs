@@ -4,7 +4,7 @@ defmodule Nexus.Policies.IdentityPolicyTest do
 
   describe "can?/3" do
     test "allows only system_admin for backoffice" do
-      sys_admin = %{role: "system_admin", org_id: "org1"}
+      sys_admin = %{roles: ["system_admin"], org_id: "org1"}
       org_admin = %{role: "org_admin", org_id: "org1"}
 
       assert IdentityPolicy.can?(sys_admin, :access, :backoffice)

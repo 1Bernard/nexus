@@ -62,6 +62,20 @@ defmodule Nexus.Identity.Aggregates.User do
     {:error, :already_registered}
   end
 
+  def execute(%__MODULE__{id: nil}, %RegisterUser{} = cmd) do
+    %UserRegistered{
+      user_id: cmd.user_id,
+      org_id: cmd.org_id,
+      email: cmd.email,
+      display_name: cmd.display_name,
+      role: cmd.role || "trader",
+      cose_key: cmd.cose_key,
+      credential_id: cmd.credential_id,
+      registered_at: cmd.registered_at,
+      status: "active"
+    }
+  end
+
   @spec execute(t(), struct()) :: term()
 
   def execute(%__MODULE__{id: _exists}, %RegisterUser{}) do
@@ -91,6 +105,16 @@ defmodule Nexus.Identity.Aggregates.User do
       org_id: cmd.org_id,
       action_id: cmd.action_id,
       verified_at: cmd.verified_at
+    }
+  end
+
+  def execute(%__MODULE__{id: id}, %ChangeUserRole{} = cmd) when not is_nil(id) do
+    %UserRoleChanged{
+      user_id: cmd.user_id,
+      org_id: cmd.org_id,
+      role: cmd.role,
+      actor_id: cmd.actor_id,
+      changed_at: cmd.changed_at
     }
   end
 

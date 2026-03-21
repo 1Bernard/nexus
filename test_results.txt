@@ -1,0 +1,147 @@
+00:29:01.078 [info] Loading 158 CA(s) from :otp store
+00:29:01.084 [info] OTLP exporter successfully initialized
+00:29:01.086 [info] [Nexus] Application starting in test environment
+00:29:01.143 [info] [Identity] ETS Challenge Store Initialized at auth_challenges
+00:29:01.143 [info] [Treasury] ETS Price Cache Initialized
+00:29:01.179 [debug] Attempting to start Postgrex
+00:29:01.181 [debug] Successfully started Postgrex (#PID<0.460.0>)
+00:29:01.181 [debug] Attempting to start Postgrex
+00:29:01.181 [debug] Successfully started Postgrex (#PID<0.483.0>)
+00:29:01.184 [debug] Attempting to start Postgrex.Notifications
+00:29:01.187 [debug] Successfully started Postgrex.Notifications (#PID<0.503.0>)
+Running ExUnit with seed: 256339, max_cases: 20
+
+Compiling step: a subsidiary "Munich HQ" has an open "USD" invoice for "100000"
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   # Skip the Ecto Sandbox owner so projector writes commit to real DB rows.
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/exposure_calculation_test.exs:6: Nexus.Treasury.ExposureCalculationTest (module)
+
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 12 │   alias Nexus.Treasury.Projections.ExposureSnapshot
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/exposure_calculation_test.exs:12: Nexus.Treasury.ExposureCalculationTest (module)
+
+Compiling step: the current "EUR/USD" exchange rate is "1.0842"
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+  6 │   # Skip the Ecto Sandbox owner so projector writes commit to real DB rows.
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/exposure_calculation_test.exs:6: Nexus.Treasury.ExposureCalculationTest (module)
+
+Compiling step: the exposure calculation is triggered
+    warning: ExUnit.Case.register_test/4 is deprecated. Use register_test/6 instead
+    │
+ 12 │   alias Nexus.Treasury.Projections.ExposureSnapshot
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/nexus/treasury/exposure_calculation_test.exs:12: Nexus.Treasury.ExposureCalculationTest (module)
+
+Compiling step: the total exposure for "Munich HQ" is registered as "92233.91" "EUR"
+Compiling step: an existing exposure calculation of "92233.91" "EUR" for "Munich HQ"
+Compiling step: a new market tick for "EUR/USD" arrives at price "1.1000"
+Compiling step: the exposure for "Munich HQ" is recalculated to "90909.09" "EUR"
+00:29:01.471 [debug] QUERY OK source="treasury_liquidity_positions" db=1.1ms decode=0.9ms queue=1.4ms
+DELETE FROM "treasury_liquidity_positions" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.473 [debug] QUERY OK source="treasury_exposure_snapshots" db=1.4ms queue=0.3ms
+DELETE FROM "treasury_exposure_snapshots" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.490 [debug] QUERY OK source="treasury_exposure_snapshots" db=3.9ms queue=0.4ms
+INSERT INTO "treasury_exposure_snapshots" ("id","currency","org_id","subsidiary","exposure_amount","calculated_at","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ["d711c23b-e351-4d72-a8d3-e1e5bd7c5caa", "EUR", "614367eb-45fc-4617-a8fa-f2580f79bd84", "TestSub", Decimal.new("1000000"), ~U[2026-03-21 00:29:01.475429Z], ~U[2026-03-21 00:29:01.484117Z], ~U[2026-03-21 00:29:01.484117Z]]
+00:29:01.496 [debug] QUERY OK source="treasury_policies" db=1.1ms queue=0.5ms
+SELECT t0."id", t0."org_id", t0."transfer_threshold", t0."mode", t0."reporting_currency", t0."mode_thresholds", t0."created_at", t0."updated_at" FROM "treasury_policies" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.501 [debug] QUERY OK source="treasury_exposure_snapshots" db=0.2ms queue=0.3ms
+SELECT t0."id", t0."org_id", t0."subsidiary", t0."currency", t0."exposure_amount", t0."calculated_at", t0."created_at", t0."updated_at" FROM "treasury_exposure_snapshots" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.502 [debug] QUERY OK source="treasury_liquidity_positions" db=0.2ms queue=0.2ms
+SELECT t0."id", t0."org_id", t0."currency", t0."amount", t0."created_at", t0."updated_at" FROM "treasury_liquidity_positions" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.513 [debug] QUERY OK db=0.2ms
+begin []
+00:29:01.516 [debug] QUERY OK source="projection_versions" db=1.4ms
+INSERT INTO "projection_versions" AS p0 ("last_seen_event_number","projection_name","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) [1, "Treasury.LiquidityProjector", ~N[2026-03-21 00:29:01.513161], ~N[2026-03-21 00:29:01.513161], 1, "Treasury.LiquidityProjector", 1]
+00:29:01.519 [debug] QUERY OK source="treasury_liquidity_positions" db=0.3ms
+INSERT INTO "treasury_liquidity_positions" AS t0 ("id","currency","amount","org_id","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT ("org_id","currency") DO UPDATE SET "amount" = t0."amount" + $7, "updated_at" = $8 ["d2536366-2da9-5f09-9009-2b16e27e03d1", "EUR", Decimal.new("-400000"), "614367eb-45fc-4617-a8fa-f2580f79bd84", ~U[2026-03-21 00:29:01.516798Z], ~U[2026-03-21 00:29:01.516798Z], Decimal.new("-400000"), ~U[2026-03-21 00:29:01.511727Z]]
+00:29:01.520 [debug] QUERY OK source="treasury_liquidity_positions" db=0.1ms
+INSERT INTO "treasury_liquidity_positions" AS t0 ("id","currency","amount","org_id","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT ("org_id","currency") DO UPDATE SET "amount" = t0."amount" + $7, "updated_at" = $8 ["b18207ad-4ae7-5580-828c-a65467e33bf4", "USD", Decimal.new("400000"), "614367eb-45fc-4617-a8fa-f2580f79bd84", ~U[2026-03-21 00:29:01.519771Z], ~U[2026-03-21 00:29:01.519771Z], Decimal.new("400000"), ~U[2026-03-21 00:29:01.511739Z]]
+00:29:01.520 [debug] QUERY OK db=0.1ms
+commit []
+00:29:01.522 [debug] QUERY OK source="treasury_liquidity_positions" db=0.2ms queue=0.5ms
+SELECT t0."id", t0."org_id", t0."currency", t0."amount", t0."created_at", t0."updated_at" FROM "treasury_liquidity_positions" AS t0 WHERE ((t0."org_id" = $1) AND (t0."currency" = $2)) ["614367eb-45fc-4617-a8fa-f2580f79bd84", "EUR"]
+00:29:01.522 [debug] QUERY OK source="treasury_liquidity_positions" db=0.1ms
+SELECT t0."id", t0."org_id", t0."currency", t0."amount", t0."created_at", t0."updated_at" FROM "treasury_liquidity_positions" AS t0 WHERE ((t0."org_id" = $1) AND (t0."currency" = $2)) ["614367eb-45fc-4617-a8fa-f2580f79bd84", "USD"]
+00:29:01.522 [debug] QUERY OK source="treasury_policies" db=0.4ms
+SELECT t0."id", t0."org_id", t0."transfer_threshold", t0."mode", t0."reporting_currency", t0."mode_thresholds", t0."created_at", t0."updated_at" FROM "treasury_policies" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.523 [debug] QUERY OK source="treasury_exposure_snapshots" db=0.1ms
+SELECT t0."id", t0."org_id", t0."subsidiary", t0."currency", t0."exposure_amount", t0."calculated_at", t0."created_at", t0."updated_at" FROM "treasury_exposure_snapshots" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+00:29:01.523 [debug] QUERY OK source="treasury_liquidity_positions" db=0.2ms
+SELECT t0."id", t0."org_id", t0."currency", t0."amount", t0."created_at", t0."updated_at" FROM "treasury_liquidity_positions" AS t0 WHERE (t0."org_id" = $1) ["614367eb-45fc-4617-a8fa-f2580f79bd84"]
+.00:29:01.556 [debug] QUERY OK source="treasury_exposure_snapshots" db=1.1ms queue=30.7ms
+DELETE FROM "treasury_exposure_snapshots" AS t0 []
+00:29:01.558 [debug] QUERY OK source="projection_versions" db=0.3ms queue=0.2ms
+DELETE FROM "projection_versions" AS p0 []
+00:29:01.558 [info] 		[36mGiven [32ma subsidiary "Munich HQ" has an open "USD" invoice for "100000"
+00:29:01.558 [info] 		[36mGiven [32mthe current "EUR/USD" exchange rate is "1.0842"
+00:29:01.569 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Exposure` with UUID "Sub5026-EUR"
+00:29:01.600 [debug] Nexus.Treasury.Aggregates.Exposure<Sub5026-EUR@0> executing command: %Nexus.Treasury.Commands.CalculateExposure{id: "Sub5026-EUR", org_id: "ecae804e-e60a-4fe1-97be-b04e487a4ff3", subsidiary: "Sub5026", currency: "EUR", exposure_amount: Decimal.new("92233.91"), timestamp: ~U[2026-03-21 00:29:01.558939Z]}
+00:29:01.649 [debug] Appended 1 event(s) to stream "Sub5026-EUR"
+00:29:01.649 [debug] Listener received notification on channel "event_store.events" with payload: "Sub5026-EUR,8666,1,1"
+00:29:01.651 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,12266,12266"
+00:29:01.670 [debug] QUERY OK db=14.1ms
+begin []
+00:29:01.673 [debug] QUERY OK source="projection_versions" db=2.9ms
+INSERT INTO "projection_versions" AS p0 ("last_seen_event_number","projection_name","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) [1, "Treasury.ExposureProjector", ~N[2026-03-21 00:29:01.670317], ~N[2026-03-21 00:29:01.670317], 1, "Treasury.ExposureProjector", 1]
+00:29:01.675 [debug] QUERY OK source="treasury_exposure_snapshots" db=0.8ms
+INSERT INTO "treasury_exposure_snapshots" ("id","currency","org_id","subsidiary","exposure_amount","calculated_at","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("org_id","subsidiary","currency") DO UPDATE SET "exposure_amount" = EXCLUDED."exposure_amount","calculated_at" = EXCLUDED."calculated_at","updated_at" = EXCLUDED."updated_at" ["019d0dcb-9f57-7ba0-928b-337690540f90", "EUR", "ecae804e-e60a-4fe1-97be-b04e487a4ff3", "Sub5026", Decimal.new("92233.91"), ~U[2026-03-21 00:29:01.558939Z], ~U[2026-03-21 00:29:01.673815Z], ~U[2026-03-21 00:29:01.673815Z]]
+00:29:01.675 [debug] QUERY OK db=0.2ms
+commit []
+00:29:01.675 [debug] [ExposureProjector] committed Sub5026-EUR
+00:29:01.676 [info] 		[36mWhen [32mthe exposure calculation is triggered
+00:29:01.678 [debug] Nexus.Treasury.Aggregates.Exposure<Sub5026-EUR@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "4755db05-1705-49c6-bf05-c02d262f02c4", event_number: 1, stream_id: "Sub5026-EUR", stream_version: 1, causation_id: "04418d1e-905f-4a18-af11-7d09fd5a0700", correlation_id: "d703794b-8a9f-44cc-a521-d9bde5f0e4d2", event_type: "Elixir.Nexus.Treasury.Events.ExposureCalculated", data: %Nexus.Treasury.Events.ExposureCalculated{org_id: "ecae804e-e60a-4fe1-97be-b04e487a4ff3", subsidiary: "Sub5026", currency: "EUR", exposure_amount: "92233.91", timestamp: "2026-03-21T00:29:01.558939Z"}, created_at: ~U[2026-03-21 00:29:01.620411Z], metadata: %{"causation_id" => "019d0dcb-9efe-7fc8-b7ed-dc7d0bc65ffd", "correlation_id" => "019d0dcb-9efe-7fc8-b7ed-dc7d0bc65ffd"}}]
+00:29:01.691 [debug] QUERY OK source="treasury_exposure_snapshots" db=1.1ms queue=14.3ms
+SELECT t0."id", t0."org_id", t0."subsidiary", t0."currency", t0."exposure_amount", t0."calculated_at", t0."created_at", t0."updated_at" FROM "treasury_exposure_snapshots" AS t0 WHERE (((t0."org_id" = $1) AND (t0."subsidiary" = $2)) AND (t0."currency" = $3)) ["ecae804e-e60a-4fe1-97be-b04e487a4ff3", "Sub5026", "EUR"]
+.00:29:01.691 [info] 		[36mThen [32mthe total exposure for "Munich HQ" is registered as "92233.91" "EUR"
+00:29:01.707 [debug] QUERY OK source="treasury_exposure_snapshots" db=15.4ms
+DELETE FROM "treasury_exposure_snapshots" AS t0 []
+00:29:01.708 [debug] QUERY OK source="projection_versions" db=0.4ms
+DELETE FROM "projection_versions" AS p0 []
+00:29:01.708 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Exposure` with UUID "Sub3-EUR"
+00:29:01.723 [debug] Nexus.Treasury.Aggregates.Exposure<Sub3-EUR@0> executing command: %Nexus.Treasury.Commands.CalculateExposure{id: "Sub3-EUR", org_id: "2ee8f25a-b9ac-48b5-93e9-787538de7436", subsidiary: "Sub3", currency: "EUR", exposure_amount: Decimal.new("92233.91"), timestamp: ~U[2026-03-21 00:29:01.708275Z]}
+00:29:01.755 [debug] Listener received notification on channel "event_store.events" with payload: "Sub3-EUR,8667,1,1"
+00:29:01.755 [debug] Appended 1 event(s) to stream "Sub3-EUR"
+00:29:01.755 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,12267,12267"
+00:29:01.756 [debug] Nexus.Treasury.Aggregates.Exposure<Sub3-EUR@1> received events: [%Commanded.EventStore.RecordedEvent{event_id: "b1db34a1-a2d4-4406-b96a-6ef48562b727", event_number: 1, stream_id: "Sub3-EUR", stream_version: 1, causation_id: "8600aa2b-fa5d-4d58-b2d0-02cada625e1a", correlation_id: "edd3d662-6b88-44ad-b0dc-b5f1009b8cb5", event_type: "Elixir.Nexus.Treasury.Events.ExposureCalculated", data: %Nexus.Treasury.Events.ExposureCalculated{org_id: "2ee8f25a-b9ac-48b5-93e9-787538de7436", subsidiary: "Sub3", currency: "EUR", exposure_amount: "92233.91", timestamp: "2026-03-21T00:29:01.708275Z"}, created_at: ~U[2026-03-21 00:29:01.738475Z], metadata: %{"causation_id" => "019d0dcb-9f8c-7b9b-9f10-5242933e2ebc", "correlation_id" => "019d0dcb-9f8c-7b9b-9f10-5242933e2ebc"}}]
+00:29:01.769 [debug] QUERY OK db=13.3ms
+begin []
+00:29:01.770 [debug] QUERY OK source="projection_versions" db=0.8ms
+INSERT INTO "projection_versions" AS p0 ("last_seen_event_number","projection_name","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) [1, "Treasury.ExposureProjector", ~N[2026-03-21 00:29:01.769121], ~N[2026-03-21 00:29:01.769121], 1, "Treasury.ExposureProjector", 1]
+00:29:01.771 [debug] QUERY OK source="treasury_exposure_snapshots" db=0.3ms
+INSERT INTO "treasury_exposure_snapshots" ("id","currency","org_id","subsidiary","exposure_amount","calculated_at","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("org_id","subsidiary","currency") DO UPDATE SET "exposure_amount" = EXCLUDED."exposure_amount","calculated_at" = EXCLUDED."calculated_at","updated_at" = EXCLUDED."updated_at" ["019d0dcb-9fbb-7bb5-ae05-f8efd97ff5e1", "EUR", "2ee8f25a-b9ac-48b5-93e9-787538de7436", "Sub3", Decimal.new("92233.91"), ~U[2026-03-21 00:29:01.708275Z], ~U[2026-03-21 00:29:01.770625Z], ~U[2026-03-21 00:29:01.770625Z]]
+00:29:01.771 [debug] QUERY OK db=0.3ms
+commit []
+00:29:01.771 [debug] [ExposureProjector] committed Sub3-EUR
+00:29:01.771 [info] 		[36mGiven [32man existing exposure calculation of "92233.91" "EUR" for "Munich HQ"
+00:29:01.771 [debug] Locating aggregate process for `Nexus.Treasury.Aggregates.Exposure` with UUID "Sub3-EUR"
+00:29:01.771 [debug] Nexus.Treasury.Aggregates.Exposure<Sub3-EUR@1> executing command: %Nexus.Treasury.Commands.CalculateExposure{id: "Sub3-EUR", org_id: "2ee8f25a-b9ac-48b5-93e9-787538de7436", subsidiary: "Sub3", currency: "EUR", exposure_amount: Decimal.new("90909.09"), timestamp: ~U[2026-03-21 00:29:01.771802Z]}
+00:29:01.803 [debug] Appended 1 event(s) to stream "Sub3-EUR"
+00:29:01.803 [debug] Listener received notification on channel "event_store.events" with payload: "Sub3-EUR,8667,2,2"
+00:29:01.803 [debug] Listener received notification on channel "event_store.events" with payload: "$all,0,12268,12268"
+00:29:01.817 [debug] QUERY OK db=13.3ms
+begin []
+00:29:01.818 [debug] QUERY OK source="projection_versions" db=0.6ms
+INSERT INTO "projection_versions" AS p0 ("last_seen_event_number","projection_name","inserted_at","updated_at") VALUES ($1,$2,$3,$4) ON CONFLICT ("projection_name") DO UPDATE SET "last_seen_event_number" = $5 WHERE ((p0."projection_name" = $6) AND (p0."last_seen_event_number" < $7)) [2, "Treasury.ExposureProjector", ~N[2026-03-21 00:29:01.817420], ~N[2026-03-21 00:29:01.817420], 2, "Treasury.ExposureProjector", 2]
+00:29:01.819 [debug] Nexus.Treasury.Aggregates.Exposure<Sub3-EUR@2> received events: [%Commanded.EventStore.RecordedEvent{event_id: "bc8d1734-a463-4183-88ab-34f93d6dee40", event_number: 2, stream_id: "Sub3-EUR", stream_version: 2, causation_id: "87c711ee-5332-464c-8060-d0d4f1d307cc", correlation_id: "342f07ce-9a98-4aac-aa1e-fd9458ba16c9", event_type: "Elixir.Nexus.Treasury.Events.ExposureCalculated", data: %Nexus.Treasury.Events.ExposureCalculated{org_id: "2ee8f25a-b9ac-48b5-93e9-787538de7436", subsidiary: "Sub3", currency: "EUR", exposure_amount: "90909.09", timestamp: "2026-03-21T00:29:01.771802Z"}, created_at: ~U[2026-03-21 00:29:01.786437Z], metadata: %{"causation_id" => "019d0dcb-9fcb-726b-962d-011f7996808f", "correlation_id" => "019d0dcb-9fcb-726b-962d-011f7996808f"}}]
+00:29:01.819 [debug] QUERY OK source="treasury_exposure_snapshots" db=0.2ms
+INSERT INTO "treasury_exposure_snapshots" ("id","currency","org_id","subsidiary","exposure_amount","calculated_at","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("org_id","subsidiary","currency") DO UPDATE SET "exposure_amount" = EXCLUDED."exposure_amount","calculated_at" = EXCLUDED."calculated_at","updated_at" = EXCLUDED."updated_at" ["019d0dcb-9feb-7ea8-8b35-435aeb8cce55", "EUR", "2ee8f25a-b9ac-48b5-93e9-787538de7436", "Sub3", Decimal.new("90909.09"), ~U[2026-03-21 00:29:01.771802Z], ~U[2026-03-21 00:29:01.818527Z], ~U[2026-03-21 00:29:01.818527Z]]
+00:29:01.819 [debug] QUERY OK db=0.2ms
+commit []
+00:29:01.819 [debug] [ExposureProjector] committed Sub3-EUR
+00:29:01.819 [info] 		[36mWhen [32ma new market tick for "EUR/USD" arrives at price "1.1000"
+00:29:01.834 [debug] QUERY OK source="treasury_exposure_snapshots" db=14.2ms
+SELECT t0."id", t0."org_id", t0."subsidiary", t0."currency", t0."exposure_amount", t0."calculated_at", t0."created_at", t0."updated_at" FROM "treasury_exposure_snapshots" AS t0 WHERE (((t0."org_id" = $1) AND (t0."subsidiary" = $2)) AND (t0."currency" = $3)) ["2ee8f25a-b9ac-48b5-93e9-787538de7436", "Sub3", "EUR"]
+00:29:01.834 [info] 		[36mThen [32mthe exposure for "Munich HQ" is recalculated to "90909.09" "EUR"
+.
+Finished in 0.5 seconds (0.00s async, 0.5s sync)
+2 scenarios, 1 test, 0 failures

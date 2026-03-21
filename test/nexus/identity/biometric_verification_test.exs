@@ -131,7 +131,7 @@ defmodule Nexus.Identity.BiometricVerificationTest do
     # But for a proper BDD test we check the read model
     user = get_user(state.user.id)
 
-    assert user.role == "trader"
+    assert "trader" in user.roles
     assert byte_size(user.cose_key) > 0
     assert user.credential_id == "mock_cred_123"
     assert user.org_id == state.user.org_id

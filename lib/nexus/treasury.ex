@@ -194,12 +194,15 @@ defmodule Nexus.Treasury do
   def generate_forecast(org_id, currency, horizon_days \\ 30, opts \\ []) do
     case ForecastEngine.calculate(org_id, currency, horizon_days) do
       {:ok, predictions} ->
+        idempotency_key = Keyword.get(opts, :idempotency_key) || Nexus.Schema.generate_uuidv7()
+
         command = %GenerateForecast{
           org_id: org_id,
           currency: currency,
           horizon_days: horizon_days,
           predictions: predictions,
-          generated_at: Nexus.Schema.utc_now()
+          generated_at: Nexus.Schema.utc_now(),
+          idempotency_key: idempotency_key
         }
 
         dispatch_opts = Keyword.take(opts, [:consistency, :timeout])
@@ -315,10 +318,10 @@ defmodule Nexus.Treasury do
       end
 
     cond do
-      Decimal.gt?(amount, 1_000_000) ->
+      Decimal.compare(amount, Decimal.new(1_000_000)) != :lt ->
         "#{symbol}#{Decimal.div(amount, 1_000_000) |> Decimal.round(1)}M"
 
-      Decimal.gt?(amount, 1_000) ->
+      Decimal.compare(amount, Decimal.new(1_000)) != :lt ->
         "#{symbol}#{Decimal.div(amount, 1_000) |> Decimal.round(0)}K"
 
       true ->

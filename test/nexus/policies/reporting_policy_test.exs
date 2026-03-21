@@ -4,9 +4,9 @@ defmodule Nexus.Policies.ReportingPolicyTest do
 
   describe "can?/3" do
     test "allows auditor and system_admin for audit_logs" do
-      auditor = %{role: "auditor", org_id: "org1"}
-      sys_admin = %{role: "system_admin", org_id: "org1"}
-      trader = %{role: "trader", org_id: "org1"}
+      auditor = %{roles: ["auditor"], org_id: "org1"}
+      sys_admin = %{roles: ["system_admin"], org_id: "org1"}
+      trader = %{roles: ["trader"], org_id: "org1"}
 
       assert ReportingPolicy.can?(auditor, :view, :audit_logs)
       assert ReportingPolicy.can?(sys_admin, :view, :audit_logs)

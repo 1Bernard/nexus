@@ -16,7 +16,7 @@ defmodule NexusWeb.Payments.BulkPaymentLiveTest do
         org_id: org_id,
         email: "payer@nexus.app",
         display_name: "Payer User",
-        role: "admin",
+        roles: ["admin"],
         credential_id: "mock_cred",
         cose_key: "mock_key"
       }

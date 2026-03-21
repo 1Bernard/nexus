@@ -9,14 +9,16 @@ defmodule Nexus.Treasury.Commands.GenerateForecast do
           currency: Types.currency(),
           horizon_days: integer(),
           predictions: [map()],
-          generated_at: Types.datetime()
+          generated_at: Types.datetime(),
+          idempotency_key: String.t()
         }
-  @enforce_keys [:org_id, :currency, :horizon_days, :predictions, :generated_at]
+  @enforce_keys [:org_id, :currency, :horizon_days, :predictions, :generated_at, :idempotency_key]
   defstruct [
     :org_id,
     :currency,
     :horizon_days,
     :predictions,
-    :generated_at
+    :generated_at,
+    :idempotency_key
   ]
 end

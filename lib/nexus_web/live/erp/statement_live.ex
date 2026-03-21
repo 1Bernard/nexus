@@ -21,7 +21,7 @@ defmodule NexusWeb.ERP.StatementLive do
     end
 
     org_id_for_query =
-      if Enum.member?(socket.assigns.current_user.role, "system_admin"), do: :all, else: org_id
+      if Enum.member?(socket.assigns.current_user.roles, "system_admin"), do: :all, else: org_id
 
     socket =
       socket

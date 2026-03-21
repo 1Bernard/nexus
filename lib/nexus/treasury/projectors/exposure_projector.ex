@@ -19,8 +19,6 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
   alias Nexus.Treasury.Projections.ExposureSnapshot
 
   project(%ExposureCalculated{} = event, _metadata, fn multi ->
-    id = "#{event.subsidiary}-#{event.currency}"
-
     exposure_amount =
       case event.exposure_amount do
         %Decimal{} = d -> d
@@ -28,19 +26,21 @@ defmodule Nexus.Treasury.Projectors.ExposureProjector do
         n when is_number(n) -> Decimal.new(n)
       end
 
+    attrs = %{
+      id: Nexus.Schema.generate_uuidv7(),
+      org_id: event.org_id,
+      subsidiary: event.subsidiary,
+      currency: event.currency,
+      exposure_amount: exposure_amount,
+      calculated_at: Nexus.Schema.parse_datetime(event.timestamp)
+    }
+
     Ecto.Multi.insert(
       multi,
       :exposure_snapshot,
-      %ExposureSnapshot{
-        id: id,
-        org_id: event.org_id,
-        subsidiary: event.subsidiary,
-        currency: event.currency,
-        exposure_amount: exposure_amount,
-        calculated_at: Nexus.Schema.parse_datetime(event.timestamp)
-      },
-      on_conflict: :replace_all,
-      conflict_target: [:id]
+      ExposureSnapshot.changeset(%ExposureSnapshot{}, attrs),
+      on_conflict: {:replace, [:exposure_amount, :calculated_at, :updated_at]},
+      conflict_target: [:org_id, :subsidiary, :currency]
     )
   end)
 

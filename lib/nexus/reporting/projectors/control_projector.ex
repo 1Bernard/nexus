@@ -9,56 +9,83 @@ defmodule Nexus.Reporting.Projectors.ControlProjector do
     repo: Nexus.Repo,
     consistency: :strong
 
-  alias Nexus.Identity.Events.UserRoleChanged
-  alias Nexus.Identity.Events.StepUpVerified
-  alias Nexus.Treasury.Events.TransferThresholdSet
-  alias Nexus.Treasury.Events.TransferExecuted
+  alias Nexus.Identity.Events.{UserRoleChanged, StepUpVerified}
+  alias Nexus.Treasury.Events.{
+    TransferThresholdSet,
+    TransferExecuted,
+    VaultBalanceSynced,
+    ReconciliationProposed,
+    TransactionReconciled
+  }
   alias Nexus.Reporting.Projections.ControlMetric
-  alias Nexus.Schema
 
   # --- Segregation of Duties ---
-  project(%UserRoleChanged{} = event, _metadata, fn multi ->
-    # Calculate SoD cleanliness score based on real conflicts
+  project(%UserRoleChanged{} = event, metadata, fn multi ->
     conflicts = Nexus.Reporting.list_sod_conflicts(event.org_id)
-    score = if Enum.empty?(conflicts), do: 100, else: 0
+    score = if Enum.empty?(conflicts), do: 100, else: max(0, 100 - length(conflicts) * 10)
 
-    upsert_metric(multi, event.org_id, "sod_cleanliness", score, %{
+    project_metric(multi, event.org_id, "sod_cleanliness", score, metadata, %{
       last_updated: event.changed_at,
       conflict_count: length(conflicts)
     })
   end)
 
   # --- Auth Integrity ---
-  project(%StepUpVerified{} = event, _metadata, fn multi ->
-    # Every successful Step-Up reinforces the Auth Integrity score.
-    upsert_metric(multi, event.org_id, "auth_integrity", 1.0, %{last_event: "step_up_verified"})
+  project(%StepUpVerified{} = event, metadata, fn multi ->
+    project_metric(multi, event.org_id, "auth_integrity", 1.0, metadata, %{last_event: "step_up_verified"})
   end)
 
   # --- Policy Drift ---
-  project(%TransferThresholdSet{} = event, _metadata, fn multi ->
-    # Baseline for Policy monitoring.
-    upsert_metric(multi, event.org_id, "policy_drift", 1.0, %{threshold: event.threshold})
+  project(%TransferThresholdSet{} = event, metadata, fn multi ->
+    project_metric(multi, event.org_id, "policy_drift", 1.0, metadata, %{threshold: event.threshold})
   end)
 
   # --- Precision Audit ---
-  project(%TransferExecuted{} = event, _metadata, fn multi ->
-    # Verify no rounding errors occurred (simulated for now)
-    upsert_metric(multi, event.org_id, "precision_audit", 1.0, %{last_amount: event.amount})
+  project(%TransferExecuted{} = event, metadata, fn multi ->
+    project_metric(multi, event.org_id, "precision_audit", 1.0, metadata, %{last_amount: event.amount})
   end)
 
-  defp upsert_metric(multi, org_id, key, score, metadata) do
+  # --- Liquidity Accuracy ---
+  project(%VaultBalanceSynced{} = event, metadata, fn multi ->
+    # In a real system, we would fetch the latest forecast and compare.
+    # For now, we simulate accuracy monitoring.
+    project_metric(multi, event.org_id, "liquidity_accuracy", 0.98, metadata, %{
+      actual_balance: event.amount,
+      synced_at: event.synced_at
+    })
+  end)
+
+  # --- Escalation Integrity ---
+  project(%ReconciliationProposed{} = event, metadata, fn multi ->
+    # New high-variance reconciliation proposed.
+    project_metric(multi, event.org_id, "escalation_integrity", 1.0, metadata, %{
+      action: "reconciliation_proposed",
+      reconciliation_id: event.reconciliation_id,
+      variance: event.variance
+    })
+  end)
+
+  project(%TransactionReconciled{} = event, metadata, fn multi ->
+    # Reconciliation finalized.
+    project_metric(multi, event.org_id, "escalation_integrity", 1.0, metadata, %{
+      action: "transaction_reconciled",
+      reconciliation_id: event.reconciliation_id
+    })
+  end)
+
+  def project_metric(multi, org_id, key, score, metadata, extra_meta) do
+    # We now INSERT every time to keep a history of scores for drift analysis.
+    # The unique index was removed in a previous migration.
     multi
     |> Ecto.Multi.insert(
-      :"metric_#{key}",
+      :"metric_#{key}_#{metadata.event_id}",
       %ControlMetric{
-        id: Schema.generate_uuidv7(),
+        id: metadata.event_id,
         org_id: org_id,
         metric_key: key,
-        score: score,
-        metadata: metadata
-      },
-      on_conflict: [set: [score: score, metadata: metadata, updated_at: Schema.utc_now()]],
-      conflict_target: [:org_id, :metric_key]
+        score: Decimal.from_float(score * 1.0),
+        metadata: Map.put(extra_meta, :causation_id, metadata.causation_id)
+      }
     )
     |> Ecto.Multi.run(:"broadcast_#{key}", fn _repo, _ ->
       Phoenix.PubSub.broadcast(

@@ -44,7 +44,7 @@ defmodule Nexus.Reporting.ComplianceHubTest do
         org_id: state.org_id,
         email: email,
         display_name: "Test User",
-        role: String.downcase(role),
+        roles: [String.downcase(role)],
         status: "active",
         cose_key: "key",
         credential_id: "cred"
@@ -60,8 +60,10 @@ defmodule Nexus.Reporting.ComplianceHubTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       user = Nexus.Repo.get!(Nexus.Identity.Projections.User, state.user_id)
 
+      new_roles = Enum.uniq([String.downcase(role) | user.roles])
+
       user
-      |> Ecto.Changeset.change(%{role: String.downcase(role)})
+      |> Ecto.Changeset.change(%{roles: new_roles})
       |> Nexus.Repo.update!()
     end)
 

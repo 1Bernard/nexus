@@ -10,7 +10,7 @@ defmodule Nexus.Intelligence.Policies.IntelligencePolicy do
 
   # Compliance / Intelligence access
   def can?(user, _action, :compliance) do
-    user.role in [:auditor, "auditor", :system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "auditor")
   end
 
   # Default fallback

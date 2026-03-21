@@ -4,8 +4,8 @@ defmodule Nexus.Policies.OrganizationPolicyTest do
 
   describe "can?/3" do
     test "allows org_admin or system_admin for org_management" do
-      org_admin = %{role: "org_admin", org_id: "org1"}
-      sys_admin = %{role: "system_admin", org_id: "org1"}
+      org_admin = %{roles: ["org_admin"], org_id: "org1"}
+      sys_admin = %{roles: ["system_admin"], org_id: "org1"}
       trader = %{role: "trader", org_id: "org1"}
 
       assert OrganizationPolicy.can?(org_admin, :edit, :org_management)

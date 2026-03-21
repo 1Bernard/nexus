@@ -42,7 +42,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       currency: curr,
       horizon_days: 30,
       predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "baseline-#{org_id}-#{curr}"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -52,7 +53,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       currency: curr,
       horizon_days: 30,
       predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(gap_dec)}],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "baseline-#{org_id}-#{curr}"
     }
 
     project_event(event, 1)
@@ -80,7 +82,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       currency: state.currency,
       horizon_days: 30,
       predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "market-change-#{state.org_id}-#{state.currency}"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -90,7 +93,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       currency: state.currency,
       horizon_days: 30,
       predictions: [%{date: "2026-03-03", predicted_amount: Decimal.to_string(new_gap)}],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "market-change-#{state.org_id}-#{state.currency}"
     }
 
     project_event(event, 2)
@@ -114,7 +118,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       predictions: [
         %{date: "2026-03-03", predicted_amount: Decimal.to_string(Decimal.negate(amount_dec))}
       ],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "final-check-#{state.org_id}-#{state.currency}"
     }
 
     assert :ok == Nexus.App.dispatch(cmd)
@@ -126,7 +131,8 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       predictions: [
         %{date: "2026-03-03", predicted_amount: Decimal.to_string(Decimal.negate(amount_dec))}
       ],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      idempotency_key: "final-check-#{state.org_id}-#{state.currency}"
     }
 
     project_event(event, 3)

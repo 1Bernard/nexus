@@ -24,7 +24,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
 
   alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, BiometricVerified, StepUpVerified}
   alias Nexus.ERP.Events.InvoiceMatched
-  alias Nexus.Reporting.Projections.AuditLog
+  alias Nexus.Reporting.Projections.{AuditLog, ControlDrift}
   alias Nexus.Schema
 
   project(%TenantProvisioned{} = event, metadata, fn multi ->
@@ -65,6 +65,12 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.toggled_at)
     })
+    |> upsert_drift(
+      event.org_id,
+      "module_#{event.module_name}",
+      to_string(event.enabled),
+      event.toggled_at
+    )
   end)
 
   project(%TransferThresholdSet{} = event, metadata, fn multi ->
@@ -78,6 +84,12 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.set_at)
     })
+    |> upsert_drift(
+      event.org_id,
+      "treasury_threshold",
+      to_string(event.threshold),
+      event.set_at
+    )
   end)
 
   project(%UserRegistered{} = event, metadata, fn multi ->
@@ -104,6 +116,12 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       causation_id: metadata.causation_id,
       recorded_at: Nexus.Schema.parse_datetime(event.changed_at)
     })
+    |> upsert_drift(
+      event.org_id,
+      "user_role_#{event.user_id}",
+      event.role,
+      event.changed_at
+    )
   end)
 
   project(%TransferAuthorized{} = event, metadata, fn multi ->
@@ -222,4 +240,34 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       recorded_at: Nexus.Schema.parse_datetime(event.verified_at)
     })
   end)
+
+  defp upsert_drift(multi, org_id, control_key, value, timestamp) do
+    Ecto.Multi.run(multi, "drift_#{control_key}", fn repo, _ ->
+      timestamp = Nexus.Schema.parse_datetime(timestamp)
+
+      case repo.get_by(ControlDrift, org_id: org_id, control_key: control_key) do
+        nil ->
+          repo.insert(%ControlDrift{
+            id: Schema.generate_uuidv7(),
+            org_id: org_id,
+            control_key: control_key,
+            original_value: value,
+            current_value: value,
+            drift_score: Decimal.new(0),
+            last_changed_at: timestamp
+          })
+
+        drift ->
+          new_score = Decimal.add(drift.drift_score, 1)
+
+          drift
+          |> ControlDrift.changeset(%{
+            current_value: value,
+            drift_score: new_score,
+            last_changed_at: timestamp
+          })
+          |> repo.update()
+      end
+    end)
+  end
 end

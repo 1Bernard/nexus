@@ -10,17 +10,17 @@ defmodule Nexus.Treasury.Policies.TreasuryPolicy do
 
   # --- Vault Permissions ---
   def can?(user, _action, :vaults) do
-    user.role in [:treasury_ops, "treasury_ops", :system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "treasury_ops")
   end
 
   def can?(user, action, :vault) when action in [:simulate_rebalance, :register_vault] do
-    user.role in [:treasury_ops, "treasury_ops", :system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "treasury_ops")
   end
 
   # --- Reconciliation Permissions ---
   def can?(user, action, :reconciliation)
       when action in [:confirm, :reverse, :approve, :reject] do
-    user.role in [:treasury_ops, "treasury_ops", :system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "treasury_ops")
   end
 
   # Default fallback

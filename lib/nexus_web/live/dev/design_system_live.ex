@@ -27,7 +27,7 @@ defmodule NexusWeb.Dev.DesignSystemLive do
         %Nexus.Identity.Projections.User{
           id: "dev-admin-id",
           display_name: "A. Freeman",
-          role: "admin"
+          roles: ["admin"]
         }
       end)
 

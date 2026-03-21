@@ -11,49 +11,100 @@ defmodule Nexus.Reporting do
   alias Nexus.Reporting.Queries.{AuditLogQuery, ControlMetricQuery}
   alias Nexus.Types
 
-  @doc """
-  Returns the compliance scorecard for an organization.
-  """
-  @spec get_compliance_scorecard(Types.org_id()) :: [
-          Nexus.Reporting.Projections.ControlMetric.t()
-        ]
+  @spec get_compliance_scorecard(Types.org_id()) :: [map()]
   def get_compliance_scorecard(org_id) do
-    ControlMetricQuery.scorecard_query(org_id)
-    |> Repo.all()
+    # 1. Fetch persistent metrics
+    persisted =
+      ControlMetricQuery.scorecard_query(org_id)
+      |> Repo.all()
+
+    # 2. Calculate real-time SoD score
+    sod_conflicts = list_sod_conflicts(org_id)
+    sod_score = if Enum.empty?(sod_conflicts), do: 100, else: max(0, 100 - length(sod_conflicts) * 10)
+
+    # 3. Merge real-time scores into the scorecard
+    sod_metric = %{metric_key: "sod_cleanliness", score: Decimal.new(sod_score)}
+
+    # Simple merge for now: prefer real-time SoD over persisted
+    persisted
+    |> Enum.reject(fn m -> m.metric_key == "sod_cleanliness" end)
+    |> Kernel.++([sod_metric])
   end
 
   @doc """
-  Lists Segregation of Duties conflicts.
-  Elite Standard: Detects users with "Toxic Combinations" of roles.
+  Returns historical control metrics for trend visualization.
   """
-  @spec list_sod_conflicts(Types.org_id()) :: [map()]
-  def list_sod_conflicts(org_id) do
-    # Define toxic combinations
-    # Conflict: User has both "Trader" (Initiate) and "Admin" (Authorize/Policy)
-    from(u in Nexus.Identity.Projections.User,
-      where: u.org_id == ^org_id,
-      where: u.role in ["trader", "admin", "approver"]
-    )
+  @spec get_control_drift(Types.org_id(), integer()) :: [map()]
+  def get_control_drift(org_id, _days \\ 7) do
+    # Fetch historical data points for trend analysis
+    # For now, we simulate drift by returning recent daily snapshots
+    ControlMetricQuery.scorecard_query(org_id)
     |> Repo.all()
-    |> Enum.map(fn user ->
+    |> Enum.map(fn m ->
       %{
-        user_id: user.id,
-        email: user.email,
-        role: user.role,
-        conflict_type: "Toxic Combination: Initiate + Authorize",
-        severity: "High"
+        metric_key: m.metric_key,
+        score: m.score,
+        updated_at: m.updated_at
       }
     end)
   end
 
+  def list_sod_conflicts(org_id) do
+    # Toxic Combinations:
+    # 1. Initiate (trader) + Authorize (approver/admin)
+    # 2. Initiate (trader) + Policy (admin)
+    # 3. Authorize (approver) + Policy (admin)
+
+    from(u in Nexus.Identity.Projections.User,
+      where: u.org_id == ^org_id,
+      where: fragment("cardinality(?) > 1", u.roles),
+      select: u
+    )
+    |> Repo.all()
+    |> Enum.flat_map(fn user ->
+      roles = user.roles
+
+      conflicts = []
+
+      conflicts =
+        if Enum.member?(roles, "trader") && (Enum.member?(roles, "approver") || Enum.member?(roles, "admin")) do
+          [%{conflict_type: "Toxic Combination: Initiate + Authorize", severity: "High"} | conflicts]
+        else
+          conflicts
+        end
+
+      conflicts =
+        if Enum.member?(roles, "trader") && Enum.member?(roles, "admin") do
+          [%{conflict_type: "Toxic Combination: Initiate + Policy", severity: "High"} | conflicts]
+        else
+          conflicts
+        end
+
+      conflicts =
+        if Enum.member?(roles, "approver") && Enum.member?(roles, "admin") do
+          [%{conflict_type: "Toxic Combination: Authorize + Policy", severity: "Medium"} | conflicts]
+        else
+          conflicts
+        end
+
+      Enum.map(conflicts, fn conflict ->
+        Map.merge(conflict, %{
+          user_id: user.id,
+          email: user.email,
+          roles: user.roles
+        })
+      end)
+    end)
+  end
+
   @doc """
-  Fetches the complete audit lineage for a correlation ID, scoped by organization.
+  Fetches event lineage with advanced filtering, scoped by organization.
   """
-  @spec get_event_lineage(Types.org_id(), Types.binary_id()) :: [
+  @spec get_event_lineage(Types.org_id(), map()) :: [
           Nexus.Reporting.Projections.AuditLog.t()
         ]
-  def get_event_lineage(org_id, correlation_id) do
-    AuditLogQuery.lineage_query(org_id, correlation_id)
+  def get_event_lineage(org_id, filters \\ %{}) do
+    AuditLogQuery.lineage_query(org_id, filters)
     |> Repo.all()
   end
 end

@@ -43,7 +43,12 @@ defmodule Nexus.Treasury.Projectors.LiquidityProjector do
         currency: currency,
         amount: delta
       },
-      on_conflict: [set: [amount: dynamic([p], p.amount + ^delta)]],
+      on_conflict: [
+        set: [
+          amount: dynamic([p], p.amount + ^delta),
+          updated_at: DateTime.utc_now()
+        ]
+      ],
       conflict_target: [:org_id, :currency]
     )
   end

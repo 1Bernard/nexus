@@ -10,7 +10,8 @@ defmodule Nexus.Reporting.Policies.ReportingPolicy do
 
   # Audit log access for auditors and admins
   def can?(user, _action, :audit_logs) do
-    user.role in [:auditor, "auditor", :system_admin, "system_admin"]
+    roles = Map.get(user, :roles) || [Map.get(user, :role)]
+    Enum.any?(roles, &(&1 in ["auditor", "system_admin"]))
   end
 
   # Default fallback

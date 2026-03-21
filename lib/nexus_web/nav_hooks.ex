@@ -89,7 +89,7 @@ defmodule NexusWeb.NavHooks do
 
     cond do
       is_nil(user) -> :all
-      Enum.member?(user.role, "system_admin") -> :all
+      Enum.member?(user.roles, "system_admin") -> :all
       true -> user.org_id
     end
   end

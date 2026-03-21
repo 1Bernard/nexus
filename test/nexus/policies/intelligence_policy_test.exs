@@ -4,8 +4,8 @@ defmodule Nexus.Policies.IntelligencePolicyTest do
 
   describe "can?/3" do
     test "allows auditor and system_admin for compliance" do
-      auditor = %{role: "auditor", org_id: "org1"}
-      sys_admin = %{role: "system_admin", org_id: "org1"}
+      auditor = %{roles: ["auditor"], org_id: "org1"}
+      sys_admin = %{roles: ["system_admin"], org_id: "org1"}
       trader = %{role: "trader", org_id: "org1"}
 
       assert IntelligencePolicy.can?(auditor, :view, :compliance)

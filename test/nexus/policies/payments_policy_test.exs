@@ -9,8 +9,8 @@ defmodule Nexus.Policies.PaymentsPolicyTest do
     end
 
     test "allows treasury_ops or system_admin to initiate/approve payments" do
-      trader = %{role: "treasury_ops", org_id: "org1"}
-      admin = %{role: "system_admin", org_id: "org1"}
+      trader = %{roles: ["treasury_ops"], org_id: "org1"}
+      admin = %{roles: ["system_admin"], org_id: "org1"}
       viewer = %{role: "viewer", org_id: "org1"}
 
       assert PaymentsPolicy.can?(trader, :initiate, :payments)

@@ -16,13 +16,22 @@ defmodule NexusWeb.Reporting.ComplianceLive do
 
     org_id = socket.assigns.current_user.org_id
     metrics = Reporting.get_compliance_scorecard(org_id)
+    drift_data = Reporting.get_control_drift(org_id)
     sod_conflicts = Reporting.list_sod_conflicts(org_id)
+
+    # Derived unique roles from conflicts and defaults
+    available_roles =
+      (Enum.flat_map(sod_conflicts, &(&1.roles)) ++ ["trader", "approver", "viewer", "admin"])
+      |> Enum.uniq()
+      |> Enum.sort()
 
     socket =
       socket
       |> assign(:page_title, "Compliance Hub")
       |> assign(:page_subtitle, "Real-time Continuous Control Monitoring (CCM)")
       |> assign(:metrics, metrics)
+      |> assign(:drift_data, drift_data)
+      |> assign(:available_roles, available_roles)
       |> assign(:sod_conflicts, sod_conflicts)
       |> assign(:trace_id, "")
       |> assign(:lineage, [])
@@ -37,8 +46,14 @@ defmodule NexusWeb.Reporting.ComplianceLive do
   end
 
   @impl true
-  def handle_event("trace", %{"trace_id" => trace_id}, socket) do
-    lineage = Reporting.get_event_lineage(socket.assigns.current_user.org_id, trace_id)
+  def handle_event("trace", %{"trace_id" => trace_id} = params, socket) do
+    filters = %{
+      correlation_id: if(trace_id != "", do: trace_id),
+      user_email: if(params["user_email"] != "", do: params["user_email"]),
+      event_type: if(params["event_type"] != "", do: params["event_type"])
+    }
+
+    lineage = Reporting.get_event_lineage(socket.assigns.current_user.org_id, filters)
     {:noreply, assign(socket, lineage: lineage, trace_id: trace_id)}
   end
 
@@ -47,11 +62,13 @@ defmodule NexusWeb.Reporting.ComplianceLive do
     # Refresh metrics and SoD conflicts on projector updates
     org_id = socket.assigns.current_user.org_id
     metrics = Reporting.get_compliance_scorecard(org_id)
+    drift_data = Reporting.get_control_drift(org_id)
     sod_conflicts = Reporting.list_sod_conflicts(org_id)
 
     {:noreply,
      socket
      |> assign(:metrics, metrics)
+     |> assign(:drift_data, drift_data)
      |> assign(:sod_conflicts, sod_conflicts)}
   end
 
@@ -72,7 +89,7 @@ defmodule NexusWeb.Reporting.ComplianceLive do
           </div>
         </:actions>
       </.page_header>
-      
+
     <!-- Navigation Tabs -->
       <div class="flex items-center gap-6 border-b border-white/10 mb-8 w-full">
         <.tab_button
@@ -96,22 +113,41 @@ defmodule NexusWeb.Reporting.ComplianceLive do
             <.compliance_gauge
               label="Auth Integrity"
               score={get_score(@metrics, "auth_integrity")}
+              trend={get_trend(@drift_data, "auth_integrity")}
               status="Verified"
             />
             <.compliance_gauge
               label="SoD Cleanliness"
               score={get_score(@metrics, "sod_cleanliness")}
+              trend={get_trend(@drift_data, "sod_cleanliness")}
               status="Healthy"
             />
             <.compliance_gauge
-              label="Drift Protection"
+              label="Policy Drift"
               score={get_score(@metrics, "policy_drift")}
+              trend={get_trend(@drift_data, "policy_drift")}
               status="Active"
             />
             <.compliance_gauge
               label="Precision Audit"
               score={get_score(@metrics, "precision_audit")}
+              trend={get_trend(@drift_data, "precision_audit")}
               status="Certified"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <.compliance_gauge
+              label="Liquidity Accuracy"
+              score={get_score(@metrics, "liquidity_accuracy")}
+              trend={get_trend(@drift_data, "liquidity_accuracy")}
+              status="Real-time"
+            />
+            <.compliance_gauge
+              label="Escalation Integrity"
+              score={get_score(@metrics, "escalation_integrity")}
+              trend={get_trend(@drift_data, "escalation_integrity")}
+              status="SLA Compliant"
             />
           </div>
         <% end %>
@@ -119,12 +155,12 @@ defmodule NexusWeb.Reporting.ComplianceLive do
         <%= if @active_tab == "sod" do %>
           <.dark_card class="p-8">
             <div class="mb-8">
-              <h3 class="text-sm font-bold text-slate-100 mb-2">Segregation of Duties Matrix</h3>
-              <p class="text-xs text-slate-500">
-                Cross-referencing organizational roles against critical system capabilities.
+              <h3 class="text-sm font-bold text-slate-100 mb-1">Segregation of Duties Matrix</h3>
+              <p class="text-[11px] text-slate-500 max-w-xl leading-relaxed">
+                Real-time mapping of user roles against critical system capabilities. Conflicts are automatically flagged for review.
               </p>
             </div>
-            <.sod_matrix conflicts={@sod_conflicts} />
+            <.sod_matrix conflicts={@sod_conflicts} roles={@available_roles} />
 
             <%= if not Enum.empty?(@sod_conflicts) do %>
               <div class="mt-8 space-y-4">
@@ -136,7 +172,7 @@ defmodule NexusWeb.Reporting.ComplianceLive do
                         <h4 class="text-xs font-bold text-rose-300">{conflict.conflict_type}</h4>
                         <p class="text-[11px] text-rose-400/80 mt-0.5">
                           User <strong>{conflict.email}</strong>
-                          possesses roles: <strong>{Enum.join(conflict.role, ", ")}</strong>.
+                          possesses roles: <strong>{Enum.join(conflict.roles, ", ")}</strong>.
                         </p>
                       </div>
                     </div>
@@ -165,19 +201,34 @@ defmodule NexusWeb.Reporting.ComplianceLive do
                   Reconstruct the cryptographically sealed chain of custody for any transaction.
                 </p>
               </div>
-              <form phx-submit="trace" class="flex items-center gap-2">
+              <form phx-submit="trace" class="flex flex-wrap items-center gap-3">
                 <input
                   type="text"
                   name="trace_id"
                   placeholder="Correlation ID"
                   value={@trace_id}
-                  class="bg-black/20 border border-slate-700/50 rounded-lg px-4 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none w-64"
+                  class="bg-black/20 border border-slate-700/50 rounded-lg px-4 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none w-48"
                 />
+                <input
+                  type="text"
+                  name="user_email"
+                  placeholder="User Email"
+                  class="bg-black/20 border border-slate-700/50 rounded-lg px-4 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none w-48"
+                />
+                <select
+                  name="event_type"
+                  class="bg-black/20 border border-slate-700/50 rounded-lg px-4 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="">All Events</option>
+                  <option value="user.logged_in">Login</option>
+                  <option value="payment.initiated">Payment</option>
+                  <option value="policy.updated">Policy Change</option>
+                </select>
                 <button
                   type="submit"
-                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase rounded-lg transition-colors"
+                  class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase rounded-lg transition-colors"
                 >
-                  Trace
+                  Filter Lineage
                 </button>
               </form>
             </div>
@@ -229,9 +280,21 @@ defmodule NexusWeb.Reporting.ComplianceLive do
   defp get_score(metrics, key) do
     Enum.find(metrics, fn m -> m.metric_key == key end)
     |> case do
-      # Default to 100 for clean slate
       nil -> 100
-      m -> Decimal.to_integer(m.score)
+      m ->
+        score = if is_struct(m.score), do: Decimal.to_integer(m.score), else: round(m.score * 100)
+        score
+    end
+  end
+
+  defp get_trend(drift_data, key) do
+    points = Enum.filter(drift_data, fn m -> m.metric_key == key end)
+
+    if length(points) >= 2 do
+      [latest, previous | _] = Enum.sort_by(points, & &1.updated_at, :desc)
+      Decimal.sub(latest.score, previous.score)
+    else
+      nil
     end
   end
 

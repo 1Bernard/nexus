@@ -60,7 +60,7 @@ defmodule Nexus.Treasury.ForecastIntegrationTest do
 
       # 3. Manually project the event (integration test helper)
       {:ok, [%{data: event, event_number: num}]} =
-        Nexus.EventStore.read_stream_forward("forecast-" <> @org_id)
+        Nexus.EventStore.read_stream_forward("forecast-" <> @org_id <> "-" <> @currency)
 
       project_event(
         event,

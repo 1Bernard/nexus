@@ -95,7 +95,7 @@
         <:col :let={user} label="Role">
           <.badge
             variant={
-              case user.role do
+              case user.roles |> List.first() do
                 "system_admin" -> "danger"
                 "admin" -> "success"
                 "trader" -> "info"
@@ -103,7 +103,7 @@
                 _ -> "neutral"
               end
             }
-            label={String.capitalize(user.role || "unknown")}
+            label={String.capitalize(List.first(user.roles) || "unknown")}
           />
         </:col>
 
@@ -172,7 +172,7 @@
                   {active.display_name}
                 </div>
                 <div class="text-[9px] font-mono text-slate-500 truncate uppercase tracking-widest opacity-60">
-                  {active.role}
+                  {List.first(active.roles)}
                 </div>
               </div>
             </div>
@@ -532,7 +532,7 @@
               <.nx_button
                 variant="primary"
                 type="submit"
-                disabled={@editing_role == @editing_user.role}
+                disabled={@editing_role == List.first(@editing_user.roles)}
                 class="px-8 py-3 rounded-2xl shadow-xl shadow-indigo-500/10"
               >
                 Update Clearance Level

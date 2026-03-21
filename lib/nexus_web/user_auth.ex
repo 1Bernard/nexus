@@ -78,7 +78,7 @@ defmodule NexusWeb.UserAuth do
     # First, rely on the base mount to get the user
     case on_mount(:mount_current_user, params, session, socket) do
       {:cont, socket} ->
-        if Enum.member?(socket.assigns.current_user.role, "system_admin") do
+        if Enum.any?(socket.assigns.current_user.roles, &(&1 in ["system_admin", "admin"])) do
           {:cont, socket}
         else
           # If not system admin, kick them back to their dashboard
@@ -92,7 +92,17 @@ defmodule NexusWeb.UserAuth do
 
   # LiveView on_mount to protect Organizational Admin routes
   def on_mount(:require_org_admin, params, session, socket) do
-    on_mount(:mount_current_user, params, session, socket)
+    case on_mount(:mount_current_user, params, session, socket) do
+      {:cont, socket} ->
+        if Enum.any?(socket.assigns.current_user.roles, &(&1 in ["system_admin", "admin", "org_admin"])) do
+          {:cont, socket}
+        else
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/dashboard")}
+        end
+
+      {:halt, socket} ->
+        {:halt, socket}
+    end
   end
 
   # LiveView on_mount to protect Auditor routes
@@ -100,8 +110,8 @@ defmodule NexusWeb.UserAuth do
     case on_mount(:mount_current_user, params, session, socket) do
       {:cont, socket} ->
         if Enum.any?(
-             socket.assigns.current_user.role,
-             &(&1 in ["system_admin", "org_admin", "auditor"])
+             socket.assigns.current_user.roles,
+             &(&1 in ["system_admin", "admin", "org_admin", "auditor"])
            ) do
           {:cont, socket}
         else

@@ -42,7 +42,7 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     calculated_exposure = Decimal.div(amount_dec, rate_dec) |> Decimal.round(2)
 
     sub = state.unique_sub
-    org_id = Ecto.UUID.generate()
+    org_id = state[:org_id] || Ecto.UUID.generate()
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
@@ -65,15 +65,14 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     }
 
     project_event(event, 1)
-    {:ok, Map.merge(state, %{subsidiary: sub, last_calculated: calculated_exposure})}
+    {:ok, Map.merge(state, %{org_id: org_id, subsidiary: sub, last_calculated: calculated_exposure})}
   end
 
   defthen ~r/^the total exposure for "(?<sub_name>[^"]+)" is registered as "(?<expected_exp>[^"]+)" "(?<curr>[^"]+)"$/,
           %{expected_exp: expected},
           state do
-    id = "#{state.subsidiary}-EUR"
-    snapshot = get_snapshot(id)
-    assert snapshot != nil, "Expected snapshot for #{id} to exist"
+    snapshot = get_snapshot(state.org_id, state.subsidiary, "EUR")
+    assert snapshot != nil, "Expected snapshot for #{state.subsidiary}-EUR to exist"
 
     {expected_dec, _} = Decimal.parse(expected)
     assert Decimal.eq?(snapshot.exposure_amount, expected_dec)
@@ -87,7 +86,7 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
            state do
     {amount_dec, _} = Decimal.parse(amount)
     sub = state.unique_sub
-    org_id = Ecto.UUID.generate()
+    org_id = state[:org_id] || Ecto.UUID.generate()
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
@@ -110,7 +109,7 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     }
 
     project_event(event, 1)
-    {:ok, Map.merge(state, %{subsidiary: sub, currency: curr})}
+    {:ok, Map.merge(state, %{org_id: org_id, subsidiary: sub, currency: curr})}
   end
 
   defwhen ~r/^a new market tick for "(?<pair>[^"]+)" arrives at price "(?<rate>[^"]+)"$/,
@@ -120,7 +119,7 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     {invoice_amount, _} = Decimal.parse("100000")
     new_exposure = Decimal.div(invoice_amount, rate_dec) |> Decimal.round(2)
 
-    org_id = Ecto.UUID.generate()
+    org_id = state.org_id
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
@@ -149,9 +148,8 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
   defthen ~r/^the exposure for "(?<sub_name>[^"]+)" is recalculated to "(?<expected_exp>[^"]+)" "(?<curr>[^"]+)"$/,
           %{expected_exp: expected, curr: curr},
           state do
-    id = "#{state.subsidiary}-#{curr}"
-    snapshot = get_snapshot(id)
-    assert snapshot != nil, "Expected recalculated snapshot for #{id} to exist"
+    snapshot = get_snapshot(state.org_id, state.subsidiary, curr)
+    assert snapshot != nil, "Expected recalculated snapshot for #{state.subsidiary}-#{curr} to exist"
 
     {expected_dec, _} = Decimal.parse(expected)
     assert Decimal.eq?(snapshot.exposure_amount, expected_dec)
@@ -177,9 +175,9 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
 
   # Read via unboxed_run so we bypass the :manual mode ownership check.
   # (The test process's manual checkout is not preserved after unboxed_run.)
-  defp get_snapshot(id) do
+  defp get_snapshot(org_id, subsidiary, currency) do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
-      Nexus.Repo.get(ExposureSnapshot, id)
+      Nexus.Repo.get_by(ExposureSnapshot, org_id: org_id, subsidiary: subsidiary, currency: currency)
     end)
   end
 end

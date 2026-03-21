@@ -17,7 +17,7 @@ defmodule NexusWeb.Admin.UserLiveTest do
         org_id: org_id,
         email: "test_admin@nexus.app",
         display_name: "Test Admin",
-        role: "admin",
+        roles: ["admin"],
         credential_id: "mock_cred",
         cose_key: "mock_key"
       }
@@ -80,7 +80,7 @@ defmodule NexusWeb.Admin.UserLiveTest do
         org_id: org_id,
         email: "trader_joe@nexus.app",
         display_name: "Trader Joe",
-        role: "trader",
+        roles: ["trader"],
         credential_id: "mock_cred_2",
         cose_key: "mock_key_2"
       }

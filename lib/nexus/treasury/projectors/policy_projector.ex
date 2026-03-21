@@ -30,7 +30,7 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     )
   end)
 
-  project(%PolicyModeChanged{} = event, _metadata, fn multi ->
+  project(%PolicyModeChanged{} = event, metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :treasury_policy,
@@ -46,17 +46,19 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     |> Ecto.Multi.insert(
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
-        id: Nexus.Schema.generate_uuidv7(),
+        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
         org_id: event.org_id,
         actor_email: event.actor_email,
         mode: event.mode,
         threshold: parse_decimal(event.threshold),
         changed_at: Nexus.Schema.parse_datetime(event.changed_at)
-      }
+      },
+      on_conflict: :nothing,
+      conflict_target: :id
     )
   end)
 
-  project(%ModeThresholdsConfigured{} = event, _metadata, fn multi ->
+  project(%ModeThresholdsConfigured{} = event, metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :treasury_policy,
@@ -71,28 +73,32 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     |> Ecto.Multi.insert(
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
-        id: Nexus.Schema.generate_uuidv7(),
+        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
         org_id: event.org_id,
         actor_email: event.actor_email,
         mode: "CONFIG",
         threshold: Decimal.new("0"),
         changed_at: Nexus.Schema.parse_datetime(event.configured_at)
-      }
+      },
+      on_conflict: :nothing,
+      conflict_target: :id
     )
   end)
 
-  project(%PolicyAlertTriggered{} = event, _metadata, fn multi ->
+  project(%PolicyAlertTriggered{} = event, metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :policy_alert,
       %PolicyAlert{
-        id: Nexus.Schema.generate_uuidv7(),
+        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
         org_id: event.org_id,
         currency_pair: event.currency_pair,
         exposure_amount: parse_decimal(event.exposure_amount),
         threshold: parse_decimal(event.threshold),
         triggered_at: Nexus.Schema.parse_datetime(event.triggered_at)
-      }
+      },
+      on_conflict: :nothing,
+      conflict_target: :id
     )
   end)
 

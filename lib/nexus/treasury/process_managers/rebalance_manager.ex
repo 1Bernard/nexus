@@ -14,7 +14,6 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
 
   alias Nexus.Treasury.Events.{ForecastGenerated, TransferInitiated}
   alias Nexus.Treasury.Commands.RequestTransfer
-  alias Nexus.Treasury.Queries.VaultQuery
   require Logger
 
   # 1. Start on forecast generation
@@ -35,7 +34,10 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
     # Simple logic: If any prediction is negative, we have a deficit
     total_prediction =
       event.predictions
-      |> Enum.map(&Nexus.Schema.parse_decimal(&1["amount"] || &1[:amount]))
+      |> Enum.map(fn p ->
+        val = p[:predicted_amount] || p["predicted_amount"]
+        Nexus.Schema.parse_decimal(val)
+      end)
       |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
     if Decimal.lt?(total_prediction, 0) do
@@ -57,7 +59,9 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
     source_currency = if target_currency == "USD", do: "EUR", else: "USD"
 
     # Check if we have a vault for the source currency
-    case VaultQuery.find_vault_for_currency(org_id, source_currency) do
+    vault_query = Application.get_env(:nexus, :vault_query_module, Nexus.Treasury.Queries.VaultQuery)
+
+    case vault_query.find_vault_for_currency(org_id, source_currency) do
       nil ->
         Logger.warning("[Treasury] [Rebalance] No source vault found for #{source_currency}")
         []

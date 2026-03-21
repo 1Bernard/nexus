@@ -42,7 +42,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
     org_id = socket.assigns.current_user.org_id
 
     org_id_for_query =
-      if Enum.member?(socket.assigns.current_user.role, "system_admin"), do: :all, else: org_id
+      if Enum.member?(socket.assigns.current_user.roles, "system_admin"), do: :all, else: org_id
 
     saved_policy = Treasury.get_policy_mode(org_id_for_query)
 

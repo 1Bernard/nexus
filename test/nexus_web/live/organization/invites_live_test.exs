@@ -57,7 +57,7 @@ defmodule NexusWeb.Organization.InvitesLiveTest do
                )
 
       assert payload.org_id == org_id
-      assert payload.role == "trader"
+      assert "trader" in payload.roles
       assert payload.email == "test.invitee@global.com"
       assert payload.display_name == "Test Invited User"
     end

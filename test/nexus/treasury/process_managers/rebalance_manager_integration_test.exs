@@ -36,7 +36,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManagerIntegrationTest do
       org_id: org_id,
       currency: "USD",
       horizon_days: 7,
-      predictions: [%{amount: Decimal.new("-500000.00")}],
+      predictions: [%{predicted_amount: Decimal.new("-500000.00")}],
       generated_at: DateTime.utc_now()
     }
 

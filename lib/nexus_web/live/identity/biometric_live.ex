@@ -90,7 +90,7 @@ defmodule NexusWeb.Identity.BiometricLive do
            socket.assigns.registration_token || "",
            max_age: 1800
          ) do
-      {:ok, %{org_id: org_id, role: role, email: email, display_name: name}} ->
+      {:ok, %{org_id: org_id, roles: roles, email: email, display_name: name}} ->
         user_id = socket.assigns.user_id
         att_bin = decode_base64_url!(att)
         client_bin = decode_base64_url!(client)
@@ -105,7 +105,7 @@ defmodule NexusWeb.Identity.BiometricLive do
             org_id: org_id,
             display_name: name,
             email: email,
-            role: role,
+            role: roles |> List.first(),
             cose_key: Base.encode64(:erlang.term_to_binary(cose_key)),
             credential_id: Base.encode64(credential_id),
             registered_at: DateTime.utc_now()

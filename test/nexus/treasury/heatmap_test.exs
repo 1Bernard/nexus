@@ -18,7 +18,7 @@ defmodule Nexus.Treasury.HeatmapTest do
 
       # Insert some test snapshots
       Repo.insert!(%ExposureSnapshot{
-        id: "Berlin-USD",
+        id: Ecto.UUID.generate(),
         org_id: org_id,
         subsidiary: "Berlin",
         currency: "USD",
@@ -27,7 +27,7 @@ defmodule Nexus.Treasury.HeatmapTest do
       })
 
       Repo.insert!(%ExposureSnapshot{
-        id: "Paris-EUR",
+        id: Ecto.UUID.generate(),
         org_id: org_id,
         subsidiary: "Paris",
         currency: "EUR",

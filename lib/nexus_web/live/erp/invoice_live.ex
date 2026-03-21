@@ -24,7 +24,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
       |> assign(page_title: "ERP Talk Back - Nexus")
       |> assign(
         org_id:
-          if(Enum.member?(socket.assigns.current_user.role, "system_admin"),
+          if(Enum.member?(socket.assigns.current_user.roles, "system_admin"),
             do: :all,
             else: org_id
           )

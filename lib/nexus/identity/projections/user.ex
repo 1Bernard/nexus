@@ -7,7 +7,7 @@ defmodule Nexus.Identity.Projections.User do
 
   @type t :: %__MODULE__{}
 
-  @derive {Jason.Encoder, only: [:id, :org_id, :email, :display_name, :status, :role]}
+  @derive {Jason.Encoder, only: [:id, :org_id, :email, :display_name, :status, :roles]}
   schema "users" do
     field :org_id, :binary_id
     field :email, :string
@@ -15,7 +15,7 @@ defmodule Nexus.Identity.Projections.User do
     field :status, :string, default: "active"
     field :cose_key, :binary
     field :credential_id, :binary
-    field :role, :string
+    field :roles, {:array, :string}, default: []
     field :org_name, :string, virtual: true
 
     timestamps()
@@ -29,12 +29,12 @@ defmodule Nexus.Identity.Projections.User do
       :org_id,
       :email,
       :display_name,
-      :role,
+      :roles,
       :status,
       :cose_key,
       :credential_id
     ])
-    |> validate_required([:id, :org_id, :email, :role, :status, :cose_key, :credential_id])
+    |> validate_required([:id, :org_id, :email, :roles, :status, :cose_key, :credential_id])
     |> unique_constraint(:credential_id)
     |> unique_constraint(:email)
   end

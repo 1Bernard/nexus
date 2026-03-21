@@ -148,7 +148,7 @@ defmodule Nexus.Organization.UserInvitationTest do
 
     assert invitation != nil
     assert invitation.email == email
-    assert invitation.role == state.last_invited_role
+    assert state.last_invited_role in invitation.roles
     assert invitation.status == "pending"
     assert byte_size(invitation.invitation_token) > 20
     {:ok, state}

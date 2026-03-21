@@ -22,7 +22,7 @@ defmodule Nexus.Organization.Projectors.InvitationProjector do
         id: Nexus.Schema.generate_uuidv7(),
         org_id: event.org_id,
         email: event.email,
-        role: event.role,
+        roles: [event.role],
         invited_by: event.invited_by,
         invitation_token: event.invitation_token,
         invited_at: Nexus.Schema.parse_datetime(event.invited_at),

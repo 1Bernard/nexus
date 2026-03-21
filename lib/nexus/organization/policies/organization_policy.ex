@@ -10,7 +10,7 @@ defmodule Nexus.Organization.Policies.OrganizationPolicy do
 
   # Org management (invites, settings) requires org_admin or system_admin
   def can?(user, _action, :org_management) do
-    user.role in [:org_admin, "org_admin", :system_admin, "system_admin"]
+    Nexus.Shared.Policy.has_role?(user, "org_admin")
   end
 
   # Default fallback

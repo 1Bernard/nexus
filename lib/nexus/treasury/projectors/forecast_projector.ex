@@ -11,8 +11,13 @@ defmodule Nexus.Treasury.Projectors.ForecastProjector do
   alias Nexus.Treasury.Projections.ForecastSnapshot
 
   project(%ForecastGenerated{} = event, _metadata, fn multi ->
-    # Generate a deterministic ID for this forecast version (e.g., daily per org/currency)
-    id = Nexus.Schema.generate_uuidv7()
+    # Use the idempotency_key as the record ID if it's a valid UUID,
+    # otherwise generate a stable one to prevent duplicate projections.
+    id =
+      case Ecto.UUID.cast(event.idempotency_key) do
+        {:ok, uuid} -> uuid
+        _ -> Nexus.Schema.generate_uuidv7()
+      end
 
     attrs = %{
       id: id,
@@ -26,7 +31,9 @@ defmodule Nexus.Treasury.Projectors.ForecastProjector do
     multi
     |> Ecto.Multi.insert(
       :forecast_snapshot,
-      ForecastSnapshot.changeset(%ForecastSnapshot{}, attrs)
+      ForecastSnapshot.changeset(%ForecastSnapshot{}, attrs),
+      on_conflict: :nothing,
+      conflict_target: :id
     )
   end)
 end

@@ -20,7 +20,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
       left_join: t in Nexus.Organization.Projections.Tenant,
       on: u.org_id == t.org_id,
       where: u.org_id == ^org_id,
-      select: %{u | org_name: t.name}
+      select_merge: %{org_name: t.name}
     )
     |> list_users_query(params)
   end
@@ -33,7 +33,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
     from(u in User,
       left_join: t in Nexus.Organization.Projections.Tenant,
       on: u.org_id == t.org_id,
-      select: %{u | org_name: t.name}
+      select_merge: %{org_name: t.name}
     )
     |> list_users_query(params)
   end
@@ -98,7 +98,7 @@ defmodule Nexus.Identity.Queries.UserQuery do
   defp filter_by_role(query, "all"), do: query
 
   defp filter_by_role(query, role) do
-    from(u in query, where: u.role == ^role)
+    from(u in query, where: fragment("? = ANY(?)", ^role, u.roles))
   end
 
   defp paginate(query, nil, limit) do
