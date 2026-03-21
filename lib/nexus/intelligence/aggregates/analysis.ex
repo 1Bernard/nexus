@@ -10,27 +10,37 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
 
   @type t :: %__MODULE__{}
 
-  alias Nexus.Intelligence.Commands.{AnalyzeInvoice, AnalyzeSentiment, ResolveAnomaly}
+  alias Nexus.Intelligence.Commands.{
+    AnalyzeInvoice,
+    AnalyzeSentiment,
+    ResolveAnomaly,
+    AnalyzeTreasuryMovement,
+    AnalyzeReconciliation
+  }
+
   alias Nexus.Intelligence.Events.{AnomalyDetected, SentimentScored, AnomalyResolved}
 
   # For anomaly detection, we only emit an event if it's an anomaly (score > 0.8)
-  @spec execute(t(), AnalyzeInvoice.t() | AnalyzeSentiment.t() | ResolveAnomaly.t()) ::
+  @spec execute(
+          t(),
+          AnalyzeInvoice.t()
+          | AnalyzeSentiment.t()
+          | ResolveAnomaly.t()
+          | AnalyzeTreasuryMovement.t()
+          | AnalyzeReconciliation.t()
+        ) ::
           Commanded.Aggregate.Multi.t() | struct() | [struct()]
   def execute(%__MODULE__{} = _state, %AnalyzeInvoice{} = cmd) do
-    Logger.debug("[AI Sentinel] Executing AnalyzeInvoice for #{cmd.invoice_id}")
-
-    Logger.debug(
-      "[AI Sentinel] Analyzing vendor: #{cmd.vendor_name}, amount: #{inspect(cmd.amount)}"
-    )
+    Logger.error("[AI Sentinel] [Aggregate] REVEAL: Executing AnalyzeInvoice for #{cmd.invoice_id}")
 
     # Delegate to the ML service
     case Nexus.Intelligence.Services.AnomalyDetector.analyze(cmd) do
-      {:ok, %{is_anomaly: true, score: score, reason: reason} = result} ->
-        Logger.debug("[AI Sentinel] Anomaly detected: #{inspect(result)}")
-
+      {:ok, %{is_anomaly: true, score: score, reason: reason}} ->
         %AnomalyDetected{
           analysis_id: cmd.analysis_id,
           org_id: cmd.org_id,
+          type: :invoice,
+          resource_id: cmd.invoice_id,
           invoice_id: cmd.invoice_id,
           score: score,
           reason: reason,
@@ -38,8 +48,47 @@ defmodule Nexus.Intelligence.Aggregates.Analysis do
         }
 
       {:ok, %{is_anomaly: false}} ->
-        Logger.debug("[AI Sentinel] No anomaly detected for #{cmd.invoice_id}")
-        # No anomaly, no state change
+        []
+    end
+  end
+
+  def execute(%__MODULE__{} = _state, %AnalyzeTreasuryMovement{} = cmd) do
+    case Nexus.Intelligence.Services.AnomalyDetector.analyze(cmd) do
+      {:ok, %{is_anomaly: true, score: score, reason: reason}} ->
+        %AnomalyDetected{
+          analysis_id: cmd.analysis_id,
+          org_id: cmd.org_id,
+          type: :treasury_movement,
+          resource_id: cmd.transfer_id,
+          score: score,
+          reason: reason,
+          flagged_at: cmd.flagged_at
+        }
+
+      {:ok, %{is_anomaly: false}} ->
+        Logger.info("[AI Sentinel] [Aggregate] No anomaly detected for #{cmd.transfer_id}")
+        []
+    end
+  end
+
+  def execute(%__MODULE__{} = _state, %AnalyzeReconciliation{} = cmd) do
+    Logger.info("[AI Sentinel] [Aggregate] Executing AnalyzeReconciliation for #{cmd.reconciliation_id}")
+
+    case Nexus.Intelligence.Services.AnomalyDetector.analyze(cmd) do
+      {:ok, %{is_anomaly: true, score: score, reason: reason} = result} ->
+        Logger.info("[AI Sentinel] [Aggregate] Anomaly detected: #{inspect(result)}")
+        %AnomalyDetected{
+          analysis_id: cmd.analysis_id,
+          org_id: cmd.org_id,
+          type: :reconciliation,
+          resource_id: cmd.reconciliation_id,
+          score: score,
+          reason: reason,
+          flagged_at: cmd.flagged_at
+        }
+
+      {:ok, %{is_anomaly: false}} ->
+        Logger.info("[AI Sentinel] [Aggregate] No anomaly detected for #{cmd.reconciliation_id}")
         []
     end
   end

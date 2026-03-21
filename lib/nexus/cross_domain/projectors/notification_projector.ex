@@ -12,7 +12,7 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
   alias Nexus.CrossDomain.Queries.NotificationQuery
   alias Nexus.CrossDomain.Projections.Notification
 
-  project(%NotificationCreated{} = event, _metadata, fn multi ->
+  project(%NotificationCreated{} = event, metadata, fn multi ->
     Ecto.Multi.insert(
       multi,
       :notification,
@@ -24,6 +24,8 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
         title: event.title,
         body: event.body,
         metadata: event.metadata,
+        correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+        causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
         created_at: Nexus.Schema.parse_datetime(event.timestamp)
       }, on_conflict: :nothing)
     |> Ecto.Multi.run(:broadcast_unread, fn _repo, _changes ->

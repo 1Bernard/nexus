@@ -12,9 +12,10 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
   alias Nexus.Treasury.Events.{PolicyAlertTriggered, TransferExecuted, PolicyModeChanged}
   alias Nexus.Treasury.Events.ReconciliationProposed
   alias Nexus.ERP.Events.StatementUploaded
+  alias Nexus.Identity.Events.UserRegistered
 
   @spec handle(struct(), map()) :: :ok | {:error, any()}
-  def handle(%PolicyAlertTriggered{} = event, _metadata) do
+  def handle(%PolicyAlertTriggered{} = event, metadata) do
     cmd = %CreateNotification{
       id: Nexus.Schema.generate_uuidv7(),
       org_id: event.org_id,
@@ -28,10 +29,10 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       }
     }
 
-    App.dispatch(cmd)
+    App.dispatch(cmd, metadata: metadata)
   end
 
-  def handle(%TransferExecuted{} = event, _metadata) do
+  def handle(%TransferExecuted{} = event, metadata) do
     cmd = %CreateNotification{
       id: Nexus.Schema.generate_uuidv7(),
       org_id: event.org_id,
@@ -46,10 +47,10 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       }
     }
 
-    App.dispatch(cmd)
+    App.dispatch(cmd, metadata: metadata)
   end
 
-  def handle(%ReconciliationProposed{} = event, _metadata) do
+  def handle(%ReconciliationProposed{} = event, metadata) do
     cmd = %CreateNotification{
       id: Nexus.Schema.generate_uuidv7(),
       org_id: event.org_id,
@@ -64,10 +65,10 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       }
     }
 
-    App.dispatch(cmd)
+    App.dispatch(cmd, metadata: metadata)
   end
 
-  def handle(%PolicyModeChanged{} = event, _metadata) do
+  def handle(%PolicyModeChanged{} = event, metadata) do
     cmd = %CreateNotification{
       id: Nexus.Schema.generate_uuidv7(),
       org_id: event.org_id,
@@ -81,10 +82,10 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       }
     }
 
-    App.dispatch(cmd)
+    App.dispatch(cmd, metadata: metadata)
   end
 
-  def handle(%StatementUploaded{} = event, _metadata) do
+  def handle(%StatementUploaded{} = event, metadata) do
     line_count = length(event.lines)
 
     cmd = %CreateNotification{
@@ -102,6 +103,24 @@ defmodule Nexus.CrossDomain.Handlers.SystemNotificationHandler do
       }
     }
 
-    App.dispatch(cmd)
+    App.dispatch(cmd, metadata: metadata)
+  end
+
+  def handle(%UserRegistered{} = event, metadata) do
+    cmd = %CreateNotification{
+      id: Nexus.Schema.generate_uuidv7(),
+      org_id: event.org_id,
+      user_id: event.user_id,
+      type: "user_registered",
+      title: "New User Registered",
+      body: "#{event.display_name} (#{event.email}) has joined the organization.",
+      metadata: %{
+        user_id: event.user_id,
+        email: event.email,
+        role: event.role
+      }
+    }
+
+    App.dispatch(cmd, metadata: metadata)
   end
 end

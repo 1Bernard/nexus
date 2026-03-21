@@ -21,7 +21,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
   @webhook_exchange "erp_webhooks"
 
   @spec handle(struct(), map()) :: :ok | {:error, any()}
-  def handle(%InvoiceIngested{} = event, _metadata) do
+  def handle(%InvoiceIngested{} = event, metadata) do
     # 1. UI Reactivity: Notify LiveViews instantly
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,
@@ -36,6 +36,8 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
         org_id: event.org_id,
         invoice_id: event.invoice_id,
         entity_id: event.entity_id,
+        correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+        causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
         timestamp: Nexus.Schema.utc_now()
       })
 
@@ -44,7 +46,7 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
     :ok
   end
 
-  def handle(%StatementUploaded{} = event, _metadata) do
+  def handle(%StatementUploaded{} = event, metadata) do
     Phoenix.PubSub.broadcast(
       Nexus.PubSub,
       "erp_statements:#{event.org_id}",
@@ -57,6 +59,8 @@ defmodule Nexus.ERP.Handlers.ERPNotificationHandler do
         org_id: event.org_id,
         statement_id: event.statement_id,
         filename: event.filename,
+        correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+        causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
         timestamp: Nexus.Schema.utc_now()
       })
 

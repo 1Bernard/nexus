@@ -17,6 +17,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
     # O(1) Indices: currency -> amount_str -> [id]
     invoice_index: %{},
     line_index: %{},
+    transfer_index: %{},
     # Reconciliation tracking
     pending_matches: %{},
     matched_items: %{},
@@ -115,12 +116,10 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   end
 
   defp find_matching_transfers(pm, event, amount) do
-    match = Enum.find(pm.transfers || %{}, fn {_id, t} ->
-      t.currency == event.currency && Decimal.eq?(t.amount, amount)
-    end)
+    key = amount_to_index_key(amount)
 
-    case match do
-      {transfer_id, _t} ->
+    case get_in(pm.transfer_index || %{}, [event.currency, key]) do
+      [transfer_id | _] ->
         build_reconcile_command(pm.org_id, event.invoice_id, transfer_id, "TRANSFER-#{transfer_id}", amount, event.currency)
       _ -> []
     end
@@ -191,7 +190,11 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
         recipient_data: event.recipient_data
       })
 
-    %__MODULE__{pm | org_id: to_string(event.org_id), transfers: updated_transfers}
+    %__MODULE__{pm |
+      org_id: to_string(event.org_id),
+      transfers: updated_transfers,
+      transfer_index: index_add(pm.transfer_index, event.from_currency, amount, id)
+    }
   end
 
   def apply(%__MODULE__{} = pm, %TransactionReconciled{} = event) do
@@ -206,7 +209,11 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
       {line, acc} -> {acc, index_remove(pm.line_index, line.currency, line.amount, event.statement_line_id)}
     end
 
-    transfers = Map.delete(pm.transfers || %{}, event.statement_line_id)
+    {transfers, t_index} = case Map.pop(pm.transfers || %{}, event.statement_line_id) do
+      {nil, acc} -> {acc, pm.transfer_index}
+      {t, acc} -> {acc, index_remove(pm.transfer_index, t.currency, t.amount, event.statement_line_id)}
+    end
+
     pending = Map.delete(pm.pending_matches || %{}, event.reconciliation_id)
 
     matched = Map.put(pm.matched_items || %{}, event.reconciliation_id, %{
@@ -222,6 +229,7 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
       invoice_index: i_index,
       statement_lines: lines,
       line_index: l_index,
+      transfer_index: t_index,
       transfers: transfers,
       pending_matches: pending,
       matched_items: matched
@@ -240,6 +248,11 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
       {line, acc} -> {acc, index_remove(pm.line_index, line.currency, line.amount, event.statement_line_id)}
     end
 
+    {transfers, t_index} = case Map.pop(pm.transfers || %{}, event.statement_line_id) do
+      {nil, acc} -> {acc, pm.transfer_index}
+      {t, acc} -> {acc, index_remove(pm.transfer_index, t.currency, t.amount, event.statement_line_id)}
+    end
+
     pending = Map.put(pm.pending_matches || %{}, event.reconciliation_id, %{
       invoice_id: event.invoice_id,
       statement_line_id: event.statement_line_id,
@@ -253,6 +266,8 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
       invoice_index: i_index,
       statement_lines: lines,
       line_index: l_index,
+      transfer_index: t_index,
+      transfers: transfers,
       pending_matches: pending
     }
   end
@@ -260,30 +275,54 @@ defmodule Nexus.Treasury.ProcessManagers.ReconciliationManager do
   def apply(%__MODULE__{} = pm, %ReconciliationRejected{} = event) do
     case Map.pop(pm.pending_matches || %{}, event.reconciliation_id) do
       {nil, _acc} -> pm
-      {%{invoice_id: i_id, statement_line_id: l_id, amount: amt, currency: cur}, pending} ->
+      {%{invoice_id: i_id, statement_line_id: l_id, amount: amt, currency: cur} = match, pending} ->
         amt = Nexus.Schema.parse_decimal(amt)
-        %__MODULE__{pm |
+        # Restore invoice
+        pm = %{pm |
           invoices: Map.put(pm.invoices, i_id, %{amount: amt, currency: cur}),
           invoice_index: index_add(pm.invoice_index, cur, amt, i_id),
-          statement_lines: Map.put(pm.statement_lines, l_id, %{amount: amt, currency: cur}),
-          line_index: index_add(pm.line_index, cur, amt, l_id),
           pending_matches: pending
         }
+
+        # Restore either statement line or transfer based on presence/naming
+        if String.starts_with?(to_string(Map.get(match, :statement_id)), "TRANSFER-") do
+          %{pm |
+            transfers: Map.put(pm.transfers, l_id, %{amount: amt, currency: cur}),
+            transfer_index: index_add(pm.transfer_index, cur, amt, l_id)
+          }
+        else
+          %{pm |
+            statement_lines: Map.put(pm.statement_lines, l_id, %{amount: amt, currency: cur}),
+            line_index: index_add(pm.line_index, cur, amt, l_id)
+          }
+        end
     end
   end
 
   def apply(%__MODULE__{} = pm, %ReconciliationReversed{} = event) do
     case Map.pop(pm.matched_items || %{}, event.reconciliation_id) do
       {nil, _acc} -> pm
-      {%{invoice_id: i_id, statement_line_id: l_id, amount: amt, currency: cur}, matched} ->
+      {%{invoice_id: i_id, statement_line_id: l_id, amount: amt, currency: cur} = match, matched} ->
         amt = Nexus.Schema.parse_decimal(amt)
-        %__MODULE__{pm |
+        # Restore invoice
+        pm = %{pm |
           invoices: Map.put(pm.invoices, i_id, %{amount: amt, currency: cur}),
           invoice_index: index_add(pm.invoice_index, cur, amt, i_id),
-          statement_lines: Map.put(pm.statement_lines, l_id, %{amount: amt, currency: cur}),
-          line_index: index_add(pm.line_index, cur, amt, l_id),
           matched_items: matched
         }
+
+        # Restore either statement line or transfer
+        if String.starts_with?(to_string(Map.get(match, :statement_id)), "TRANSFER-") do
+          %{pm |
+            transfers: Map.put(pm.transfers, l_id, %{amount: amt, currency: cur}),
+            transfer_index: index_add(pm.transfer_index, cur, amt, l_id)
+          }
+        else
+          %{pm |
+            statement_lines: Map.put(pm.statement_lines, l_id, %{amount: amt, currency: cur}),
+            line_index: index_add(pm.line_index, cur, amt, l_id)
+          }
+        end
     end
   end
 

@@ -23,7 +23,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
   }
 
   alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, BiometricVerified, StepUpVerified}
-  alias Nexus.ERP.Events.InvoiceMatched
+  alias Nexus.ERP.Events.{InvoiceMatched, StatementUploaded}
   alias Nexus.Reporting.Projections.{AuditLog, ControlDrift}
   alias Nexus.Schema
 
@@ -35,8 +35,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       org_id: event.org_id,
       tenant_name: event.name,
       details: %{admin_email: event.initial_admin_email},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.provisioned_at)
     })
   end)
@@ -48,8 +48,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.suspended_by,
       org_id: event.org_id,
       details: %{reason: event.reason},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.suspended_at)
     })
   end)
@@ -61,8 +61,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.toggled_by,
       org_id: event.org_id,
       details: %{module_name: event.module_name, enabled: event.enabled},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.toggled_at)
     })
     |> upsert_drift(
@@ -80,8 +80,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: "system@nexus.ai",
       org_id: event.org_id,
       details: %{threshold: event.threshold, policy_id: event.policy_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.set_at)
     })
     |> upsert_drift(
@@ -99,8 +99,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.email,
       org_id: event.org_id,
       details: %{display_name: event.display_name, role: event.role},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.registered_at)
     })
   end)
@@ -112,8 +112,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.actor_id,
       org_id: event.org_id,
       details: %{user_id: event.user_id, role: event.role},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.changed_at)
     })
     |> upsert_drift(
@@ -131,8 +131,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.actor_email,
       org_id: event.org_id,
       details: %{transfer_id: event.transfer_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.authorized_at)
     })
   end)
@@ -149,8 +149,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
         from_currency: event.from_currency,
         to_currency: event.to_currency
       },
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.executed_at)
     })
   end)
@@ -166,9 +166,26 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
         matched_id: event.matched_id,
         matched_type: event.matched_type
       },
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.matched_at)
+    })
+  end)
+
+  project(%StatementUploaded{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "statement_uploaded",
+      actor_email: "system@nexus.ai",
+      org_id: event.org_id,
+      details: %{
+        statement_id: event.statement_id,
+        filename: event.filename,
+        format: event.format
+      },
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
+      recorded_at: Nexus.Schema.parse_datetime(event.uploaded_at)
     })
   end)
 
@@ -183,8 +200,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
         amount: event.amount,
         currency: event.currency
       },
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
     })
   end)
@@ -196,8 +213,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.rejector_email,
       org_id: event.org_id,
       details: %{reconciliation_id: event.reconciliation_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
     })
   end)
@@ -209,8 +226,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: event.actor_email,
       org_id: event.org_id,
       details: %{reconciliation_id: event.reconciliation_id, invoice_id: event.invoice_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.timestamp)
     })
   end)
@@ -222,8 +239,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: "user_#{event.user_id}",
       org_id: event.org_id,
       details: %{handshake_id: event.handshake_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.verified_at)
     })
   end)
@@ -235,8 +252,8 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       actor_email: "user_#{event.user_id}",
       org_id: event.org_id,
       details: %{action_id: event.action_id},
-      correlation_id: metadata.correlation_id,
-      causation_id: metadata.causation_id,
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
       recorded_at: Nexus.Schema.parse_datetime(event.verified_at)
     })
   end)

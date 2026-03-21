@@ -7,7 +7,7 @@ defmodule Nexus.CrossDomain.Projections.Notification do
   @type t :: %__MODULE__{}
 
   @derive {Jason.Encoder,
-           only: [:id, :org_id, :user_id, :type, :title, :body, :metadata, :read_at]}
+           only: [:id, :org_id, :user_id, :type, :title, :body, :metadata, :correlation_id, :causation_id, :read_at]}
   schema "cross_domain_notifications" do
     field :org_id, :binary_id
     field :user_id, :binary_id
@@ -15,6 +15,8 @@ defmodule Nexus.CrossDomain.Projections.Notification do
     field :title, :string
     field :body, :string
     field :metadata, :map, default: %{}
+    field :correlation_id, :binary_id
+    field :causation_id, :binary_id
     field :read_at, :utc_datetime_usec
     field :org_name, :string, virtual: true
     field :user_name, :string, virtual: true
@@ -25,7 +27,7 @@ defmodule Nexus.CrossDomain.Projections.Notification do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(notification, attrs) do
     notification
-    |> cast(attrs, [:id, :org_id, :user_id, :type, :title, :body, :metadata, :read_at])
+    |> cast(attrs, [:id, :org_id, :user_id, :type, :title, :body, :metadata, :correlation_id, :causation_id, :read_at])
     |> validate_required([:id, :org_id, :type, :title])
   end
 end

@@ -18,6 +18,7 @@ defmodule Nexus.Intelligence.Projectors.AnalysisProjector do
       id: event.analysis_id,
       org_id: event.org_id,
       invoice_id: event.invoice_id,
+      source_id: event.resource_id,
       type: "anomaly",
       score: event.score,
       reason: event.reason,

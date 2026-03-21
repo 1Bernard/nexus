@@ -159,12 +159,17 @@ defmodule Nexus.Router do
     identity: :vault_id
   )
 
+  # Command validation and enrichment
+  # middleware(Nexus.Shared.Middleware.Logger)
+
   # --- Intelligence Domain ---
   dispatch(
     [
       Nexus.Intelligence.Commands.AnalyzeInvoice,
       Nexus.Intelligence.Commands.AnalyzeSentiment,
-      Nexus.Intelligence.Commands.ResolveAnomaly
+      Nexus.Intelligence.Commands.ResolveAnomaly,
+      Nexus.Intelligence.Commands.AnalyzeTreasuryMovement,
+      Nexus.Intelligence.Commands.AnalyzeReconciliation
     ],
     to: Nexus.Intelligence.Aggregates.Analysis,
     identity: :analysis_id
