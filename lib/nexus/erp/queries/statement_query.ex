@@ -7,9 +7,13 @@ defmodule Nexus.ERP.Queries.StatementQuery do
   alias Nexus.Organization.Projections.Tenant
 
   @doc "Base query for Statement, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(s in Statement, where: s.org_id == ^org_id)
+    if org_id == :all do
+      Statement
+    else
+      from(s in Statement, where: s.org_id == ^org_id)
+    end
   end
 
   @doc "Enriches statement query with Tenant information."

@@ -6,9 +6,13 @@ defmodule Nexus.Treasury.Queries.ExposureQuery do
   alias Nexus.Treasury.Projections.ExposureSnapshot
 
   @doc "Base query for ExposureSnapshot, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(e in ExposureSnapshot, where: e.org_id == ^org_id)
+    if org_id == :all do
+      ExposureSnapshot
+    else
+      from(e in ExposureSnapshot, where: e.org_id == ^org_id)
+    end
   end
 
   @doc "Filters exposures by organization ID."

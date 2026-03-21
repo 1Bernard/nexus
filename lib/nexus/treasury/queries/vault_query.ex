@@ -7,9 +7,13 @@ defmodule Nexus.Treasury.Queries.VaultQuery do
   alias Nexus.Treasury.Projections.Vault
 
   @doc "Base query for Vault, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(v in Vault, where: v.org_id == ^org_id)
+    if org_id == :all do
+      Vault
+    else
+      from(v in Vault, where: v.org_id == ^org_id)
+    end
   end
 
   @spec list_by_org(Nexus.Types.org_id()) :: [Vault.t()]

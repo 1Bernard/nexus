@@ -6,9 +6,13 @@ defmodule Nexus.Treasury.Queries.TreasuryPolicyQuery do
   alias Nexus.Treasury.Projections.TreasuryPolicy
 
   @doc "Base query for TreasuryPolicy, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(p in TreasuryPolicy, where: p.org_id == ^org_id)
+    if org_id == :all do
+      TreasuryPolicy
+    else
+      from(p in TreasuryPolicy, where: p.org_id == ^org_id)
+    end
   end
 
   @doc "Filters policies by organization ID."

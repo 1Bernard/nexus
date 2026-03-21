@@ -6,10 +6,13 @@ defmodule Nexus.Reporting.Queries.AuditLogQuery do
   alias Nexus.Reporting.Projections.AuditLog
 
   @doc "Base query for AuditLog, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
   @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(log in AuditLog, where: log.org_id == ^org_id)
+    if org_id == :all do
+      AuditLog
+    else
+      from(log in AuditLog, where: log.org_id == ^org_id)
+    end
   end
 
   @doc "Filters audit logs by organization ID."

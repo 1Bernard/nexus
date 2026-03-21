@@ -6,9 +6,13 @@ defmodule Nexus.Treasury.Queries.PolicyAlertQuery do
   alias Nexus.Treasury.Projections.PolicyAlert
 
   @doc "Base query for PolicyAlert, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(a in PolicyAlert, where: a.org_id == ^org_id)
+    if org_id == :all do
+      PolicyAlert
+    else
+      from(a in PolicyAlert, where: a.org_id == ^org_id)
+    end
   end
 
   @doc "Filters alerts by organization ID."

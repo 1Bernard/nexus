@@ -7,13 +7,18 @@ defmodule Nexus.Treasury.Queries.ReconciliationQuery do
   alias Nexus.Organization.Projections.Tenant
 
   @doc "Base query for Reconciliation with Tenant enrichment, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
   @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(reconciliation in Reconciliation,
+    query =
+      if org_id == :all do
+        Reconciliation
+      else
+        from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
+      end
+
+    from(reconciliation in query,
       left_join: t in Tenant,
       on: reconciliation.org_id == t.org_id,
-      where: reconciliation.org_id == ^org_id,
       select: %{reconciliation | org_name: t.name}
     )
   end
@@ -46,7 +51,8 @@ defmodule Nexus.Treasury.Queries.ReconciliationQuery do
   end
 
   @doc "Simple base query without joins, scoped by organization."
-  @spec simple_base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec simple_base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
+  def simple_base(:all), do: Reconciliation
   def simple_base(org_id) do
     from(reconciliation in Reconciliation, where: reconciliation.org_id == ^org_id)
   end

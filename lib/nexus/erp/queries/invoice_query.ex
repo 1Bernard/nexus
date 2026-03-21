@@ -8,9 +8,13 @@ defmodule Nexus.ERP.Queries.InvoiceQuery do
   alias Nexus.Organization.Projections.Tenant
 
   @doc "Base query for Invoice, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(i in Invoice, where: i.org_id == ^org_id)
+    if org_id == :all do
+      Invoice
+    else
+      from(i in Invoice, where: i.org_id == ^org_id)
+    end
   end
 
   @doc "Enriches invoice query with Tenant information."

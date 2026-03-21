@@ -6,9 +6,13 @@ defmodule Nexus.Treasury.Queries.ForecastQuery do
   alias Nexus.Treasury.Projections.ForecastSnapshot
 
   @doc "Base query for ForecastSnapshot, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(f in ForecastSnapshot, where: f.org_id == ^org_id)
+    if org_id == :all do
+      ForecastSnapshot
+    else
+      from(f in ForecastSnapshot, where: f.org_id == ^org_id)
+    end
   end
 
   @doc "Filters forecasts by organization ID."

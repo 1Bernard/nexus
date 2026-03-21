@@ -7,9 +7,13 @@ defmodule Nexus.ERP.Queries.StatementLineQuery do
   alias Nexus.Organization.Projections.Tenant
 
   @doc "Base query for StatementLine, scoped by organization."
-  @spec base(Nexus.Types.org_id()) :: Ecto.Query.t()
+  @spec base(Nexus.Types.org_id() | :all) :: Ecto.Query.t()
   def base(org_id) do
-    from(line in StatementLine, where: line.org_id == ^org_id)
+    if org_id == :all do
+      StatementLine
+    else
+      from(line in StatementLine, where: line.org_id == ^org_id)
+    end
   end
 
   @doc "Enriches statement line query with Tenant information."
