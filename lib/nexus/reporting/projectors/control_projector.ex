@@ -73,6 +73,7 @@ defmodule Nexus.Reporting.Projectors.ControlProjector do
     })
   end)
 
+  @spec project_metric(Ecto.Multi.t(), Nexus.Types.org_id(), String.t(), float(), map(), map()) :: Ecto.Multi.t()
   def project_metric(multi, org_id, key, score, metadata, extra_meta) do
     # We now INSERT every time to keep a history of scores for drift analysis.
     # The unique index was removed in a previous migration.

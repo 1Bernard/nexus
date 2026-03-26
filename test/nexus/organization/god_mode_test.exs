@@ -18,7 +18,7 @@ defmodule Nexus.Organization.GodModeTest do
       )
     end)
 
-    org_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
 
     # Provision a tenant first
     tenant =

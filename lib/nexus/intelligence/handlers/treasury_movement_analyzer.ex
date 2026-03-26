@@ -12,7 +12,7 @@ defmodule Nexus.Intelligence.Handlers.TreasuryMovementAnalyzer do
   require Logger
 
   @spec handle(TransferExecuted.t(), map()) :: :ok
-  def handle(%TransferExecuted{} = event, _metadata) do
+  def handle(%TransferExecuted{} = event, metadata) do
     Logger.info(
       "[Intelligence] Triggering anomaly detection for treasury transfer #{event.transfer_id}"
     )
@@ -28,8 +28,8 @@ defmodule Nexus.Intelligence.Handlers.TreasuryMovementAnalyzer do
       flagged_at: Nexus.Schema.utc_now()
     }
 
-    case Nexus.App.dispatch(command) do
-      :ok -> 
+    case Nexus.App.dispatch(command, metadata: metadata) do
+      :ok ->
         Logger.info("[Intelligence] [Handler] AnalyzeTreasuryMovement DISPATCHED OK")
         :ok
       {:error, reason} ->

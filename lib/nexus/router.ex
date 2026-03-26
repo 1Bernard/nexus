@@ -34,7 +34,7 @@ defmodule Nexus.Router do
     identity: :user_id
   )
 
-  dispatch(Nexus.Identity.Commands.ChangeUserRole,
+  dispatch([Nexus.Identity.Commands.ChangeUserRole, Nexus.Identity.Commands.RevokeUserRole],
     to: Nexus.Identity.Aggregates.User,
     identity: :user_id
   )
@@ -146,6 +146,11 @@ defmodule Nexus.Router do
   dispatch(Nexus.Treasury.Commands.ReverseReconciliation,
     to: Nexus.Treasury.Aggregates.Reconciliation,
     identity: :reconciliation_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.RebalancePortfolio,
+    to: Nexus.Treasury.Aggregates.Portfolio,
+    identity: :portfolio_id
   )
 
   dispatch(

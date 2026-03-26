@@ -7,7 +7,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManagerIntegrationTest do
 
   setup do
     Repo.delete_all(Vault)
-    org_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
     vault_id = Nexus.Schema.generate_uuidv7()
     vault_name = "EUR Operating-#{:erlang.unique_integer([:positive])}"
 

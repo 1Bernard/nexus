@@ -7,9 +7,8 @@ defmodule Nexus.Identity.Projections.UserSettings do
   @type t :: %__MODULE__{}
 
   @derive {Jason.Encoder, only: [:org_id, :user_id, :locale, :timezone, :notifications_enabled]}
-  @primary_key false
   schema "identity_user_settings" do
-    field :user_id, :binary_id, primary_key: true
+    field :user_id, :binary_id
     field :org_id, :binary_id
     field :locale, :string, default: "en"
     field :timezone, :string, default: "UTC"

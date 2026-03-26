@@ -155,4 +155,82 @@ defmodule NexusWeb.Reporting.ComplianceComponents do
     </div>
     """
   end
+
+  @doc """
+  Form for generating audit samples.
+  """
+  attr :method, :string, default: "random"
+  attr :size, :integer, default: 10
+
+  def sampling_form(assigns) do
+    ~H"""
+    <form phx-submit="generate_sample" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-black/20 p-6 rounded-2xl border border-white/5">
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Method</label>
+        <select name="method" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500">
+          <option value="random">Random Selection</option>
+          <option value="risk_based">Risk-Based Prioritization</option>
+          <option value="high_value">High-Value Concentration</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Sample Size</label>
+        <input type="number" name="size" value={@size} class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Threshold (USD)</label>
+        <input type="number" name="threshold" value="100000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500" />
+      </div>
+      <button type="submit" class="h-9 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase rounded-lg transition-colors">
+        Generate Sample
+      </button>
+    </form>
+    """
+  end
+
+  @doc """
+  Displays the generated audit sample table.
+  """
+  attr :samples, :list, required: true
+
+  def sample_table(assigns) do
+    ~H"""
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead class="border-b border-white/10">
+          <tr>
+            <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Event</th>
+            <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Timestamp</th>
+            <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actor</th>
+            <th class="py-4 px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Attestation</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <%= for sample <- @samples do %>
+            <tr class="group hover:bg-white/[0.02] transition-colors">
+              <td class="py-4 px-2">
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-200 uppercase tracking-tight">{sample.event_type}</span>
+                  <span class="text-[9px] text-slate-500 font-mono mt-0.5">{String.slice(sample.id, 0, 8)}...</span>
+                </div>
+              </td>
+              <td class="py-4 px-2">
+                <span class="text-[11px] text-slate-400 font-mono">{Calendar.strftime(sample.recorded_at, "%Y-%m-%d %H:%M:%S")}</span>
+              </td>
+              <td class="py-4 px-2">
+                <span class="text-[11px] text-slate-400">{sample.actor_email}</span>
+              </td>
+              <td class="py-4 px-2 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="p-1 px-2 rounded bg-slate-800 text-[9px] font-bold text-slate-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/30 transition-all uppercase">Verify</button>
+                  <button class="p-1 px-2 rounded bg-slate-800 text-[9px] font-bold text-slate-400 hover:text-rose-400 border border-white/5 hover:border-rose-500/30 transition-all uppercase">Flag</button>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    """
+  end
 end

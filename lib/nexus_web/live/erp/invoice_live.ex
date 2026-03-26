@@ -359,7 +359,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </.nx_button>
         </:actions>
       </.page_header>
-      
+
     <!-- Top Level KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 relative z-10">
         <NexusWeb.NexusComponents.stat_card
@@ -384,7 +384,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           icon="hero-document-magnifying-glass"
         />
       </div>
-      
+
     <!-- Aging Buckets - Visual Risk Indicator -->
       <div class="bg-[var(--nx-surface)] border border-[var(--nx-border)] rounded-2xl p-6 mb-8 relative overflow-hidden group">
         <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none">
@@ -424,7 +424,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </div>
-      
+
     <!-- High-Density Data Table Card -->
       <NexusWeb.NexusComponents.data_grid
         id="invoices-table"
@@ -591,7 +591,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </:action>
       </NexusWeb.NexusComponents.data_grid>
-      
+
     <!-- Manual Entry Modal -->
       <NexusWeb.NexusComponents.nx_modal
         id="manual-entry-modal"
@@ -613,7 +613,7 @@ defmodule NexusWeb.ERP.InvoiceLive do
           </div>
         </div>
       </NexusWeb.NexusComponents.nx_modal>
-      
+
     <!-- Line Item Details Modal -->
       <NexusWeb.NexusComponents.nx_modal
         :if={@selected_invoice}

@@ -2,8 +2,6 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
   use Cabbage.Feature, file: "treasury/exposure_calculation.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
-  # Skip the Ecto Sandbox owner so projector writes commit to real DB rows.
   @moduletag :no_sandbox
 
   alias Nexus.Treasury.Commands.CalculateExposure
@@ -15,11 +13,13 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     # In :manual mode, use unboxed_run for all DB cleanup so we get a real connection.
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.delete_all(ExposureSnapshot)
-      # Reset idempotency tracking so each scenario starts fresh.
       Nexus.Repo.delete_all("projection_versions")
     end)
 
-    {:ok, %{unique_sub: "Sub#{System.unique_integer([:positive])}"}}
+    {:ok, %{
+      unique_sub: "Sub-#{Nexus.Schema.generate_uuidv7()}",
+      org_id: Nexus.Schema.generate_uuidv7()
+    }}
   end
 
   # --- Scenario: Calculating exposure for unhedged invoices ---
@@ -42,11 +42,11 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     calculated_exposure = Decimal.div(amount_dec, rate_dec) |> Decimal.round(2)
 
     sub = state.unique_sub
-    org_id = state[:org_id] || Ecto.UUID.generate()
+    org_id = state.org_id
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
-      id: "#{sub}-EUR",
+      id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
       subsidiary: sub,
       currency: "EUR",
@@ -65,14 +65,14 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     }
 
     project_event(event, 1)
-    {:ok, Map.merge(state, %{org_id: org_id, subsidiary: sub, last_calculated: calculated_exposure})}
+    {:ok, Map.merge(state, %{last_calculated: calculated_exposure})}
   end
 
   defthen ~r/^the total exposure for "(?<sub_name>[^"]+)" is registered as "(?<expected_exp>[^"]+)" "(?<curr>[^"]+)"$/,
           %{expected_exp: expected},
           state do
-    snapshot = get_snapshot(state.org_id, state.subsidiary, "EUR")
-    assert snapshot != nil, "Expected snapshot for #{state.subsidiary}-EUR to exist"
+    snapshot = get_snapshot(state.org_id, state.unique_sub, "EUR")
+    assert snapshot != nil, "Expected snapshot for #{state.unique_sub}-EUR to exist"
 
     {expected_dec, _} = Decimal.parse(expected)
     assert Decimal.eq?(snapshot.exposure_amount, expected_dec)
@@ -86,11 +86,11 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
            state do
     {amount_dec, _} = Decimal.parse(amount)
     sub = state.unique_sub
-    org_id = state[:org_id] || Ecto.UUID.generate()
+    org_id = state.org_id
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
-      id: "#{sub}-#{curr}",
+      id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
       subsidiary: sub,
       currency: curr,
@@ -109,23 +109,25 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     }
 
     project_event(event, 1)
-    {:ok, Map.merge(state, %{org_id: org_id, subsidiary: sub, currency: curr})}
+    {:ok, Map.merge(state, %{currency: curr})}
   end
 
   defwhen ~r/^a new market tick for "(?<pair>[^"]+)" arrives at price "(?<rate>[^"]+)"$/,
-          %{pair: _pair, rate: rate},
-          state do
+           %{pair: _pair, rate: rate},
+           state do
     {rate_dec, _} = Decimal.parse(rate)
-    {invoice_amount, _} = Decimal.parse("100000")
+    # Use the invoice_amount from the feature or state if possible, but the feature doesn't provide it here.
+    # The scenario assumes a 100000 USD invoice as per the first scenario logic.
+    invoice_amount = Decimal.new("100000")
     new_exposure = Decimal.div(invoice_amount, rate_dec) |> Decimal.round(2)
 
     org_id = state.org_id
     now = DateTime.utc_now()
 
     cmd = %CalculateExposure{
-      id: "#{state.subsidiary}-#{state.currency}",
+      id: Nexus.Schema.generate_uuidv7(),
       org_id: org_id,
-      subsidiary: state.subsidiary,
+      subsidiary: state.unique_sub,
       currency: state.currency,
       exposure_amount: new_exposure,
       timestamp: now
@@ -135,7 +137,7 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
 
     event = %ExposureCalculated{
       org_id: org_id,
-      subsidiary: state.subsidiary,
+      subsidiary: state.unique_sub,
       currency: state.currency,
       exposure_amount: Decimal.to_string(new_exposure),
       timestamp: DateTime.to_iso8601(now)
@@ -148,8 +150,8 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
   defthen ~r/^the exposure for "(?<sub_name>[^"]+)" is recalculated to "(?<expected_exp>[^"]+)" "(?<curr>[^"]+)"$/,
           %{expected_exp: expected, curr: curr},
           state do
-    snapshot = get_snapshot(state.org_id, state.subsidiary, curr)
-    assert snapshot != nil, "Expected recalculated snapshot for #{state.subsidiary}-#{curr} to exist"
+    snapshot = get_snapshot(state.org_id, state.unique_sub, curr)
+    assert snapshot != nil, "Expected recalculated snapshot for #{state.unique_sub}-#{curr} to exist"
 
     {expected_dec, _} = Decimal.parse(expected)
     assert Decimal.eq?(snapshot.exposure_amount, expected_dec)
@@ -158,10 +160,6 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
 
   # --- Helpers ---
 
-  # Call the projector directly and synchronously, bypassing the Commanded
-  # event subscription bus (which does not deliver events in the test env when
-  # the projector is started outside Nexus.App's supervision tree).
-  # Wraps in unboxed_run so Repo.transaction can checkout a real connection.
   defp project_event(event, event_number) do
     metadata = %{
       handler_name: "Treasury.ExposureProjector",
@@ -173,8 +171,6 @@ defmodule Nexus.Treasury.ExposureCalculationTest do
     end)
   end
 
-  # Read via unboxed_run so we bypass the :manual mode ownership check.
-  # (The test process's manual checkout is not preserved after unboxed_run.)
   defp get_snapshot(org_id, subsidiary, currency) do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.get_by(ExposureSnapshot, org_id: org_id, subsidiary: subsidiary, currency: currency)

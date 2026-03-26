@@ -69,6 +69,36 @@ defmodule Nexus.Reporting.Queries.AuditLogQuery do
     order_by(query, [log], asc: log.recorded_at)
   end
 
+  @doc "Selects a random sample of audit logs."
+  @spec random_sample(Ecto.Query.t(), integer()) :: Ecto.Query.t()
+  def random_sample(query, limit) do
+    query
+    |> order_by(fragment("RANDOM()"))
+    |> limit(^limit)
+  end
+
+  @doc "Filters for high-value transactions above a threshold."
+  @spec high_value_sample(Ecto.Query.t(), Decimal.t() | integer()) :: Ecto.Query.t()
+  def high_value_sample(query, threshold) do
+    # Using Postgres JSONB navigation for 'amount' in details
+    where(query, [log], fragment("(details->>'amount')::numeric >= ?", ^threshold))
+  end
+
+  @doc "Prioritizes security and policy events."
+  @spec risk_based_sample(Ecto.Query.t()) :: Ecto.Query.t()
+  def risk_based_sample(query) do
+    where(query, [log],
+      log.event_type in [
+        "financial_policy_updated",
+        "user_role_changed",
+        "security_biometric_verified",
+        "security_step_up_verified",
+        "tenant_suspended"
+      ]
+    )
+    |> order_by([log], desc: log.recorded_at)
+  end
+
   @doc "Builds a query for event lineage with optional filters."
   @spec lineage_query(Nexus.Types.org_id(), map()) :: Ecto.Query.t()
   def lineage_query(org_id, filters \\ %{}) do

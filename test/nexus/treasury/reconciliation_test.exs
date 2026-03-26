@@ -2,7 +2,7 @@ defmodule Nexus.Treasury.ReconciliationTest do
   use Cabbage.Feature, async: false, file: "treasury/reconciliation.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
+  @moduletag :no_sandbox
   @moduletag :no_sandbox
 
   alias Nexus.App

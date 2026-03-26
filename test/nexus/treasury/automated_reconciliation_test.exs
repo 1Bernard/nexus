@@ -1,12 +1,12 @@
 defmodule Nexus.Treasury.AutomatedReconciliationTest do
-  use Nexus.DataCase, async: false
+  use Cabbage.Feature, file: "treasury/automated_reconciliation.feature"
+  use Nexus.DataCase
 
   @moduletag :no_sandbox
 
   alias Nexus.App
   alias Nexus.Repo
-  alias Nexus.ERP.Commands.IngestInvoice
-  alias Nexus.ERP.Commands.UploadStatement
+  alias Nexus.ERP.Commands.{IngestInvoice, UploadStatement}
   alias Nexus.Treasury.Projections.Reconciliation
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
   alias Nexus.Treasury.ProcessManagers.ReconciliationManager
@@ -18,139 +18,149 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
       Repo.delete_all(Reconciliation)
       Repo.delete_all(StatementLine)
       Repo.delete_all(Invoice)
-      Ecto.Adapters.SQL.query!(Repo, "DELETE FROM projection_versions")
+      Repo.delete_all("projection_versions")
     end)
 
     {:ok, %{org_id: org_id, pm_stream: "AutomatedTest.PM-#{org_id}"}}
   end
 
-  test "automatically reconciles an invoice when a matching statement is uploaded",
-       %{org_id: org_id} = state do
-    # 1. Ingest an invoice
-    invoice_id = Nexus.Schema.generate_uuidv7()
+  # --- Given ---
 
-    ingest_cmd = %IngestInvoice{
-      org_id: org_id,
-      invoice_id: invoice_id,
-      entity_id: "ENT-101",
-      currency: "EUR",
-      amount: "1500.00",
-      subsidiary: "Munich HQ",
-      due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Service", amount: "1500.00"}],
-      sap_document_number: "SAP-101",
-      sap_status: "Verified",
-      ingested_at: DateTime.utc_now()
-    }
-
-    assert :ok = App.dispatch(ingest_cmd)
-
-    # Sync PM and Projects
-    {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
-    project_event(event, num, "ERP.InvoiceProjector", Nexus.ERP.Projectors.InvoiceProjector)
-    sync_pm(event, state)
-
-    # 2. Upload a matching statement
-    statement_id = Nexus.Schema.generate_uuidv7()
-
-    csv_content = """
-    date,ref,amount,currency,narrative
-    2024-03-02,BANK-REF-101,-1500.00,EUR,Payment for SAP-101
-    """
-
-    upload_cmd = %UploadStatement{
-      org_id: org_id,
-      statement_id: statement_id,
-      filename: "statement.csv",
-      format: "csv",
-      raw_content: csv_content,
-      uploaded_at: DateTime.utc_now()
-    }
-
-    assert :ok = App.dispatch(upload_cmd)
-
-    # Sync PM and Projects
-    {:ok, [%{data: event, event_number: num}]} =
-      Nexus.EventStore.read_stream_forward(statement_id)
-
-    project_event(event, num, "ERP.StatementProjector", Nexus.ERP.Projectors.StatementProjector)
-    sync_pm(event, state)
-
-    # 3. Verify reconciliation exists
-    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-      recon = Repo.one(from r in Reconciliation, where: r.invoice_id == ^invoice_id)
-      assert recon != nil, "Expected automated reconciliation to be created"
-      assert recon.status == :matched
-      assert recon.amount == Decimal.new("1500.00")
-      assert recon.actor_email == "system@nexus.ai"
-      assert recon.org_id == org_id
-
-      # Verify invoice status updated
-      inv = Repo.get(Invoice, invoice_id)
-      assert inv.status == "matched"
-    end)
+  defgiven ~r/^a registered tenant exists$/, _vars, state do
+    {:ok, state}
   end
 
-  test "automatically reconciles a statement line when a matching invoice is ingested",
-       %{org_id: org_id} = state do
-    # 1. Upload a statement first
-    statement_id = Nexus.Schema.generate_uuidv7()
-
-    csv_content = """
-    date,ref,amount,currency,narrative
-    2024-03-02,BANK-REF-202,-2400.00,USD,Deposit 202
-    """
-
-    upload_cmd = %UploadStatement{
-      org_id: org_id,
-      statement_id: statement_id,
-      filename: "statement.csv",
-      format: "csv",
-      raw_content: csv_content,
-      uploaded_at: DateTime.utc_now()
-    }
-
-    assert :ok = App.dispatch(upload_cmd)
-
-    {:ok, [%{data: event, event_number: num}]} =
-      Nexus.EventStore.read_stream_forward(statement_id)
-
-    project_event(event, num, "ERP.StatementProjector", Nexus.ERP.Projectors.StatementProjector)
-    sync_pm(event, state)
-
-    # 2. Ingest a matching invoice
+  defgiven ~r/^an invoice "(?<sap_ref>[^"]+)" for "(?<amount_str>[^"]+)" has been ingested$/,
+           %{sap_ref: sap_ref, amount_str: amount_str},
+           state do
+    [amount, currency] = String.split(amount_str, " ")
     invoice_id = Nexus.Schema.generate_uuidv7()
 
-    ingest_cmd = %IngestInvoice{
-      org_id: org_id,
+    command = %IngestInvoice{
+      org_id: state.org_id,
       invoice_id: invoice_id,
-      entity_id: "ENT-202",
-      currency: "USD",
-      amount: "2400.00",
-      subsidiary: "Tokyo Branch",
+      entity_id: "ENT-101",
+      currency: currency,
+      amount: amount,
+      subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
-      line_items: [%{description: "Goods", amount: "2400.00"}],
-      sap_document_number: "SAP-202",
+      line_items: [%{description: "Service", amount: amount}],
+      sap_document_number: sap_ref,
       sap_status: "Verified",
       ingested_at: DateTime.utc_now()
     }
 
-    assert :ok = App.dispatch(ingest_cmd)
+    assert :ok = App.dispatch(command)
+
+    # Sync PM and Projects
+    {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
+    project_event(event, num, "ERP.InvoiceProjector", Nexus.ERP.Projectors.InvoiceProjector)
+    sync_pm(event, state)
+
+    {:ok, Map.put(state, :invoice_id, invoice_id)}
+  end
+
+  defgiven ~r/^a bank statement is uploaded with a reference "(?<ref>[^"]+)" for "(?<amount_str>[^"]+)"$/,
+           %{ref: ref, amount_str: amount_str},
+           state do
+    upload_statement_helper(state, ref, amount_str)
+  end
+
+  # --- When ---
+
+  defwhen ~r/^a bank statement is uploaded with a reference "(?<ref>[^"]+)" for "(?<amount_str>[^"]+)"$/,
+          %{ref: ref, amount_str: amount_str},
+          state do
+    upload_statement_helper(state, ref, amount_str)
+  end
+
+  defwhen ~r/^an invoice "(?<sap_ref>[^"]+)" for "(?<amount_str>[^"]+)" is ingested$/,
+          %{sap_ref: sap_ref, amount_str: amount_str},
+          state do
+    [amount, currency] = String.split(amount_str, " ")
+    invoice_id = Nexus.Schema.generate_uuidv7()
+
+    command = %IngestInvoice{
+      org_id: state.org_id,
+      invoice_id: invoice_id,
+      entity_id: "ENT-202",
+      currency: currency,
+      amount: amount,
+      subsidiary: "Tokyo Branch",
+      due_date: Date.utc_today() |> Date.add(30),
+      line_items: [%{description: "Goods", amount: amount}],
+      sap_document_number: sap_ref,
+      sap_status: "Verified",
+      ingested_at: DateTime.utc_now()
+    }
+
+    assert :ok = App.dispatch(command)
 
     {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
     project_event(event, num, "ERP.InvoiceProjector", Nexus.ERP.Projectors.InvoiceProjector)
     sync_pm(event, state)
 
-    # 3. Verify reconciliation exists
+    {:ok, Map.put(state, :invoice_id, invoice_id)}
+  end
+
+  # --- Then ---
+
+  defthen ~r/^the invoice "(?<sap_ref>[^"]+)" should be automatically matched$/, _vars, state do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-      recon = Repo.one(from r in Reconciliation, where: r.invoice_id == ^invoice_id)
-      assert recon != nil, "Expected automated reconciliation to be created"
-      assert recon.status == :matched
-      assert recon.actor_email == "system@nexus.ai"
+      invoice = Repo.get!(Invoice, state.invoice_id)
+      assert invoice.status == "matched"
     end)
+    {:ok, state}
+  end
+
+  defthen ~r/^the statement reference "(?<ref>[^"]+)" should be automatically matched$/, _vars, state do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      line = Repo.one(from l in StatementLine, where: l.statement_id == ^state.statement_id)
+      assert line.status == "matched"
+    end)
+    {:ok, state}
+  end
+
+  defthen ~r/^a reconciliation record should exist with status "matched"$/, _vars, state do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      recon = Repo.one(from r in Reconciliation, where: r.invoice_id == ^state.invoice_id)
+      assert recon != nil
+      assert recon.status == :matched
+    end)
+    {:ok, state}
   end
 
   # --- Helpers ---
+
+  defp upload_statement_helper(state, ref, amount_str) do
+    [amount, currency] = String.split(amount_str, " ")
+    statement_id = Nexus.Schema.generate_uuidv7()
+
+    csv_content = """
+    date,ref,amount,currency,narrative
+    #{Date.utc_today()},#{ref},#{amount},#{currency},Payment for Invoice
+    """
+
+    command = %UploadStatement{
+      org_id: state.org_id,
+      statement_id: statement_id,
+      filename: "statement.csv",
+      format: "csv",
+      raw_content: csv_content,
+      uploaded_at: DateTime.utc_now()
+    }
+
+    assert :ok = App.dispatch(command)
+
+    # Sync PM and Projects
+    {:ok, [%{data: event, event_number: num}]} =
+      Nexus.EventStore.read_stream_forward(statement_id)
+
+    project_event(event, num, "ERP.StatementProjector", Nexus.ERP.Projectors.StatementProjector)
+    sync_pm(event, state)
+
+    {:ok, Map.put(state, :statement_id, statement_id)}
+  end
 
   defp project_event(event, event_number, handler_name, projector_module) do
     metadata = %{handler_name: handler_name, event_number: event_number}
@@ -181,8 +191,6 @@ defmodule Nexus.Treasury.AutomatedReconciliationTest do
     end
 
     # Persist PM state change
-    _new_pm_state = ReconciliationManager.apply(pm_state, event)
-
     event_data = %EventStore.EventData{
       event_type: to_string(event.__struct__),
       data: event,

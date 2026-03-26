@@ -25,6 +25,7 @@ defmodule Nexus.Shared.Policy do
   @doc """
   Extracts roles from a user struct or map.
   """
+  @spec get_roles(map() | struct()) :: roles()
   def get_roles(%{roles: roles}) when is_list(roles), do: roles
   def get_roles(%{role: role}) when is_binary(role), do: [role]
   def get_roles(%{"roles" => roles}) when is_list(roles), do: roles

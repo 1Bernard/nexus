@@ -381,6 +381,54 @@ defmodule NexusWeb.Tenant.DashboardLive do
         </div>
       </div>
 
+      <%!-- Phase 11: Portfolio Optimization Section --%>
+      <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 w-full mt-6">
+        <.dark_card class="p-8 relative overflow-hidden group border-indigo-500/20 bg-indigo-500/5">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                <span class="hero-square-3-stack-3d w-6 h-6 text-indigo-400"></span>
+              </div>
+              <div>
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">
+                  Strategy Optimizer
+                </h2>
+                <h3 class="text-xl font-bold text-white tracking-tight">Portfolio Rebalancing</h3>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="flex flex-col items-end mr-4">
+                <span class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Optimization Latency</span>
+                <span class="text-xs font-mono text-emerald-400">14ms</span>
+              </div>
+              <.nx_button
+                variant="primary"
+                phx-click="rebalance_portfolio"
+                icon="hero-arrow-path"
+                class="px-6 border-indigo-500/30 hover:border-indigo-500 text-indigo-300"
+              >
+                Scan for Drift
+              </.nx_button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <%!-- Optimization visualization placeholders --%>
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4">
+              <p class="text-[10px] text-slate-500 uppercase font-black tracking-[0.1em]">Policy Drift</p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-mono text-white">4.2%</span>
+                <span class="text-[10px] text-rose-500 font-bold tracking-tighter uppercase">Above Limit</span>
+              </div>
+              <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div class="h-full bg-rose-500 w-[72%]"></div>
+              </div>
+            </div>
+          </div>
+        </.dark_card>
+      </div>
+
       <%!-- Middle Row: Massive Risk Heatmap (Full Width) --%>
       <div class="grid grid-cols-1 gap-6 w-full mt-6">
         <.dark_card class="p-6 h-[600px] flex flex-col">
@@ -763,7 +811,31 @@ defmodule NexusWeb.Tenant.DashboardLive do
 
   def handle_info({:transfer_authorized, _event}, socket) do
     # The modal handles its own "success" state via :step_up_success from component
-    {:noreply, socket}
+    org_id_for_query = socket.assigns.org_id_for_query
+    {:noreply,
+     socket
+     |> assign(:risk_summary, Treasury.get_risk_summary(org_id_for_query))
+     |> assign(
+       :liquidity_positions,
+       Treasury.list_liquidity_positions(org_id_for_query)
+       |> Map.new(&{&1.currency, &1.amount})
+     )
+     |> assign(:recent_activity, ERP.list_recent_activity(org_id_for_query))}
+  end
+
+  @impl true
+  def handle_info({:policy_mode_changed, event}, socket) do
+    # Real-time update when another browser session changes the risk mode
+    org_id_for_query = socket.assigns.org_id_for_query
+
+    {:noreply,
+     socket
+     |> assign(:policy_mode, event.mode)
+     |> assign(:transfer_threshold, event.threshold)
+     |> assign(
+       :policy_audit_logs,
+       Treasury.list_policy_audit_logs(org_id_for_query)
+     )}
   end
 
   def handle_info({:transfer_executed, event}, socket) do
@@ -791,36 +863,6 @@ defmodule NexusWeb.Tenant.DashboardLive do
   end
 
   @impl true
-  def handle_info({:policy_mode_changed, event}, socket) do
-    # Real-time update when another browser session changes the risk mode
-    org_id_for_query = socket.assigns.org_id_for_query
-
-    {:noreply,
-     socket
-     |> assign(:policy_mode, event.mode)
-     |> assign(:transfer_threshold, event.threshold)
-     |> assign(
-       :policy_audit_logs,
-       Treasury.list_policy_audit_logs(org_id_for_query)
-     )}
-  end
-
-  @impl true
-  def handle_event("biometric_start", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("biometric_reset", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("biometric_login", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_event("set_market_timeframe", %{"tf" => tf}, socket) do
     {:noreply, assign(socket, :market_timeframe, tf)}
   end
@@ -844,6 +886,36 @@ defmodule NexusWeb.Tenant.DashboardLive do
     {:noreply, assign(socket, :show_transfer_modal, true)}
   end
 
+  @impl true
+  def handle_event("rebalance_portfolio", _params, socket) do
+    org_id = socket.assigns.current_user.org_id
+    user_email = socket.assigns.current_user.email
+
+    case Treasury.rebalance_portfolio(org_id, user_email) do
+      :ok ->
+        {:noreply, put_flash(socket, :info, "Rebalancing cycle initiated.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to initiate rebalancing: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("biometric_start", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("biometric_reset", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("biometric_login", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("set_cash_flow_timeframe", %{"tf" => tf}, socket) do
     # Strip "D" and convert to integer (e.g., "7D" -> 7)
     days =
@@ -861,6 +933,7 @@ defmodule NexusWeb.Tenant.DashboardLive do
     {:noreply, assign(socket, :cash_flow_timeframe, tf)}
   end
 
+  @impl true
   def handle_event("download_forecast_csv", _params, socket) do
     org_id = socket.assigns.current_user.org_id
     csv_data = Treasury.list_forecast_csv(org_id, "EUR")

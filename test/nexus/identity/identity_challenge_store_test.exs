@@ -1,7 +1,7 @@
 defmodule Nexus.Identity.IdentityChallengeStoreTest do
   use Cabbage.Feature, file: "identity/identity_challenge_store.feature"
   use Nexus.DataCase
-  @moduletag :feature
+  @moduletag :no_sandbox
 
   alias Nexus.Identity.AuthChallengeStore
 

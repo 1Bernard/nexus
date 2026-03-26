@@ -22,7 +22,7 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
     ReconciliationRejected
   }
 
-  alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, BiometricVerified, StepUpVerified}
+  alias Nexus.Identity.Events.{UserRegistered, UserRoleChanged, UserRoleRevoked, BiometricVerified, StepUpVerified}
   alias Nexus.ERP.Events.{InvoiceMatched, StatementUploaded}
   alias Nexus.Reporting.Projections.{AuditLog, ControlDrift}
   alias Nexus.Schema
@@ -121,6 +121,25 @@ defmodule Nexus.Reporting.Projectors.AuditProjector do
       "user_role_#{event.user_id}",
       event.role,
       event.changed_at
+    )
+  end)
+
+  project(%UserRoleRevoked{} = event, metadata, fn multi ->
+    Ecto.Multi.insert(multi, :audit_log, %AuditLog{
+      id: Schema.generate_uuidv7(),
+      event_type: "user_role_revoked",
+      actor_email: event.revoked_by,
+      org_id: event.org_id,
+      details: %{user_id: event.user_id, role: event.role},
+      correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
+      causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
+      recorded_at: Nexus.Schema.parse_datetime(event.revoked_at)
+    })
+    |> upsert_drift(
+      event.org_id,
+      "remediation_revoke_#{event.user_id}",
+      event.role,
+      event.revoked_at
     )
   end)
 

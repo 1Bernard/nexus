@@ -128,8 +128,10 @@ defmodule Nexus.Application do
             Nexus.Treasury.ProcessManagers.ReconciliationManager,
             Nexus.Treasury.ProcessManagers.TransferManager,
             Nexus.Treasury.ProcessManagers.RebalanceManager,
+            Nexus.Treasury.ProcessManagers.PortfolioManager,
             Nexus.Payments.ProcessManagers.BulkPaymentSaga,
-            Nexus.Payments.ProcessManagers.PaymentExecutionSaga
+            Nexus.Payments.ProcessManagers.PaymentExecutionSaga,
+            Nexus.Reporting.ProcessManagers.ComplianceRemediationManager
           ]
       end
 

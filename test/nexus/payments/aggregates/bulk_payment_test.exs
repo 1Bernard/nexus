@@ -7,9 +7,9 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
 
   describe "execute/2" do
     test "initiates a bulk payment batch" do
-      bulk_payment_id = Uniq.UUID.uuid7()
-      org_id = Uniq.UUID.uuid7()
-      user_id = Uniq.UUID.uuid7()
+      bulk_payment_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
+      user_id = Nexus.Schema.generate_uuidv7()
       initiated_at = DateTime.utc_now()
 
       payments = [
@@ -39,14 +39,14 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
 
       assert %BulkPaymentInitiated{} = event
       assert event.bulk_payment_id == bulk_payment_id
-      assert event.total_amount == Decimal.new("350.50")
+      assert Decimal.eq?(event.total_amount, Decimal.new("350.50"))
       assert event.count == 2
       assert event.payments == payments
     end
 
     test "finalizes a bulk payment batch" do
-      bulk_payment_id = Uniq.UUID.uuid7()
-      org_id = Uniq.UUID.uuid7()
+      bulk_payment_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
       completed_at = DateTime.utc_now()
 
       state = %BulkPayment{id: bulk_payment_id, org_id: org_id, status: :initiated}
@@ -67,19 +67,20 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
 
   describe "apply/2" do
     test "updates state after initiation" do
+      id = Nexus.Schema.generate_uuidv7()
       event = %BulkPaymentInitiated{
-        bulk_payment_id: "batch-1",
-        org_id: "org-1",
-        user_id: "user-1",
+        bulk_payment_id: id,
+        org_id: Nexus.Schema.generate_uuidv7(),
+        user_id: Nexus.Schema.generate_uuidv7(),
         payments: [],
-        total_amount: Decimal.new(0),
+        total_amount: Decimal.new("0"),
         count: 5,
         initiated_at: DateTime.utc_now()
       }
 
       state = BulkPayment.apply(%BulkPayment{}, event)
 
-      assert state.id == "batch-1"
+      assert state.id == id
       assert state.status == :initiated
       assert state.total_items == 5
       assert state.processed_items == 0

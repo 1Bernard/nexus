@@ -49,6 +49,7 @@ defmodule Nexus.Reporting do
     end)
   end
 
+  @spec list_sod_conflicts(Types.org_id()) :: [map()]
   def list_sod_conflicts(org_id) do
     # Toxic Combinations:
     # 1. Initiate (trader) + Authorize (approver/admin)
@@ -106,5 +107,41 @@ defmodule Nexus.Reporting do
   def get_event_lineage(org_id, filters \\ %{}) do
     AuditLogQuery.lineage_query(org_id, filters)
     |> Repo.all()
+  end
+
+  @doc """
+  Generates a subset of audit logs based on sampling criteria.
+  """
+  @spec generate_audit_sample(Types.org_id(), map()) :: [Nexus.Reporting.Projections.AuditLog.t()]
+  def generate_audit_sample(org_id, params) do
+    limit = String.to_integer(params["size"] || "10")
+    method = params["method"] || "random"
+
+    query = AuditLogQuery.base(org_id)
+
+    query =
+      case method do
+        "random" ->
+          AuditLogQuery.random_sample(query, limit)
+
+        "high_value" ->
+          threshold = Decimal.new(params["threshold"] || "100000")
+          query
+          |> AuditLogQuery.high_value_sample(threshold)
+          |> AuditLogQuery.newest_first()
+          |> limit(^limit)
+
+        "risk_based" ->
+          query
+          |> AuditLogQuery.risk_based_sample()
+          |> limit(^limit)
+
+        _ ->
+          query
+          |> AuditLogQuery.newest_first()
+          |> limit(^limit)
+      end
+
+    Repo.all(query)
   end
 end

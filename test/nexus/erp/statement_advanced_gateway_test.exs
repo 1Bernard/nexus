@@ -10,7 +10,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
   alias Nexus.App
 
   setup do
-    org_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
 
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Repo.delete_all(StatementLine)
@@ -23,7 +23,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
 
   describe "Statement metrics and status" do
     test "initializes matched_count to 0 and detects overlap", %{org_id: org_id} do
-      statement_id = Ecto.UUID.generate()
+      statement_id = Nexus.Schema.generate_uuidv7()
       content = "date,ref,amount,currency,narrative\n2024-01-01,REF001,100.00,EUR,Test narrative"
 
       # 1. Upload first statement
@@ -51,7 +51,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
       end)
 
       # 2. Upload duplicate filename with DIFFERENT content (e.g. new version)
-      statement_id2 = Ecto.UUID.generate()
+      statement_id2 = Nexus.Schema.generate_uuidv7()
       content2 = content <> "\n2024-01-02,REF002,200.00,EUR,New line"
       cmd2 = %{cmd1 | statement_id: statement_id2, raw_content: content2}
 
@@ -75,7 +75,7 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
     end
 
     test "increments matched_count on TransactionReconciled", %{org_id: org_id} do
-      statement_id = Ecto.UUID.generate()
+      statement_id = Nexus.Schema.generate_uuidv7()
       content = "date,ref,amount,currency,narrative\n2024-01-01,REF001,100.00,EUR,Test narrative"
 
       cmd1 = %UploadStatement{
@@ -101,12 +101,12 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
         end)
 
       # Reconcile the line
-      recon_id = Ecto.UUID.generate()
+      recon_id = Nexus.Schema.generate_uuidv7()
 
       recon_cmd = %ReconcileTransaction{
         reconciliation_id: recon_id,
         org_id: org_id,
-        invoice_id: Ecto.UUID.generate(),
+        invoice_id: Nexus.Schema.generate_uuidv7(),
         statement_id: statement_id,
         statement_line_id: line.id,
         amount: "100.00",
@@ -137,8 +137,8 @@ defmodule Nexus.ERP.StatementAdvancedGatewayTest do
   describe "Filtering and Search" do
     test "list_statements filters by filename and date", %{org_id: org_id} do
       # Create two statements
-      s1_id = Ecto.UUID.generate()
-      s2_id = Ecto.UUID.generate()
+      s1_id = Nexus.Schema.generate_uuidv7()
+      s2_id = Nexus.Schema.generate_uuidv7()
       content = "date,ref,amount,currency,narrative\n2024-01-01,REF,0,EUR,N"
 
       App.dispatch(%UploadStatement{

@@ -28,7 +28,8 @@ defmodule Nexus.Identity.Aggregates.User do
     ChangeUserStatus,
     UpdateSettings,
     StartSession,
-    ExpireSession
+    ExpireSession,
+    RevokeUserRole
   }
 
   alias Nexus.Identity.Events.{
@@ -39,7 +40,8 @@ defmodule Nexus.Identity.Aggregates.User do
     UserStatusChanged,
     SettingsUpdated,
     SessionStarted,
-    SessionExpired
+    SessionExpired,
+    UserRoleRevoked
   }
 
   # --- Command Handlers ---
@@ -160,6 +162,16 @@ defmodule Nexus.Identity.Aggregates.User do
     }
   end
 
+  def execute(%__MODULE__{id: id, status: :registered}, %RevokeUserRole{} = cmd) when not is_nil(id) do
+    %UserRoleRevoked{
+      user_id: id,
+      org_id: cmd.org_id,
+      role: cmd.role,
+      revoked_by: cmd.revoked_by,
+      revoked_at: cmd.revoked_at
+    }
+  end
+
   def execute(%__MODULE__{id: nil}, %ChangeUserRole{}), do: {:error, :unregistered_user}
   def execute(%__MODULE__{id: nil}, %ChangeUserStatus{}), do: {:error, :unregistered_user}
   def execute(%__MODULE__{id: nil}, %UpdateSettings{}), do: {:error, :unregistered_user}
@@ -205,6 +217,12 @@ defmodule Nexus.Identity.Aggregates.User do
 
   def apply(%__MODULE__{} = state, %UserRoleChanged{} = event) do
     %__MODULE__{state | role: event.role}
+  end
+
+  def apply(%__MODULE__{} = state, %UserRoleRevoked{} = event) do
+    # Only clear the role if it matches the revoked one (defensive)
+    new_role = if state.role == event.role, do: "viewer", else: state.role
+    %__MODULE__{state | role: new_role}
   end
 
   def apply(%__MODULE__{} = state, %UserStatusChanged{} = event) do

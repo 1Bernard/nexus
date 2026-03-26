@@ -278,11 +278,31 @@ defmodule Nexus.Treasury do
       total_exposure: format_currency(total_net_exposure, reporting_currency),
       at_risk: format_currency(value_at_risk, reporting_currency),
       max_loss:
-        format_currency(Decimal.mult(value_at_risk, Decimal.new("0.25")), reporting_currency)
+        format_currency(Decimal.mult(value_at_risk, Decimal.new("0.25")), reporting_currency),
+      raw_net_exposure: total_net_exposure
     }
   end
 
-  defp convert_to_reporting(amount, currency, reporting_currency) do
+  @doc """
+  Initiates a portfolio rebalancing session.
+  """
+  @spec rebalance_portfolio(Types.org_id(), String.t()) :: :ok | {:error, any()}
+  def rebalance_portfolio(org_id, triggered_by) do
+    command = %Nexus.Treasury.Commands.RebalancePortfolio{
+      portfolio_id: Nexus.Schema.generate_uuidv7(),
+      org_id: org_id,
+      triggered_by: triggered_by,
+      metadata: %{}
+    }
+
+    Nexus.App.dispatch(command)
+  end
+
+  @doc """
+  Converts an amount to the reporting currency using real-time market rates.
+  """
+  @spec convert_to_reporting(Decimal.t(), Types.currency(), Types.currency()) :: Decimal.t()
+  def convert_to_reporting(amount, currency, reporting_currency) do
     if currency == reporting_currency do
       amount
     else
@@ -686,7 +706,7 @@ defmodule Nexus.Treasury do
   @spec register_vault(map(), keyword()) :: :ok | {:error, any()}
   def register_vault(attrs, opts \\ []) do
     command = %RegisterVault{
-      vault_id: Nexus.Schema.generate_uuidv7(),
+      vault_id: Map.get(attrs, :vault_id) || Nexus.Schema.generate_uuidv7(),
       org_id: attrs.org_id,
       name: attrs.name,
       bank_name: attrs.bank_name,

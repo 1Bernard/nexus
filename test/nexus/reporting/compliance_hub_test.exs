@@ -2,7 +2,6 @@ defmodule Nexus.Reporting.ComplianceHubTest do
   use Cabbage.Feature, file: "reporting/compliance_hub.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
   @moduletag :no_sandbox
 
   alias Nexus.Reporting.Projections.ControlMetric
@@ -10,8 +9,8 @@ defmodule Nexus.Reporting.ComplianceHubTest do
   alias Nexus.Reporting.Projectors.ControlProjector
 
   setup do
-    org_id = Ecto.UUID.generate()
-    correlation_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
+    correlation_id = Nexus.Schema.generate_uuidv7()
 
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.delete_all(ControlMetric)

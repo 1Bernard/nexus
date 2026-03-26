@@ -1,22 +1,21 @@
 defmodule Nexus.Identity.UserSettingsFeatureTest do
   use Cabbage.Feature, file: "identity/user_settings.feature"
   use Nexus.DataCase
-  @moduletag :feature
+
+  @moduletag :no_sandbox
 
   alias Nexus.App
+  alias Nexus.Repo
   alias Nexus.Identity.Commands.{RegisterUser, UpdateSettings, StartSession, ExpireSession}
-  alias Nexus.Identity.Queries.SettingsQuery
+  alias Nexus.Identity.Projections.{User, UserSettings, UserSession}
 
   setup do
-    # Start projectors in test process to capture events in the sandbox
-    start_supervised!(Nexus.Identity.Projectors.UserRegistrationProjector)
-    start_supervised!(Nexus.Identity.Projectors.UserProjector)
-
-    # Sandbox handles clearing if we use it correctly, but explicit cleanup is safer for these projectors
-    Nexus.Repo.delete_all(Nexus.Identity.Projections.UserSession)
-    Nexus.Repo.delete_all(Nexus.Identity.Projections.UserSettings)
-    Nexus.Repo.delete_all(Nexus.Identity.Projections.User)
-    Nexus.Repo.delete_all("projection_versions")
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.delete_all(UserSession)
+      Repo.delete_all(UserSettings)
+      Repo.delete_all(User)
+      Repo.delete_all("projection_versions")
+    end)
 
     :ok
   end
@@ -24,14 +23,13 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
   # --- Given ---
 
   defgiven ~r/^I am a registered user "(?<name>[^"]+)"$/, _vars, state do
-    user_id = Ecto.UUID.generate()
-    org_id = Ecto.UUID.generate()
-    email = "bernard-#{Ecto.UUID.generate()}@nexus.financial"
+    user_id = Nexus.Schema.generate_uuidv7()
+    org_id = Nexus.Schema.generate_uuidv7()
 
     command = %RegisterUser{
       user_id: user_id,
       org_id: org_id,
-      email: email,
+      email: "bernard-#{Nexus.Schema.generate_uuidv7()}@nexus.financial",
       display_name: "Bernard",
       role: "admin",
       cose_key: Base.encode64("mock"),
@@ -39,16 +37,17 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
       registered_at: DateTime.utc_now()
     }
 
-    :ok = App.dispatch(command)
+    assert :ok = App.dispatch(command)
 
-    # Wait for Registration Projector
-    Process.sleep(200)
+    # Sync User and Settings
+    {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward(user_id)
+    project_identity_event(event, num)
 
-    {:ok, state |> Map.put(:user_id, user_id) |> Map.put(:org_id, org_id)}
+    {:ok, Map.merge(state, %{user_id: user_id, org_id: org_id})}
   end
 
   defgiven ~r/^I have an active secure session$/, _vars, state do
-    session_id = Ecto.UUID.generate()
+    session_id = Nexus.Schema.generate_uuidv7()
 
     command = %StartSession{
       org_id: state.org_id,
@@ -60,25 +59,28 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
       started_at: DateTime.utc_now()
     }
 
-    :ok = App.dispatch(command)
-    # Wait for session projector
-    Process.sleep(100)
+    assert :ok = App.dispatch(command)
+
+    # Sync Session (Stored on User stream)
+    {:ok, events} = Nexus.EventStore.read_stream_forward(state.user_id)
+    event = List.last(events)
+    project_session_event(event.data, event.event_number)
 
     {:ok, Map.put(state, :session_id, session_id)}
   end
 
-  defgiven ~r/^I am on the "(?<page>[^"]+)" page$/, %{page: "Settings"}, state do
+  defgiven ~r/^I am on the "(?<page>[^"]+)" page$/, _vars, state do
     {:ok, state}
   end
 
-  defgiven ~r/^I am on the "(?<tab>[^"]+)" tab$/, %{tab: "Security"}, state do
+  defgiven ~r/^I am on the "(?<tab>[^"]+)" tab$/, _vars, state do
     {:ok, state}
   end
 
   defgiven ~r/^there is an active session from a "(?<device>[^"]+)" device$/,
            %{device: "Mobile"},
            state do
-    mobile_session_id = Ecto.UUID.generate()
+    mobile_session_id = Nexus.Schema.generate_uuidv7()
 
     command = %StartSession{
       org_id: state.org_id,
@@ -90,8 +92,11 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
       started_at: DateTime.utc_now()
     }
 
-    :ok = App.dispatch(command)
-    Process.sleep(100)
+    assert :ok = App.dispatch(command)
+
+    {:ok, events} = Nexus.EventStore.read_stream_forward(state.user_id)
+    event = List.last(events)
+    project_session_event(event.data, event.event_number)
 
     {:ok, Map.put(state, :mobile_session_id, mobile_session_id)}
   end
@@ -118,6 +123,11 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
 
     result = App.dispatch(command)
 
+    # Sync Settings
+    {:ok, events} = Nexus.EventStore.read_stream_forward(state.user_id)
+    event = List.last(events)
+    project_identity_event(event.data, event.event_number)
+
     {:ok, Map.put(state, :result, result)}
   end
 
@@ -130,6 +140,11 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
     }
 
     result = App.dispatch(command)
+
+    # Sync Session
+    {:ok, events} = Nexus.EventStore.read_stream_forward(state.user_id)
+    event = List.last(events)
+    project_session_event(event.data, event.event_number)
 
     {:ok, Map.put(state, :result, result)}
   end
@@ -144,26 +159,21 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
   defthen ~r/^my preferences should be persisted as "(?<locale>[^"]+)" and "(?<timezone>[^"]+)"$/,
           %{locale: locale, timezone: timezone},
           state do
-    # Wait for projection
-    Process.sleep(500)
-
-    settings = SettingsQuery.get_settings(state.org_id, state.user_id)
-
-    assert settings, "Settings should have been projected"
-    assert settings.locale == locale
-    assert settings.timezone == timezone
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      settings = Repo.get_by(UserSettings, org_id: state.org_id, user_id: state.user_id)
+      assert settings != nil
+      assert settings.locale == locale
+      assert settings.timezone == timezone
+    end)
     {:ok, state}
   end
 
   defthen ~r/^I should see "Active Now" next to my current session$/, _vars, state do
-    # Wait for projection
-    Process.sleep(200)
-
-    # Domain test: verify the current session is not expired
-    sessions = SettingsQuery.list_active_sessions(state.org_id, state.user_id)
-    current = Enum.find(sessions, &(&1.id == state.session_id))
-    assert current, "Current session should be listed"
-    refute current.is_expired
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      session = Repo.get_by(UserSession, id: state.session_id, user_id: state.user_id)
+      assert session != nil
+      refute session.is_expired
+    end)
     {:ok, state}
   end
 
@@ -176,16 +186,53 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
   end
 
   defthen ~r/^the session should be terminated$/, _vars, state do
-    Process.sleep(500)
-
-    sessions = SettingsQuery.list_active_sessions(state.org_id, state.user_id)
-
-    refute Enum.any?(sessions, &(&1.id == state.mobile_session_id))
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      session = Repo.get_by(UserSession, id: state.mobile_session_id)
+      assert session != nil
+      assert session.is_expired
+    end)
     {:ok, state}
   end
 
   defthen ~r/^I should see "Session revoked successfully"$/, _vars, state do
     assert :ok == state.result
     {:ok, state}
+  end
+
+  # --- Helpers ---
+
+  defp project_identity_event(event, num) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      case event do
+        %Nexus.Identity.Events.UserRegistered{} ->
+          Nexus.Identity.Projectors.UserRegistrationProjector.handle(event, %{
+            handler_name: "Identity.Projectors.UserRegistrationProjector",
+            event_number: num
+          })
+
+          Nexus.Identity.Projectors.UserProjector.handle(event, %{
+            handler_name: "Identity.Projectors.UserProjector",
+            event_number: num
+          })
+
+        %Nexus.Identity.Events.SettingsUpdated{} ->
+          Nexus.Identity.Projectors.UserProjector.handle(event, %{
+            handler_name: "Identity.Projectors.UserProjector",
+            event_number: num
+          })
+
+        _ ->
+          :ok
+      end
+    end)
+  end
+
+  defp project_session_event(event, num) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Nexus.Identity.Projectors.UserProjector.handle(event, %{
+        handler_name: "Identity.Projectors.UserProjector",
+        event_number: num
+      })
+    end)
   end
 end

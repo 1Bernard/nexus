@@ -2,7 +2,7 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
   use Cabbage.Feature, async: false, file: "payments/bulk_payment.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
+  @moduletag :no_sandbox
   @moduletag :no_sandbox
 
   alias Nexus.App

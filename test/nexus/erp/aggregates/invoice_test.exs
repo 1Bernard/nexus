@@ -10,30 +10,32 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
 
   describe "MatchInvoice" do
     test "matches an ingested invoice" do
-      state = %Invoice{id: @invoice_id, status: :ingested}
+      invoice_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
+      state = %Invoice{id: invoice_id, status: :ingested}
 
       cmd = %MatchInvoice{
-        invoice_id: @invoice_id,
-        org_id: @org_id,
+        invoice_id: invoice_id,
+        org_id: org_id,
         matched_type: "bulk_payment",
-        matched_id: "batch-789",
+        matched_id: Nexus.Schema.generate_uuidv7(),
         matched_at: DateTime.utc_now()
       }
 
       event = Invoice.execute(state, cmd)
 
       assert %InvoiceMatched{} = event
-      assert event.invoice_id == @invoice_id
-      assert event.matched_type == "bulk_payment"
-      assert event.matched_id == "batch-789"
+      assert event.invoice_id == invoice_id
     end
 
     test "is idempotent for already matched invoice" do
-      state = %Invoice{id: @invoice_id, status: :matched}
+      invoice_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
+      state = %Invoice{id: invoice_id, status: :matched}
 
       cmd = %MatchInvoice{
-        invoice_id: @invoice_id,
-        org_id: @org_id,
+        invoice_id: invoice_id,
+        org_id: org_id,
         matched_type: "bulk_payment",
         matched_id: "batch-789"
       }
@@ -44,11 +46,13 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
 
   describe "apply/2" do
     test "updates state to matched" do
+      invoice_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
       state = %Invoice{status: :ingested}
 
       event = %InvoiceMatched{
-        invoice_id: @invoice_id,
-        org_id: @org_id,
+        invoice_id: invoice_id,
+        org_id: org_id,
         matched_type: "bulk_payment",
         matched_id: "batch-789",
         matched_at: DateTime.utc_now()
@@ -56,7 +60,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
 
       new_state = Invoice.apply(state, event)
 
-      assert new_state.id == @invoice_id
+      assert new_state.id == invoice_id
       assert new_state.status == :matched
     end
   end

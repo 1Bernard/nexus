@@ -6,15 +6,15 @@ defmodule Nexus.Reporting.ControlProjectorTest do
   alias Nexus.Treasury.Events.{VaultBalanceSynced, ReconciliationProposed}
 
   setup do
-    org_id = Ecto.UUID.generate()
-    event_id = Ecto.UUID.generate()
+    org_id = Nexus.Schema.generate_uuidv7()
+    event_id = Nexus.Schema.generate_uuidv7()
     {:ok, org_id: org_id, event_id: event_id, handler_name: "Reporting.ControlProjector"}
   end
 
   test "projects VaultBalanceSynced into liquidity_accuracy metric", %{org_id: org_id, event_id: event_id, handler_name: handler_name} do
     event = %VaultBalanceSynced{
       org_id: org_id,
-      vault_id: Ecto.UUID.generate(),
+      vault_id: Nexus.Schema.generate_uuidv7(),
       amount: Decimal.new("1000.00"),
       currency: "EUR",
       synced_at: DateTime.utc_now()
@@ -36,10 +36,10 @@ defmodule Nexus.Reporting.ControlProjectorTest do
   test "projects ReconciliationProposed into escalation_integrity metric", %{org_id: org_id, event_id: event_id, handler_name: handler_name} do
     event = %ReconciliationProposed{
       org_id: org_id,
-      reconciliation_id: Ecto.UUID.generate(),
-      invoice_id: Ecto.UUID.generate(),
-      statement_id: Ecto.UUID.generate(),
-      statement_line_id: Ecto.UUID.generate(),
+      reconciliation_id: Nexus.Schema.generate_uuidv7(),
+      invoice_id: Nexus.Schema.generate_uuidv7(),
+      statement_id: Nexus.Schema.generate_uuidv7(),
+      statement_line_id: Nexus.Schema.generate_uuidv7(),
       amount: Decimal.new("500.00"),
       variance: Decimal.new("5.00"),
       actor_email: "auditor@nexus.xyz",

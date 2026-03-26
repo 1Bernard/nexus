@@ -2,7 +2,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
   use Cabbage.Feature, file: "treasury/cash_flow_outlook.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
+  @moduletag :no_sandbox
   @moduletag :no_sandbox
 
   alias Nexus.Treasury.Commands.GenerateForecast
@@ -21,7 +21,7 @@ defmodule Nexus.Treasury.CashFlowOutlookTest do
       )
     end)
 
-    {:ok, %{org_id: Ecto.UUID.generate()}}
+    {:ok, %{org_id: Nexus.Schema.generate_uuidv7()}}
   end
 
   # --- Given ---

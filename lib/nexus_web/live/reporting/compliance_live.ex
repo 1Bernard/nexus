@@ -35,6 +35,8 @@ defmodule NexusWeb.Reporting.ComplianceLive do
       |> assign(:sod_conflicts, sod_conflicts)
       |> assign(:trace_id, "")
       |> assign(:lineage, [])
+      |> assign(:sample_list, [])
+      |> assign(:remediation_logs, [])
       |> assign(:active_tab, "scorecard")
 
     {:ok, socket}
@@ -42,7 +44,16 @@ defmodule NexusWeb.Reporting.ComplianceLive do
 
   @impl true
   def handle_event("set_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, :active_tab, tab)}
+    socket = assign(socket, :active_tab, tab)
+
+    socket = if tab == "remediation" do
+      logs = Reporting.get_event_lineage(socket.assigns.current_user.org_id, %{event_type: "user_role_revoked"})
+      assign(socket, remediation_logs: logs)
+    else
+      socket
+    end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -55,6 +66,13 @@ defmodule NexusWeb.Reporting.ComplianceLive do
 
     lineage = Reporting.get_event_lineage(socket.assigns.current_user.org_id, filters)
     {:noreply, assign(socket, lineage: lineage, trace_id: trace_id)}
+  end
+
+  @impl true
+  def handle_event("generate_sample", params, socket) do
+    org_id = socket.assigns.current_user.org_id
+    sample = Reporting.generate_audit_sample(org_id, params)
+    {:noreply, assign(socket, sample_list: sample)}
   end
 
   @impl true
@@ -104,6 +122,18 @@ defmodule NexusWeb.Reporting.ComplianceLive do
           click="set_tab"
           tab="lineage"
           label="Immutable Lineage"
+        />
+        <.tab_button
+          active={@active_tab == "sampling"}
+          click="set_tab"
+          tab="sampling"
+          label="Sampling Hub"
+        />
+        <.tab_button
+          active={@active_tab == "remediation"}
+          click="set_tab"
+          tab="remediation"
+          label="Remediation Log"
         />
       </div>
 
@@ -265,6 +295,80 @@ defmodule NexusWeb.Reporting.ComplianceLive do
                       <div class="mt-4 p-4 rounded-xl bg-black/30 border border-white/5 font-mono text-[10px] text-slate-500 group-hover:border-indigo-500/20 transition-all">
                         {Jason.encode!(event.details)}
                       </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </.dark_card>
+        <% end %>
+        <%= if @active_tab == "sampling" do %>
+          <.dark_card class="p-8">
+            <div class="mb-8">
+              <h3 class="text-sm font-bold text-slate-100 mb-2">Audit Sampling Tool</h3>
+              <p class="text-xs text-slate-500">
+                Generate statistical or risk-based samples for control verification.
+              </p>
+            </div>
+
+            <.sampling_form method="random" size={10} />
+
+            <div class="mt-8">
+              <%= if Enum.empty?(@sample_list) do %>
+                <div class="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                  <span class="hero-beaker w-10 h-10 text-slate-700 mb-4"></span>
+                  <p class="text-xs text-slate-500">Configure parameters and click "Generate Sample" to begin. sonora.</p>
+                </div>
+              <% else %>
+                <.sample_table samples={@sample_list} />
+              <% end %>
+            </div>
+          </.dark_card>
+        <% end %>
+
+        <%= if @active_tab == "remediation" do %>
+          <.dark_card class="p-8">
+            <div class="mb-8">
+              <h3 class="text-sm font-bold text-slate-100 mb-2">Autonomous Remediation History</h3>
+              <p class="text-xs text-slate-500">
+                Log of automated security actions taken by the Self-Healing Control Loops. sonora.
+              </p>
+            </div>
+
+            <%= if Enum.empty?(@remediation_logs) do %>
+              <div class="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                <span class="hero-shield-check w-10 h-10 text-slate-700 mb-4"></span>
+                <p class="text-xs text-slate-500">No remediation actions taken yet. Systems are healthy.</p>
+              </div>
+            <% else %>
+              <div class="space-y-4">
+                <%= for log <- @remediation_logs do %>
+                  <div class="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start justify-between">
+                    <div class="flex items-start gap-4">
+                      <div class="mt-1 p-2 rounded-lg bg-indigo-500/20">
+                        <span class="hero-shield-exclamation w-5 h-5 text-indigo-400"></span>
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2 mb-1">
+                          <span class="text-xs font-bold text-slate-100 uppercase tracking-wide">
+                            Role Revocation
+                          </span>
+                          <span class="px-2 py-0.5 rounded bg-amber-500/10 text-[9px] font-bold text-amber-500 uppercase border border-amber-500/20">
+                            Automatic
+                          </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">
+                          Revoked role <span class="text-slate-200 font-bold">{log.details["role"]}</span>
+                          from user <span class="text-slate-200">{log.details["user_id"]}</span>
+                          due to SoD conflict. sonora.
+                        </p>
+                        <p class="text-[10px] text-slate-500 mt-2 font-mono">
+                          {Calendar.strftime(log.recorded_at, "%Y-%m-%d %H:%M:%S UTC")}
+                        </p>
+                      </div>
+                    </div>
+                    <div class="px-3 py-1 rounded bg-black/40 border border-white/5 font-mono text-[10px] text-slate-600">
+                      Lineage Check: {String.slice(log.id, 0, 8)}...
                     </div>
                   </div>
                 <% end %>

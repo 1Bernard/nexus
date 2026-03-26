@@ -2,7 +2,7 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
   use Cabbage.Feature, file: "treasury/market_data_feed.feature"
   use Nexus.DataCase
 
-  @moduletag :feature
+  @moduletag :no_sandbox
 
   alias Nexus.Treasury.Gateways.PriceCache
   alias Nexus.Treasury.Gateways.PolygonClient

@@ -5,7 +5,7 @@ defmodule Nexus.Treasury.HeatmapTest do
 
   describe "list_exposure_heatmap/1" do
     test "returns fallback defaults when no snapshots exist" do
-      org_id = Ecto.UUID.generate()
+      org_id = Nexus.Schema.generate_uuidv7()
       result = Treasury.list_exposure_heatmap(org_id)
 
       assert result.subsidiaries == ["Munich HQ", "Tokyo Branch", "Corporate Operations"]
@@ -14,11 +14,11 @@ defmodule Nexus.Treasury.HeatmapTest do
     end
 
     test "returns dynamic subsidiaries and currencies when snapshots exist" do
-      org_id = Ecto.UUID.generate()
+      org_id = Nexus.Schema.generate_uuidv7()
 
       # Insert some test snapshots
       Repo.insert!(%ExposureSnapshot{
-        id: Ecto.UUID.generate(),
+        id: Nexus.Schema.generate_uuidv7(),
         org_id: org_id,
         subsidiary: "Berlin",
         currency: "USD",
@@ -27,7 +27,7 @@ defmodule Nexus.Treasury.HeatmapTest do
       })
 
       Repo.insert!(%ExposureSnapshot{
-        id: Ecto.UUID.generate(),
+        id: Nexus.Schema.generate_uuidv7(),
         org_id: org_id,
         subsidiary: "Paris",
         currency: "EUR",

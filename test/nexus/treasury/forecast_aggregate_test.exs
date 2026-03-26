@@ -6,7 +6,7 @@ defmodule Nexus.Treasury.ForecastAggregateTest do
   test "apply/2 should correctly update state without crashing" do
     state = %Forecast{}
     event = %ForecastGenerated{
-      org_id: Ecto.UUID.generate(),
+      org_id: Nexus.Schema.generate_uuidv7(),
       currency: "EUR",
       horizon_days: 30,
       predictions: [%{date: "2026-03-03", predicted_amount: "641.86"}],

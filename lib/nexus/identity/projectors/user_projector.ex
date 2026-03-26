@@ -14,7 +14,8 @@ defmodule Nexus.Identity.Projectors.UserProjector do
     UserStatusChanged,
     SettingsUpdated,
     SessionStarted,
-    SessionExpired
+    SessionExpired,
+    UserRoleRevoked
   }
 
   alias Nexus.Identity.Projections.{User, UserSettings, UserSession}
@@ -28,6 +29,19 @@ defmodule Nexus.Identity.Projectors.UserProjector do
       # Replacing the array with the new role as a single-item list
       set: [roles: [event.role], updated_at: Nexus.Schema.utc_now()]
     )
+  end)
+
+  project(%UserRoleRevoked{} = event, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.run(:revoke_role, fn repo, _ ->
+      user = repo.get!(User, event.user_id)
+      new_roles = Enum.reject(user.roles, &(&1 == event.role))
+
+      from(u in User, where: u.id == ^event.user_id)
+      |> repo.update_all(set: [roles: new_roles, updated_at: Nexus.Schema.utc_now()])
+
+      {:ok, nil}
+    end)
   end)
 
   project(%UserStatusChanged{} = event, _metadata, fn multi ->

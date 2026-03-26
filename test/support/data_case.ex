@@ -72,4 +72,13 @@ defmodule Nexus.DataCase do
       end)
     end)
   end
+
+  @doc """
+  Runs a function without the SQL sandbox.
+  Useful for tests that start background processes (like projectors) which
+  need to write to the same database.
+  """
+  def unboxed_run(fun) do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fun)
+  end
 end
