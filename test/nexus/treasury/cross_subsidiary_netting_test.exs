@@ -14,6 +14,7 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
   alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting}
   alias Nexus.Treasury.Events.{NettingCycleInitialized, InvoiceAddedToNetting}
   alias Nexus.Treasury.Projections.{NettingCycle, NettingEntry}
+  alias Nexus.ERP.Projections.Invoice
   alias Nexus.Treasury.Projectors.NettingProjector
   alias Ecto.Adapters.SQL.Sandbox
 
@@ -23,6 +24,7 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
       Repo.query!("TRUNCATE event_store.events CASCADE")
       Repo.delete_all(NettingCycle)
       Repo.delete_all(NettingEntry)
+      Repo.delete_all(Invoice)
     end)
 
     {:ok, %{}}
@@ -143,6 +145,78 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
       Repo.one(from e in NettingEntry, where: e.netting_id == ^netting_id, select: count(e.id))
     end)
     assert entries_count == String.to_integer(count)
+    {:ok, state}
+  end
+
+  # --- Scenario: Automate invoice inclusion via scanning ---
+
+  defgiven ~r/^ERP contains "(?<count>\d+)" open invoices for "(?<currency>[^"]+)" within the cycle period$/,
+           %{count: count_str, currency: currency},
+           %{org_id: org_id} = state do
+    count = String.to_integer(count_str)
+
+    invoices =
+      Enum.map(1..count, fn i ->
+        %{
+          id: Nexus.Schema.generate_uuidv7(),
+          org_id: org_id,
+          entity_id: "ENT-#{i}",
+          currency: currency,
+          amount: Decimal.new("100.00"),
+          subsidiary: "Subsidiary #{i}",
+          sap_document_number: "SAP-#{i}",
+          due_date: Nexus.Schema.utc_now(),
+          status: "ingested"
+        }
+      end)
+
+    Sandbox.unboxed_run(Repo, fn ->
+      Enum.each(invoices, fn inv ->
+        Repo.insert!(struct(Invoice, inv))
+      end)
+    end)
+
+    {:ok, Map.put(state, :scanned_amount, Decimal.new(count * 100))}
+  end
+
+  defwhen "I trigger the invoice scan for the cycle", _args, %{netting_id: netting_id, org_id: org_id} = state do
+    user_id = Nexus.Schema.generate_uuidv7()
+
+    cmd = %Nexus.Treasury.Commands.ScanInvoicesForNetting{
+      netting_id: netting_id,
+      org_id: org_id,
+      user_id: user_id
+    }
+
+    Sandbox.unboxed_run(Repo, fn ->
+      assert :ok = App.dispatch(cmd)
+    end)
+
+    # In test env, some handlers aren't auto-started (Rule 3).
+    # We manually invoke the scanner handler to process the scan.
+    {:ok, events} = Nexus.EventStore.read_stream_forward(netting_id)
+    scan_initiated = Enum.find(events, fn e -> is_struct(e.data, Nexus.Treasury.Events.NettingCycleScanInitiated) end)
+    assert scan_initiated, "ScanInitiated event not found in stream"
+
+    Nexus.Treasury.Handlers.NettingScannerHandler.handle(scan_initiated.data, %{})
+    # The scanner will follow and dispatch AddInvoiceToNetting events
+    # We need to wait and project those.
+
+    Process.sleep(1000) # Wait for async scanner to dispatch all 3 additions
+
+    {:ok, events} = Nexus.EventStore.read_stream_forward(netting_id)
+    Enum.each(events, fn %{data: event, event_number: num} ->
+      if is_struct(event, InvoiceAddedToNetting) do
+        project_event(event, num)
+      end
+    end)
+
+    {:ok, state}
+  end
+
+  defthen "the total netting amount should be the sum of those invoices", _args, %{netting_id: netting_id, scanned_amount: expected} = state do
+    cycle = Sandbox.unboxed_run(Repo, fn -> Repo.get!(NettingCycle, netting_id) end)
+    assert Decimal.equal?(cycle.total_amount, expected)
     {:ok, state}
   end
 

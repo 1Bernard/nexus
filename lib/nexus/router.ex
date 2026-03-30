@@ -158,6 +158,11 @@ defmodule Nexus.Router do
     identity: :netting_id
   )
 
+  dispatch(Nexus.Treasury.Commands.ScanInvoicesForNetting,
+    to: Nexus.Treasury.Aggregates.Netting,
+    identity: :netting_id
+  )
+
   dispatch(Nexus.Treasury.Commands.AddInvoiceToNetting,
     to: Nexus.Treasury.Aggregates.Netting,
     identity: :netting_id

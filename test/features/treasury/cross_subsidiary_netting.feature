@@ -17,3 +17,11 @@ Feature: Cross-Subsidiary Netting
         When I add both invoices to the netting cycle
         Then the total netting amount should be "3000.00"
         And the cycle should contain "2" entries
+
+    Scenario: Automate invoice inclusion via scanning
+        Given a registered organization "Global Corp" exists
+        And an active netting cycle for "EUR" exists
+        And ERP contains "3" open invoices for "EUR" within the cycle period
+        When I trigger the invoice scan for the cycle
+        Then the cycle should contain "3" entries
+        And the total netting amount should be the sum of those invoices

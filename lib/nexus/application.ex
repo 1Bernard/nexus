@@ -109,10 +109,12 @@ defmodule Nexus.Application do
             Nexus.Treasury.Projectors.ForecastProjector,
             Nexus.Treasury.Projectors.ReconciliationProjector,
             Nexus.Treasury.Projectors.TransferProjector,
+            Nexus.Treasury.Projectors.NettingProjector,
             Nexus.Payments.Projectors.BulkPaymentProjector,
             # --- Bridge Handlers ---
             Nexus.Treasury.Handlers.ExposureBridge,
             Nexus.Treasury.Handlers.ExposurePolicyHandler,
+            Nexus.Treasury.Handlers.NettingScannerHandler,
             Nexus.Intelligence.Handlers.InvoiceAnalyzer,
             # --- Real-Time Notification Handlers (Rule 3) ---
             Nexus.Payments.Handlers.BulkPaymentHandler,

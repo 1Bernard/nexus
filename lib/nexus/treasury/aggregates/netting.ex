@@ -3,8 +3,8 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   The Netting aggregate manages the lifecycle of an intercompany netting cycle.
   It tracks which invoices are included and calculates total positions.
   """
-  alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting}
-  alias Nexus.Treasury.Events.{NettingCycleInitialized, InvoiceAddedToNetting}
+  alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting, ScanInvoicesForNetting}
+  alias Nexus.Treasury.Events.{NettingCycleInitialized, NettingCycleScanInitiated, InvoiceAddedToNetting}
 
   defstruct [:id, :org_id, :currency, :status, :invoice_ids, :total_amount]
 
@@ -14,6 +14,7 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   Executes commands against the Netting aggregate.
   1. InitializeNettingCycle: Starts a new intercompany netting process.
   2. AddInvoiceToNetting: Links an ERP invoice to an active cycle.
+  3. ScanInvoicesForNetting: Initiates an automated scan for eligible invoices.
   """
   def execute(%__MODULE__{id: nil}, %InitializeNettingCycle{} = cmd) do
     %NettingCycleInitialized{
@@ -24,6 +25,14 @@ defmodule Nexus.Treasury.Aggregates.Netting do
       period_end: cmd.period_end,
       user_id: cmd.user_id,
       initialized_at: DateTime.utc_now()
+    }
+  end
+
+  def execute(%__MODULE__{status: :active} = _netting, %ScanInvoicesForNetting{} = cmd) do
+    %NettingCycleScanInitiated{
+      netting_id: cmd.netting_id,
+      org_id: cmd.org_id,
+      user_id: cmd.user_id
     }
   end
 
@@ -49,15 +58,20 @@ defmodule Nexus.Treasury.Aggregates.Netting do
 
   # --- State Transitions ---
 
-  def apply(%__MODULE__{}, %NettingCycleInitialized{} = evt) do
+  def apply(%__MODULE__{} = netting, %NettingCycleInitialized{} = event) do
     %__MODULE__{
-      id: evt.netting_id,
-      org_id: evt.org_id,
-      currency: evt.currency,
-      status: :active,
-      invoice_ids: [],
-      total_amount: Decimal.new(0)
+      netting
+      | id: event.netting_id,
+        org_id: event.org_id,
+        currency: event.currency,
+        status: :active,
+        invoice_ids: [],
+        total_amount: Decimal.new(0)
     }
+  end
+
+  def apply(%__MODULE__{} = netting, %NettingCycleScanInitiated{} = _event) do
+    netting
   end
 
   def apply(%__MODULE__{} = netting, %InvoiceAddedToNetting{} = evt) do
