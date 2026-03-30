@@ -1,70 +1,121 @@
 defmodule Nexus.Treasury.ProcessManagers.RebalanceManagerTest do
-  use ExUnit.Case, async: true
+  @moduledoc """
+  Elite BDD tests for Auto Rebalance Trigger.
+  """
+  use Cabbage.Feature, async: false, file: "treasury/auto_rebalance_trigger.feature"
+  use Nexus.DataCase
+
   alias Nexus.Treasury.ProcessManagers.RebalanceManager
-  alias Nexus.Treasury.Events.ForecastGenerated
+  alias Nexus.Treasury.Events.{ForecastGenerated, TransferInitiated}
+  alias Nexus.Treasury.Commands.RequestTransfer
+  alias Nexus.Treasury.Projections.Vault
+  alias Nexus.Repo
 
-  # Note: This test would usually require a Vault in the DB since handle/2 calls VaultQuery.
-  # For a pure unit test, we'd refactor the Saga to accept a dependency or simulate the environment.
-  # Here, we'll test the core logic of forecast parsing.
+  @moduletag :no_sandbox
 
-  describe "handle/2" do
-    test "ignores positive forecasts" do
-      event = %ForecastGenerated{
-        org_id: "org1",
-        currency: "USD",
-        horizon_days: 7,
-        predictions: [%{amount: Decimal.new(1000)}],
-        generated_at: DateTime.utc_now()
-      }
-
-      assert RebalanceManager.handle(%RebalanceManager{}, event) == []
-    end
-
-    # To test the Rebalance dispatch, we'd normally need a RebalanceManager.execute or similar.
-    # Given the current implementation, it will attempt to query the DB.
-    # We'll skip the DB-dependent part in a pure unit test or use a real integration test.
+  setup do
+    unboxed_run(fn ->
+      Repo.delete_all(Vault)
+    end)
+    :ok
   end
 
-  describe "apply/2" do
-    test "transitions state on ForecastGenerated" do
-      event = %ForecastGenerated{
-        org_id: "org1",
-        currency: "USD",
-        horizon_days: 7,
-        predictions: [],
-        generated_at: DateTime.utc_now()
-      }
+  # --- Given ---
 
-      state = RebalanceManager.apply(%RebalanceManager{}, event)
-      assert state.org_id == "org1"
-      assert state.target_currency == "USD"
-    end
+  defgiven ~r/^a vault "(?<name>[^"]+)" with balance "(?<balance>[^"]+)" exists$/,
+           %{name: name, balance: balance},
+           _state do
+    org_id = Nexus.Schema.generate_uuidv7()
+    vault_id = Nexus.Schema.generate_uuidv7()
 
-    test "marks saga completed on TransferInitiated" do
-      event = %Nexus.Treasury.Events.TransferInitiated{
-        transfer_id: "tx123",
-        org_id: "org1",
-        user_id: "user1",
-        from_currency: "EUR",
-        to_currency: "USD",
-        amount: "1000",
-        status: "pending_authorization",
-        requested_at: DateTime.utc_now()
-      }
+    unboxed_run(fn ->
+      Repo.insert!(%Vault{
+        id: vault_id,
+        org_id: org_id,
+        name: name,
+        bank_name: "Test Bank",
+        currency: "EUR",
+        balance: Decimal.new(balance),
+        provider: "manual"
+      })
+    end)
 
-      state = RebalanceManager.apply(%RebalanceManager{}, event)
-      assert state.completed == true
-    end
+    {:ok, %{org_id: org_id, vault_id: vault_id}}
   end
 
-  describe "stop?/1" do
-    test "returns true when completed is true" do
-      assert RebalanceManager.stop?(%RebalanceManager{completed: true})
-    end
+  defgiven ~r/^an active rebalance saga for "(?<currency>[^"]+)"$/, %{currency: currency}, _state do
+    org_id = Nexus.Schema.generate_uuidv7()
+    {:ok, %{org_id: org_id, currency: currency, saga: %RebalanceManager{org_id: org_id, target_currency: currency}}}
+  end
 
-    test "returns false when completed is false" do
-      refute RebalanceManager.stop?(%RebalanceManager{completed: false})
-      refute RebalanceManager.stop?(%RebalanceManager{completed: nil})
-    end
+  # --- When ---
+
+  defwhen ~r/^a forecast for "(?<currency>[^"]+)" predicts a deficit of "(?<amount>[^"]+)"$/,
+          %{currency: currency, amount: amount},
+          %{org_id: org_id} do
+    event = %ForecastGenerated{
+      org_id: org_id,
+      currency: currency,
+      horizon_days: 7,
+      predictions: [%{predicted_amount: Decimal.negate(Decimal.new(amount))}],
+      generated_at: DateTime.utc_now()
+    }
+
+    commands = RebalanceManager.handle(%RebalanceManager{}, event)
+    {:ok, %{commands: commands}}
+  end
+
+  defwhen ~r/^a forecast for "(?<currency>[^"]+)" predicts a surplus of "(?<amount>[^"]+)"$/,
+          %{currency: currency, amount: amount},
+          %{org_id: org_id} do
+    event = %ForecastGenerated{
+      org_id: org_id,
+      currency: currency,
+      horizon_days: 7,
+      predictions: [%{predicted_amount: Decimal.new(amount)}],
+      generated_at: DateTime.utc_now()
+    }
+
+    commands = RebalanceManager.handle(%RebalanceManager{}, event)
+    {:ok, %{commands: commands}}
+  end
+
+  defwhen ~r/^a transfer of "(?<amount>[^"]+)" from "(?<from>[^"]+)" to "(?<to>[^"]+)" is initiated$/,
+          %{amount: amount, from: from, to: to},
+          %{org_id: org_id, saga: saga} do
+    event = %TransferInitiated{
+      transfer_id: Nexus.Schema.generate_uuidv7(),
+      org_id: org_id,
+      user_id: Nexus.Schema.generate_uuidv7(),
+      from_currency: from,
+      to_currency: to,
+      amount: amount,
+      status: "pending_authorization",
+      requested_at: DateTime.utc_now()
+    }
+
+    new_saga = RebalanceManager.apply(saga, event)
+    {:ok, %{saga: new_saga}}
+  end
+
+  # --- Then ---
+
+  defthen ~r/^a Rebalance command should be dispatched for "(?<currency>[^"]+)"$/,
+          %{currency: currency},
+          %{commands: [command]} do
+    assert %RequestTransfer{} = command
+    assert command.to_currency == currency
+    assert command.from_currency == "EUR"
+    :ok
+  end
+
+  defthen "no Rebalance command should be dispatched", _args, %{commands: commands} do
+    assert commands == []
+    :ok
+  end
+
+  defthen "the rebalance saga should be marked as completed", _args, %{saga: saga} do
+    assert saga.completed == true
+    :ok
   end
 end

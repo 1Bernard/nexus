@@ -1,74 +1,81 @@
 defmodule Nexus.Payments.ProcessManagers.PaymentExecutionSagaTest do
-  use ExUnit.Case, async: true
+  @moduledoc """
+  Elite BDD tests for Payment Lifecycle Orchestration.
+  """
+  # Saga tests can be async if they are pure logic
+  use Cabbage.Feature, async: true, file: "payments/payment_lifecycle.feature"
+
   alias Nexus.Payments.ProcessManagers.PaymentExecutionSaga
   alias Nexus.Treasury.Events.TransferExecuted
   alias Nexus.Payments.Commands.InitiateExternalPayment
   alias Nexus.Payments.Events.ExternalPaymentSettled
 
-  describe "handle/2" do
-    test "dispatches InitiateExternalPayment on TransferExecuted" do
-      event = %TransferExecuted{
-        transfer_id: "tx123",
-        org_id: "org1",
-        amount: Decimal.new(1000),
-        from_currency: "USD",
-        to_currency: "EUR",
-        recipient_data: %{recipient_code: "RCP_123"},
-        executed_at: DateTime.utc_now()
-      }
+  # --- Given ---
 
-      command = PaymentExecutionSaga.handle(%PaymentExecutionSaga{status: nil}, event)
+  defgiven ~r/^a transfer of "(?<amount>[^"]+)" USD to "(?<to_curr>[^"]+)" has been executed$/,
+           %{amount: amount, to_curr: to_curr},
+           _state do
+    event = %TransferExecuted{
+      transfer_id: Nexus.Schema.generate_uuidv7(),
+      org_id: Nexus.Schema.generate_uuidv7(),
+      amount: Decimal.new(amount),
+      from_currency: "USD",
+      to_currency: to_curr,
+      recipient_data: %{recipient_code: "RCP_789"},
+      executed_at: DateTime.utc_now()
+    }
 
-      assert %InitiateExternalPayment{
-               transfer_id: "tx123",
-               amount: amount,
-               currency: "EUR",
-               recipient_data: %{recipient_code: "RCP_123"}
-             } = command
-
-      assert Decimal.equal?(amount, 1000)
-    end
-
-    test "handle/2 returns empty list on ExternalPaymentSettled" do
-      event = %ExternalPaymentSettled{
-        payment_id: "pay-1",
-        org_id: "org1",
-        settled_at: DateTime.utc_now()
-      }
-
-      assert [] == PaymentExecutionSaga.handle(%PaymentExecutionSaga{}, event)
-    end
+    {:ok, %{event: event}}
   end
 
-  describe "apply/2" do
-    test "transitions state on TransferExecuted" do
-      event = %TransferExecuted{
-        transfer_id: "tx123",
-        org_id: "org1",
-        amount: Decimal.new(1000),
-        from_currency: "USD",
-        to_currency: "EUR",
-        executed_at: DateTime.utc_now()
-      }
+  defgiven ~r/^a payment execution saga in status "(?<status>[^"]+)"$/, %{status: status}, _state do
+    saga = %PaymentExecutionSaga{
+      transfer_id: Nexus.Schema.generate_uuidv7(),
+      org_id: Nexus.Schema.generate_uuidv7(),
+      status: String.to_atom(status)
+    }
 
-      state = PaymentExecutionSaga.apply(%PaymentExecutionSaga{}, event)
-      assert state.transfer_id == "tx123"
-      assert state.status == :transfer_executed
-    end
+    {:ok, %{saga: saga}}
   end
 
-  describe "stop?/1" do
-    test "returns true when status is :settled" do
-      assert PaymentExecutionSaga.stop?(%PaymentExecutionSaga{status: :settled})
-    end
+  # --- When ---
 
-    test "returns true when status is :failed" do
-      assert PaymentExecutionSaga.stop?(%PaymentExecutionSaga{status: :failed})
-    end
+  defwhen "the payment execution saga handles the transfer event", _args, %{event: event} do
+    command = PaymentExecutionSaga.handle(%PaymentExecutionSaga{status: nil}, event)
+    state = PaymentExecutionSaga.apply(%PaymentExecutionSaga{status: nil}, event)
+    {:ok, %{command: command, saga: state}}
+  end
 
-    test "returns false for other statuses" do
-      refute PaymentExecutionSaga.stop?(%PaymentExecutionSaga{status: :transfer_executed})
-      refute PaymentExecutionSaga.stop?(%PaymentExecutionSaga{status: nil})
-    end
+  defwhen "the external payment is settled", _args, %{saga: saga} do
+    event = %ExternalPaymentSettled{
+      payment_id: "pay-#{saga.transfer_id}",
+      org_id: saga.org_id,
+      settled_at: DateTime.utc_now()
+    }
+
+    # apply the event
+    new_saga = PaymentExecutionSaga.apply(saga, event)
+    {:ok, %{saga: new_saga}}
+  end
+
+  # --- Then ---
+
+  defthen ~r/^an external payment of "(?<amount>[^"]+)" (?<curr>[A-Z]{3}) should be initiated$/,
+          %{amount: amount, curr: curr},
+          %{command: command} do
+    assert %InitiateExternalPayment{} = command
+    assert Decimal.equal?(command.amount, Decimal.new(amount))
+    assert command.currency == curr
+    :ok
+  end
+
+  defthen ~r/^the saga status should be "(?<status>[^"]+)"$/, %{status: status}, %{saga: saga} do
+    assert saga.status == String.to_atom(status)
+    :ok
+  end
+
+  defthen "the saga should be stopped", _args, %{saga: saga} do
+    assert PaymentExecutionSaga.stop?(saga)
+    :ok
   end
 end

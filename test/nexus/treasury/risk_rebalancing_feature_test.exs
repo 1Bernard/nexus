@@ -20,6 +20,10 @@ defmodule Nexus.Treasury.RiskRebalancingTest do
       Repo.delete_all("projection_versions")
     end)
 
+    # Force 1:1 exchange rate for deterministic BDD results
+    Nexus.Treasury.Gateways.PriceCache.clear_all()
+    Nexus.Treasury.Gateways.PriceCache.update_price("EUR/USD", "1.0000")
+
     {:ok, %{org_id: org_id}}
   end
 
@@ -85,7 +89,7 @@ defmodule Nexus.Treasury.RiskRebalancingTest do
   defthen ~r/^the EUR liquidity position should be "(?<expected>[^"]+)"$/,
           %{expected: expected_str},
           state do
-    expected = Decimal.new(String.replace(expected_str, ",", ""))
+    expected = Decimal.new(expected_str |> String.replace(",", "") |> String.trim())
 
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
       pos = Repo.get_by(LiquidityPosition, org_id: state.org_id, currency: "EUR")

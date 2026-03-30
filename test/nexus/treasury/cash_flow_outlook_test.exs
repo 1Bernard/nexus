@@ -1,8 +1,11 @@
 defmodule Nexus.Treasury.CashFlowOutlookTest do
+  @moduledoc """
+  BDD tests for the Treasury Cash Flow Outlook, verifying that market price
+  changes and new invoices correctly update the projected consolidated gap.
+  """
   use Cabbage.Feature, file: "treasury/cash_flow_outlook.feature"
   use Nexus.DataCase
 
-  @moduletag :no_sandbox
   @moduletag :no_sandbox
 
   alias Nexus.Treasury.Commands.GenerateForecast

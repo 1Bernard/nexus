@@ -3,7 +3,7 @@ defmodule Nexus.Policies.SecurityPolicyFeatureTest do
   Elite BDD tests for Cross-Domain Security Policies.
   Standardized to Cabbage Gherkin format.
   """
-  use Cabbage.Feature, file: "security_policy_feature.feature"
+  use Cabbage.Feature, file: "policies/security_policy.feature"
   use Nexus.DataCase
 
   @moduletag :no_sandbox

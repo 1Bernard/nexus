@@ -3,8 +3,7 @@ defmodule NexusWeb.Organization.InvitesLive do
   LiveView for accepting a tenant invitation via a signed token link.
   """
   use NexusWeb, :live_view
-
-  alias NexusWeb.NexusComponents
+  require Logger
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
@@ -18,9 +17,10 @@ defmodule NexusWeb.Organization.InvitesLive do
          |> assign(:org_id, org_id)
          |> assign(:roles, [role])
          |> assign(:valid_token, true)
-         |> assign(:form, to_form(%{"display_name" => "", "email" => ""}))}
+         |> assign(:form, to_form(%{"display_name" => "", "email" => ""}, as: "registration"))}
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.debug("[InvitesLive] Token verify failed: #{inspect(reason)}")
         {:ok,
          socket
          |> assign(:page_title, "Invalid Invitation")
@@ -49,7 +49,7 @@ defmodule NexusWeb.Organization.InvitesLive do
           </p>
         </div>
 
-        <NexusComponents.dark_card>
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8">
           <%= if @valid_token do %>
             <div class="text-center mb-8">
               <div class="mx-auto w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center mb-4 text-indigo-400">
@@ -77,63 +77,24 @@ defmodule NexusWeb.Organization.InvitesLive do
               </p>
             </div>
 
-            <.form for={@form} phx-submit="register" class="space-y-6">
-              <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                  Full Name
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    name={@form[:display_name].name}
-                    value={@form[:display_name].value}
-                    required
-                    class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
-                    placeholder="Jane Doe"
-                  />
-                </div>
-              </div>
+            <.form for={@form} id="registration-form" phx-submit="register" class="space-y-6">
+              <.input
+                field={@form[:display_name]}
+                type="text"
+                label="Full Name"
+                placeholder="Jane Doe"
+                required
+                class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
+              />
 
-              <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                  Email Address
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="email"
-                    name={@form[:email].name}
-                    value={@form[:email].value}
-                    required
-                    class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
-                    placeholder="jane@example.com"
-                  />
-                </div>
-              </div>
+              <.input
+                field={@form[:email]}
+                type="email"
+                label="Email Address"
+                placeholder="jane@example.com"
+                required
+                class="block w-full pl-10 pr-3 py-3 border border-slate-700/50 rounded-xl leading-5 bg-slate-900/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm shadow-inner"
+              />
 
               <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex gap-3 items-start">
                 <div class="mt-0.5 text-indigo-400">
@@ -192,7 +153,7 @@ defmodule NexusWeb.Organization.InvitesLive do
               </.link>
             </div>
           <% end %>
-        </NexusComponents.dark_card>
+        </div>
 
         <p class="mt-8 text-center text-xs text-slate-600 font-medium">
           &copy; {Date.utc_today().year} Nexus Security. All rights reserved.
@@ -203,7 +164,7 @@ defmodule NexusWeb.Organization.InvitesLive do
   end
 
   @impl true
-  def handle_event("register", %{"display_name" => name, "email" => email}, socket) do
+  def handle_event("register", %{"registration" => %{"display_name" => name, "email" => email}}, socket) do
     if socket.assigns.valid_token do
       # We encode the registration intent securely for the next step (Biometric Registration)
       # This hands off the decoded org_id and role reliably to `/auth/gate`

@@ -1,7 +1,17 @@
 defmodule Nexus.Treasury.HeatmapTest do
   use Nexus.DataCase
+
+  @moduletag :no_sandbox
+
   alias Nexus.Treasury
   alias Nexus.Treasury.Projections.ExposureSnapshot
+
+  setup do
+    unboxed_run(fn ->
+      Repo.delete_all(ExposureSnapshot)
+    end)
+    :ok
+  end
 
   describe "list_exposure_heatmap/1" do
     test "returns fallback defaults when no snapshots exist" do

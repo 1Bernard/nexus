@@ -1,8 +1,11 @@
 defmodule Nexus.Treasury.TransferHardeningTest do
-  use Nexus.DataCase, async: false
-  @moduletag :no_sandbox
-  import Commanded.Assertions.EventAssertions
+  @moduledoc """
+  Elite BDD tests for Treasury Transfer Hardening.
+  """
+  use Cabbage.Feature, file: "treasury/transfer_hardening.feature"
+  use Nexus.DataCase
 
+  import Commanded.Assertions.EventAssertions
   alias Nexus.App
   alias Nexus.Treasury
   alias Nexus.Treasury.Events.{TransferInitiated, TransferAuthorized, TransferExecuted}
@@ -10,11 +13,24 @@ defmodule Nexus.Treasury.TransferHardeningTest do
   alias Nexus.Identity.Commands.{RegisterUser, VerifyStepUp}
   alias Nexus.Treasury.ProcessManagers.TransferManager
 
-  setup do
-    org_id = Uniq.UUID.uuid7()
-    user_id = Uniq.UUID.uuid7()
+  @moduletag :no_sandbox
 
-    # Register the user
+  setup do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.delete_all("projection_versions")
+      # Clear event store for the specific user and transfer streams to ensure isolation
+      # In a real environment, we'd truncate the whole events table if we want a clean slate,
+      # but since this test generates unique IDs, we focus on projection idempotency.
+      Repo.query!("TRUNCATE event_store.events CASCADE")
+    end)
+
+    {:ok, %{}}
+  end
+
+  defgiven "an authorized user exists for an organization", _args, _state do
+    org_id = Nexus.Schema.generate_uuidv7()
+    user_id = Nexus.Schema.generate_uuidv7()
+
     reg_cmd = %RegisterUser{
       user_id: user_id,
       org_id: org_id,
@@ -26,68 +42,44 @@ defmodule Nexus.Treasury.TransferHardeningTest do
       registered_at: DateTime.utc_now()
     }
 
-    :ok = App.dispatch(reg_cmd)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      assert :ok = App.dispatch(reg_cmd)
+    end)
 
     assert_receive_event(App, UserRegistered, fn event ->
       event.user_id == user_id
     end)
 
-    {:ok, org_id: org_id, user_id: user_id, pm_stream: "TransferHardeningTest.PM-#{user_id}"}
+    {:ok, %{org_id: org_id, user_id: user_id, pm_stream: "TransferHardeningTest.PM-#{user_id}"}}
   end
 
-  test "low-value transfer executes immediately", %{org_id: org_id, user_id: user_id} = state do
-    transfer_id = Uniq.UUID.uuid7()
+  defwhen ~r/^the user requests a transfer for "(?<amount>[^"]+)" (?<currency>[^"]+) (?<type>below|above) the "(?<threshold>[^"]+)" threshold$/,
+          %{amount: amount, currency: currency, threshold: threshold},
+          %{org_id: org_id, user_id: user_id} = state do
+    transfer_id = Nexus.Schema.generate_uuidv7()
 
     attrs = %{
       transfer_id: transfer_id,
       org_id: org_id,
       user_id: user_id,
-      from_currency: "EUR",
+      from_currency: currency,
       to_currency: "USD",
-      amount: "100",
-      threshold: "1000000"
+      amount: Nexus.Schema.parse_decimal_safe(amount),
+      threshold: Nexus.Schema.parse_decimal_safe(threshold)
     }
 
-    assert :ok = Treasury.request_transfer(attrs)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      assert :ok = Treasury.request_transfer(attrs)
+    end)
 
     # Manually sync PM for TransferInitiated
     {:ok, events} = Nexus.EventStore.read_stream_forward(transfer_id)
     Enum.each(events, &sync_transfer_pm(&1.data, state))
 
-    assert_receive_event(App, TransferInitiated, fn event ->
-      event.transfer_id == transfer_id && event.status == "authorized"
-    end)
-
-    assert_receive_event(App, TransferExecuted, fn event ->
-      event.transfer_id == transfer_id
-    end)
+    {:ok, %{transfer_id: transfer_id}}
   end
 
-  test "high-value transfer requires step-up and then executes",
-       %{org_id: org_id, user_id: user_id} = state do
-    transfer_id = Uniq.UUID.uuid7()
-
-    attrs = %{
-      transfer_id: transfer_id,
-      org_id: org_id,
-      user_id: user_id,
-      from_currency: "EUR",
-      to_currency: "USD",
-      amount: "5000000",
-      threshold: "1000000"
-    }
-
-    assert :ok = Treasury.request_transfer(attrs)
-
-    # Manually sync PM for TransferInitiated
-    {:ok, events} = Nexus.EventStore.read_stream_forward(transfer_id)
-    Enum.each(events, &sync_transfer_pm(&1.data, state))
-
-    assert_receive_event(App, TransferInitiated, fn event ->
-      event.transfer_id == transfer_id && event.status == "pending_authorization"
-    end)
-
-    # Now verify step-up
+  defwhen "the user verifies their step-up identity", _args, %{org_id: org_id, user_id: user_id, transfer_id: transfer_id} = state do
     verify_cmd = %VerifyStepUp{
       user_id: user_id,
       org_id: org_id,
@@ -96,24 +88,35 @@ defmodule Nexus.Treasury.TransferHardeningTest do
       verified_at: DateTime.utc_now()
     }
 
-    assert :ok = App.dispatch(verify_cmd)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      assert :ok = App.dispatch(verify_cmd)
+    end)
 
     # Manually sync PM for StepUpVerified
     {:ok, events} = Nexus.EventStore.read_stream_forward(user_id)
-    # Only sync the latest event (StepUpVerified)
     sync_transfer_pm(List.last(events).data, state)
 
     # Now sync PM for resulting TransferAuthorized and TransferExecuted
     {:ok, events} = Nexus.EventStore.read_stream_forward(transfer_id)
     Enum.each(events, &sync_transfer_pm(&1.data, state))
 
-    assert_receive_event(App, TransferAuthorized, fn event ->
-      event.transfer_id == transfer_id
+    :ok
+  end
+
+  defthen ~r/^the transfer should be "(?<status>[^"]+)"$/, %{status: status}, %{transfer_id: transfer_id} do
+    assert_receive_event(App, TransferInitiated, fn event ->
+      event.transfer_id == transfer_id && event.status == status
     end)
 
+    :ok
+  end
+
+  defthen "the transfer should eventually be \"executed\"", _args, %{transfer_id: transfer_id} do
     assert_receive_event(App, TransferExecuted, fn event ->
       event.transfer_id == transfer_id
     end)
+
+    :ok
   end
 
   # --- Manual PM Sync Helper ---

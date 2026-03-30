@@ -3,7 +3,7 @@ defmodule Nexus.Reporting.SoDFeatureTest do
   Elite BDD tests for Segregation of Duties logic.
   Standardized to Cabbage Gherkin format.
   """
-  use Cabbage.Feature, file: "sod_feature.feature"
+  use Cabbage.Feature, file: "reporting/sod_feature.feature"
   use Nexus.DataCase
 
   @moduletag :no_sandbox

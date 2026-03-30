@@ -262,9 +262,9 @@ defmodule Nexus.Treasury do
             end
 
           liquid = Map.get(liquidity_map, curr, Decimal.new(0))
-          # Net Exposure for a currency is Gross Exposure - Liquid balances
-          # Example: 1M EUR Liabilities - 400k EUR Cash = 600k Net Exposure
-          net_in_curr = Decimal.sub(gross, liquid)
+          # Net Exposure for a currency is Gross Exposure + Liquid balances (signed)
+          # Example: +1M EUR Asset (Long) + (-400k) EUR Transfer Out (Short) = 600k Net Exposure
+          net_in_curr = Decimal.add(gross, liquid)
 
           converted = convert_to_reporting(net_in_curr, curr, reporting_currency)
           Decimal.add(acc, Decimal.abs(converted))

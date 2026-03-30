@@ -23,7 +23,7 @@ defmodule Nexus.CrossDomain.Projectors.NotificationProjector do
         type: event.type,
         title: event.title,
         body: event.body,
-        metadata: event.metadata,
+        metadata: Notification.decode_metadata(event.metadata),
         correlation_id: Map.get(metadata, "correlation_id") || Map.get(metadata, :correlation_id),
         causation_id: Map.get(metadata, "causation_id") || Map.get(metadata, :causation_id),
         created_at: Nexus.Schema.parse_datetime(event.timestamp)

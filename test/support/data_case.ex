@@ -47,9 +47,9 @@ defmodule Nexus.DataCase do
     alias Ecto.Adapters.SQL.Sandbox
 
     if tags[:no_sandbox] do
-      # Manual / unmanaged mode: projector writes commit to real DB rows.
-      # The test module must clean up manually (Repo.delete_all in setup).
-      Sandbox.mode(Nexus.Repo, :manual)
+      # Auto mode: any process can checkout its own connection from the pool.
+      # Commits are immediate. Test must clean up manually.
+      Ecto.Adapters.SQL.Sandbox.mode(Nexus.Repo, :auto)
       :ok
     else
       pid = Sandbox.start_owner!(Nexus.Repo, shared: not tags[:async])

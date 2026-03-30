@@ -3,7 +3,7 @@ defmodule Nexus.Treasury.ForecastFeatureTest do
   Elite BDD tests for Treasury Forecast Dispatch.
   Standardized to Cabbage Gherkin format.
   """
-  use Cabbage.Feature, file: "treasury_forecast.feature"
+  use Cabbage.Feature, file: "treasury/forecast_dispatch.feature"
   use Nexus.DataCase
 
   @moduletag :no_sandbox

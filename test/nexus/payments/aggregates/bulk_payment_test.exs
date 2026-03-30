@@ -87,11 +87,13 @@ defmodule Nexus.Payments.Aggregates.BulkPaymentTest do
     end
 
     test "updates state after completion" do
+      bulk_payment_id = Nexus.Schema.generate_uuidv7()
+      org_id = Nexus.Schema.generate_uuidv7()
       state = %BulkPayment{status: :initiated}
 
       event = %BulkPaymentCompleted{
-        bulk_payment_id: "batch-1",
-        org_id: "org-1",
+        bulk_payment_id: bulk_payment_id,
+        org_id: org_id,
         completed_at: DateTime.utc_now()
       }
 

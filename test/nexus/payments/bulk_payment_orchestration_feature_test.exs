@@ -3,7 +3,7 @@ defmodule Nexus.Payments.BulkPaymentOrchestrationFeatureTest do
   Elite BDD tests for Bulk Payment Orchestration Sagas.
   Standardized to Cabbage Gherkin format.
   """
-  use Cabbage.Feature, file: "bulk_payment_orchestration.feature"
+  use Cabbage.Feature, file: "payments/bulk_payment_orchestration.feature"
   use Nexus.DataCase
 
   @moduletag :no_sandbox

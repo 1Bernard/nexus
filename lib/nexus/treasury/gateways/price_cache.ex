@@ -20,6 +20,11 @@ defmodule Nexus.Treasury.Gateways.PriceCache do
     :ets.insert(@table, {pair, price, Nexus.Schema.utc_now(), source})
   end
 
+  @spec clear_all() :: true
+  def clear_all do
+    :ets.delete_all_objects(@table)
+  end
+
   @spec get_last_tick(String.t()) ::
           {:ok, {String.t(), DateTime.t(), atom()}} | {:error, :no_data}
   def get_last_tick(pair) do

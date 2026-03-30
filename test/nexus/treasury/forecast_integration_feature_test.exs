@@ -1,6 +1,6 @@
 defmodule Nexus.Treasury.ForecastIntegrationFeatureTest do
   @moduledoc false
-  use Cabbage.Feature, file: "treasury/forecast.feature"
+  use Cabbage.Feature, file: "treasury/forecast_generation.feature"
   use Nexus.DataCase
 
   @moduletag :no_sandbox

@@ -28,6 +28,7 @@ defmodule NexusWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import NexusWeb.ConnCase
+      import Nexus.DataCase
     end
   end
 

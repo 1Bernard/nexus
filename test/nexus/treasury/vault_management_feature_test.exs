@@ -61,7 +61,7 @@ defmodule Nexus.Treasury.VaultManagementFeatureTest do
            %{curr: currency, amount: amount_str},
            state do
     org_id = Map.fetch!(state, :org_id)
-    amount = Decimal.new(String.replace(amount_str, ",", ""))
+    amount = Decimal.new(amount_str |> String.replace(",", "") |> String.trim())
     vault_id = Nexus.Schema.generate_uuidv7()
     name = "#{currency} Vault"
 
@@ -151,7 +151,7 @@ defmodule Nexus.Treasury.VaultManagementFeatureTest do
     vault_id = Map.fetch!(state, :vault_id)
     org_id = Map.fetch!(state, :org_id)
     currency = Map.get(state, :currency, "EUR")
-    amount = Decimal.new(String.replace(amount_str, "€", "") |> String.replace(",", ""))
+    amount = Decimal.new(amount_str |> String.replace("€", "") |> String.replace(",", "") |> String.trim())
 
     command = %Nexus.Treasury.Commands.SyncVaultBalance{
       vault_id: vault_id,
@@ -174,7 +174,7 @@ defmodule Nexus.Treasury.VaultManagementFeatureTest do
           %{amount: amount_str, from: from, to: to},
           state do
     org_id = Map.fetch!(state, :org_id)
-    amount_dec = Decimal.new(String.replace(amount_str, ",", ""))
+    amount_dec = Decimal.new(amount_str |> String.replace(",", "") |> String.trim())
 
     from_id = state[:"#{String.downcase(from)}_vault_id"]
     to_id = state[:"#{String.downcase(to)}_vault_id"]

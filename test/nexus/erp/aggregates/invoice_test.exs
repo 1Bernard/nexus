@@ -37,7 +37,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
         invoice_id: invoice_id,
         org_id: org_id,
         matched_type: "bulk_payment",
-        matched_id: "batch-789"
+        matched_id: Nexus.Schema.generate_uuidv7()
       }
 
       assert Invoice.execute(state, cmd) == []
@@ -54,7 +54,7 @@ defmodule Nexus.ERP.Aggregates.InvoiceTest do
         invoice_id: invoice_id,
         org_id: org_id,
         matched_type: "bulk_payment",
-        matched_id: "batch-789",
+        matched_id: Nexus.Schema.generate_uuidv7(),
         matched_at: DateTime.utc_now()
       }
 

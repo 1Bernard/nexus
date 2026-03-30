@@ -31,9 +31,8 @@ config :nexus, Nexus.EventStore,
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
 config :nexus, NexusWeb.Endpoint,
-  # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  # Binding to localhost explicitly for reliability
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
   server: true,
   check_origin: false,
   code_reloader: true,
@@ -83,6 +82,23 @@ config :nexus, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
+
+# -------------------------------------------------------------------------
+# Commanded & Observability
+# -------------------------------------------------------------------------
+# Set Nx to use the binary backend for faster startup in dev
+config :nx, :default_backend, Nx.BinaryBackend
+
+# Bypass heavy AI model loading on startup
+config :nexus, mock_ai: true
+
+# Set global log level to :info to speed up startup and reduce noise
+config :logger, level: :info
+
+# Disable OpenTelemetry in dev to avoid connection errors and overhead
+config :opentelemetry,
+  span_processor: :batch,
+  traces_exporter: :none
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

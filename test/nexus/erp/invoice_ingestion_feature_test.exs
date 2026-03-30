@@ -13,6 +13,8 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Repo.delete_all(Invoice)
       Repo.delete_all("projection_versions")
+      # Ensure a clean event store for the no_sandbox integration test
+      Repo.query!("TRUNCATE event_store.events CASCADE")
     end)
 
     :ok
@@ -20,15 +22,26 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
 
   # --- Given ---
 
-  defgiven ~r/^a registered tenant "(?<tenant>[^"]+)" exists$/, %{tenant: _tenant}, state do
+  defgiven ~r/^a registered tenant "(?<tenant>[^"]+)" exists$/, %{tenant: tenant}, state do
     org_id = Nexus.Schema.generate_uuidv7()
+
+    # Actually provision the tenant to satisfy TenantGate middleware
+    :ok =
+      App.dispatch(%Nexus.Organization.Commands.ProvisionTenant{
+        org_id: org_id,
+        name: tenant,
+        initial_admin_email: "admin@#{tenant}.com",
+        provisioned_by: "system_admin",
+        provisioned_at: DateTime.utc_now()
+      })
+
     {:ok, Map.put(state, :org_id, org_id)}
   end
 
   defgiven ~r/^an invoice "(?<id>[^"]+)" has already been ingested$/, %{id: invoice_id}, state do
     command = %IngestInvoice{
       org_id: state.org_id,
-      invoice_id: invoice_id,
+      invoice_id: "#{state.org_id}-#{invoice_id}",
       entity_id: "E-100",
       currency: "EUR",
       amount: Decimal.new("1000"),
@@ -43,7 +56,7 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
     assert :ok = App.dispatch(command)
 
     # Sync for setup
-    {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
+    {:ok, [%{data: event, event_number: num}]} = Nexus.EventStore.read_stream_forward("#{state.org_id}-#{invoice_id}")
     project_event(event, num)
 
     {:ok, state}
@@ -104,14 +117,14 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
           state do
     command = %IngestInvoice{
       org_id: state.org_id,
-      invoice_id: invoice_id,
+      invoice_id: "#{state.org_id}-#{invoice_id}",
       entity_id: "E-100",
       currency: "EUR",
       amount: Decimal.new("1000"),
       subsidiary: "Munich HQ",
       due_date: Date.utc_today() |> Date.add(30),
       line_items: [%{description: "Consulting", amount: Decimal.new("1000")}],
-      sap_document_number: "SAP-#{invoice_id}",
+      sap_document_number: "SAP-#{invoice_id}-#{Nexus.Schema.generate_uuidv7() |> String.slice(0, 8)}",
       sap_status: "Verified_Via_Network",
       ingested_at: DateTime.utc_now()
     }

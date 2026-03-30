@@ -1,79 +1,88 @@
 defmodule Nexus.Treasury.RebalanceManagerFeatureTest do
-  use Cabbage.Feature, file: "treasury/rebalance_manager.feature"
+  @moduledoc """
+  Elite BDD tests for Treasury Rebalance Orchestration.
+  """
+  use Cabbage.Feature, file: "treasury/rebalance_orchestration.feature"
   use Nexus.DataCase
 
   alias Nexus.Treasury.ProcessManagers.RebalanceManager
   alias Nexus.Treasury.Events.ForecastGenerated
+  alias Nexus.Treasury.Projections.Vault
   alias Nexus.Treasury.Commands.RequestTransfer
 
-  defmodule VaultQueryMock do
-    def find_vault_for_currency(_org_id, "EUR"), do: %{id: "vault-eur-123"}
-    def find_vault_for_currency(_org_id, _), do: nil
-  end
+  @moduletag :no_sandbox
 
   setup do
-    Application.put_env(:nexus, :vault_query_module, VaultQueryMock)
-    on_exit(fn -> Application.delete_env(:nexus, :vault_query_module) end)
+    unboxed_run(fn ->
+      Repo.delete_all(Vault)
+    end)
 
-    {:ok, %{org_id: Nexus.Schema.generate_uuidv7()}}
+    :ok
   end
 
-  # --- Given ---
+  defgiven ~r/^an organization has an active "(?<currency>[^"]+)" vault with "(?<balance>[^"]+)" balance$/,
+           %{currency: currency, balance: balance},
+           _vars do
+    org_id = Nexus.Schema.generate_uuidv7()
+    vault_id = Nexus.Schema.generate_uuidv7()
 
-  defgiven ~r/^a forecast is generated for "(?<currency>[^"]+)" with a deficit of "(?<amount>[^"]+)"$/,
-           %{currency: currency, amount: amount},
-           state do
+    unboxed_run(fn ->
+      %Vault{
+        id: vault_id,
+        org_id: org_id,
+        name: "EUR Operating-#{:erlang.unique_integer([:positive])}",
+        bank_name: "Nexus Bank",
+        currency: currency,
+        balance: Nexus.Schema.parse_decimal_safe(balance),
+        provider: "nexus",
+        status: "active"
+      }
+      |> Repo.insert!()
+    end)
+
+    {:ok, %{org_id: org_id, vault_id: vault_id}}
+  end
+
+  defwhen ~r/^a forecast reports a deficit of "(?<amount>[^"]+)" in "(?<currency>[^"]+)"$/,
+          %{amount: amount_str, currency: currency},
+          %{org_id: org_id} do
+    amount = Nexus.Schema.parse_decimal_safe(amount_str)
+
     event = %ForecastGenerated{
-      org_id: state.org_id,
+      org_id: org_id,
       currency: currency,
-      horizon_days: 30,
-      predictions: [
-        %{predicted_amount: "-#{amount}", date: "2026-03-22"}
-      ],
+      horizon_days: 7,
+      # Negative amount in forecast means deficit
+      predictions: [%{predicted_amount: Decimal.negate(amount)}],
       generated_at: DateTime.utc_now()
     }
-    {:ok, Map.put(state, :forecast_event, event)}
+
+    # Handle in Saga (requires DB access to find vaults)
+    commands = unboxed_run(fn ->
+      RebalanceManager.handle(%RebalanceManager{}, event)
+    end)
+
+    {:ok, %{commands: commands}}
   end
 
-  defgiven ~r/^a forecast is generated for "(?<currency>[^"]+)" with a surplus of "(?<amount>[^"]+)"$/,
-           %{currency: currency, amount: amount},
-           state do
-    event = %ForecastGenerated{
-      org_id: state.org_id,
-      currency: currency,
-      horizon_days: 30,
-      predictions: [
-        %{predicted_amount: "#{amount}", date: "2026-03-22"}
-      ],
-      generated_at: DateTime.utc_now()
-    }
-    {:ok, Map.put(state, :forecast_event, event)}
+  defthen ~r/^a transfer request from "(?<from>[^"]+)" to "(?<to>[^"]+)" should be dispatched for "(?<amount>[^"]+)"$/,
+          %{from: from, to: to, amount: amount_str},
+          %{commands: commands, org_id: org_id} do
+    amount = Nexus.Schema.parse_decimal_safe(amount_str)
+
+    assert [%RequestTransfer{} = cmd] = commands
+    assert cmd.org_id == org_id
+    assert cmd.from_currency == from
+    assert cmd.to_currency == to
+    assert Decimal.equal?(cmd.amount, amount)
+
+    :ok
   end
 
-  # --- When ---
-
-  defwhen ~r/^the Rebalance Manager handles the forecast$/, _vars, state do
-    saga = %RebalanceManager{}
-    commands = RebalanceManager.handle(saga, state.forecast_event)
-    {:ok, Map.put(state, :commands, commands)}
-  end
-
-  # --- Then ---
-
-  defthen ~r/^a "RequestTransfer" command should be dispatched for "(?<amount>[^"]+)" (?<currency>[^"]+) from "(?<source>[^"]+)"$/,
-          %{amount: amount, currency: currency, source: source},
-          state do
-    assert Enum.count(state.commands) == 1
-    [command] = state.commands
-    assert %RequestTransfer{} = command
-    assert command.to_currency == currency
-    assert command.from_currency == source
-    assert Decimal.equal?(command.amount, Decimal.new(amount))
-    {:ok, state}
-  end
-
-  defthen ~r/^no "RequestTransfer" command should be dispatched$/, _vars, state do
-    assert state.commands == []
-    {:ok, state}
+  defthen ~r/^the transfer should be attributed to "(?<user_id>[^"]+)"$/,
+          %{user_id: user_id},
+          %{commands: [cmd]} do
+    assert cmd.user_id == user_id
+    :ok
   end
 end

@@ -46,7 +46,7 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     |> Ecto.Multi.insert(
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
-        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
+        id: Map.get(metadata, :event_id, Nexus.Schema.generate_uuidv7()),
         org_id: event.org_id,
         actor_email: event.actor_email,
         mode: event.mode,
@@ -73,7 +73,7 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
     |> Ecto.Multi.insert(
       :policy_audit_log,
       %Nexus.Treasury.Projections.PolicyAuditLog{
-        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
+        id: Map.get(metadata, :event_id, Nexus.Schema.generate_uuidv7()),
         org_id: event.org_id,
         actor_email: event.actor_email,
         mode: "CONFIG",
@@ -90,7 +90,7 @@ defmodule Nexus.Treasury.Projectors.PolicyProjector do
       multi,
       :policy_alert,
       %PolicyAlert{
-        id: Map.get(metadata, :event_id, Ecto.UUID.generate()),
+        id: Map.get(metadata, :event_id, Nexus.Schema.generate_uuidv7()),
         org_id: event.org_id,
         currency_pair: event.currency_pair,
         exposure_amount: parse_decimal(event.exposure_amount),

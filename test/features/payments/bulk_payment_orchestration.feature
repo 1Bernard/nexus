@@ -5,8 +5,7 @@ Feature: Bulk Payment Orchestration
 
   Scenario: Orchestrating a bulk payment with multiple items
     Given a bulk payment batch "batch-1" is initiated with segments "EUR" and "USD"
-    When the saga processes the initiSc
-    ation event
+    When the saga processes the initiation event
     Then it should dispatch "2" individual transfer requests
     And each request should follow the original payment details
 

@@ -12,8 +12,10 @@ defmodule Nexus.Intelligence.Services.SentimentAnalyzer do
   """
   @spec serving() :: Nx.Serving.t()
   def serving do
-    # In test, we always use a no-op mock
-    if @env == :test do
+    # Check if AI mocking is enabled globally for dev efficiency
+    mock_ai? = Application.get_all_env(:nexus)[:mock_ai]
+
+    if @env == :test || mock_ai? == true do
       mock_serving()
     else
       try do
