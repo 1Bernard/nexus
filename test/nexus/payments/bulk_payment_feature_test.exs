@@ -1,8 +1,10 @@
 defmodule Nexus.Payments.BulkPaymentFeatureTest do
+  @moduledoc """
+  BDD integration test for Bulk Payment initiation and saga orchestration.
+  """
   use Cabbage.Feature, async: false, file: "payments/bulk_payment.feature"
   use Nexus.DataCase
 
-  @moduletag :no_sandbox
   @moduletag :no_sandbox
 
   alias Nexus.App
@@ -20,11 +22,8 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
     Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
       Nexus.Repo.delete_all(Invoice)
       Nexus.Repo.delete_all(Nexus.Payments.Projections.BulkPayment)
-
-      Ecto.Adapters.SQL.query!(Nexus.Repo, """
-      DELETE FROM projection_versions
-      WHERE projection_name IN ('Payments.BulkPaymentProjector', 'ERP.InvoiceProjector')
-      """)
+      Nexus.Repo.delete_all("projection_versions")
+      Repo.query!("TRUNCATE event_store.events CASCADE")
     end)
 
     {:ok, %{}}
@@ -61,7 +60,9 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
       ingested_at: DateTime.utc_now()
     }
 
-    assert :ok = App.dispatch(command)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      assert :ok = App.dispatch(command)
+    end)
 
     # Project it manually to read model (avoiding StaleEntryError)
     {:ok, [%{data: event, event_number: _num}]} = Nexus.EventStore.read_stream_forward(invoice_id)
@@ -81,10 +82,8 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
         sap_status: event.sap_status,
         status: "ingested",
         due_date: Date.from_iso8601!(event.due_date) |> DateTime.new!(~T[00:00:00.000000]),
-        created_at:
-          DateTime.from_iso8601(event.ingested_at) |> elem(1) |> DateTime.truncate(:microsecond),
-        updated_at:
-          DateTime.from_iso8601(event.ingested_at) |> elem(1) |> DateTime.truncate(:microsecond)
+        created_at: Nexus.Schema.parse_datetime(event.ingested_at),
+        updated_at: Nexus.Schema.parse_datetime(event.ingested_at)
       })
     end)
 
@@ -148,7 +147,9 @@ defmodule Nexus.Payments.BulkPaymentFeatureTest do
       initiated_at: DateTime.utc_now()
     }
 
-    assert :ok = App.dispatch(command)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      assert :ok = App.dispatch(command)
+    end)
 
     # Fetch the event and manually sync the saga
     {:ok, [%{data: event, event_number: _num}]} =

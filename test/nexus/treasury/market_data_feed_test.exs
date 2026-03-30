@@ -1,4 +1,8 @@
 defmodule Nexus.Treasury.MarketDataFeedTest do
+  @moduledoc """
+  BDD tests for the Treasury Market Data Feed, verifying real-time tick
+  ingestion and stale data detection.
+  """
   use Cabbage.Feature, file: "treasury/market_data_feed.feature"
   use Nexus.DataCase
 
@@ -8,10 +12,7 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
   alias Nexus.Treasury.Gateways.PolygonClient
 
   setup do
-    on_exit(fn ->
-      :ets.delete_all_objects(:market_rates_v3)
-    end)
-
+    PriceCache.clear_all()
     :ok
   end
 
@@ -51,7 +52,10 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
            %{pair: pair},
            state do
     stale_time = DateTime.add(DateTime.utc_now(), -20, :minute)
-    :ets.insert(:market_rates_v3, {pair, "1.0800", stale_time})
+    PriceCache.update_price(pair, "1.0800", :manual)
+
+    # Force the timestamp to be stale for the test
+    :ets.insert(:market_rates_v3, {pair, "1.0800", stale_time, :manual})
     {:ok, Map.put(state, :stale_pair, pair)}
   end
 
@@ -60,7 +64,7 @@ defmodule Nexus.Treasury.MarketDataFeedTest do
   end
 
   defthen ~r/^a "Stale Data" warning is flagged for the currency pair$/, _vars, state do
-    [{_pair, _price, last_tick}] = :ets.lookup(:market_rates_v3, state.stale_pair)
+    [{_pair, _price, last_tick, _source}] = :ets.lookup(:market_rates_v3, state.stale_pair)
     diff_seconds = DateTime.diff(DateTime.utc_now(), last_tick)
     assert diff_seconds > 15 * 60
     {:ok, state}

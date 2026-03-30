@@ -15,6 +15,8 @@ defmodule NexusWeb.Admin.UserLiveTest do
   setup %{conn: conn} do
     unboxed_run(fn ->
       Repo.delete_all(User)
+      Repo.delete_all("projection_versions")
+      Repo.query!("TRUNCATE event_store.events CASCADE")
     end)
 
     # Create an admin user directly in the database for the test

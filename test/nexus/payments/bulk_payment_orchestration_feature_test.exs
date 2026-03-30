@@ -16,6 +16,11 @@ defmodule Nexus.Payments.BulkPaymentOrchestrationFeatureTest do
   alias Nexus.ERP.Commands.MatchInvoice
 
   setup do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Nexus.Repo, fn ->
+      Repo.delete_all("projection_versions")
+      Repo.query!("TRUNCATE event_store.events CASCADE")
+    end)
+
     {:ok, %{}}
   end
 

@@ -1,6 +1,6 @@
 defmodule NexusWeb.Payments.BulkPaymentGatewayTest do
   @moduledoc """
-  Elite BDD tests for Bulk Payment Gateway.
+  BDD integration test for the Bulk Payment Gateway UI.
   """
   use Cabbage.Feature, async: false, file: "payments/bulk_payment_gateway.feature"
   use NexusWeb.ConnCase
@@ -16,22 +16,26 @@ defmodule NexusWeb.Payments.BulkPaymentGatewayTest do
     # Clear existing users to avoid unique constraint violations in :no_sandbox
     unboxed_run(fn ->
       Repo.delete_all(User)
+      Repo.delete_all("projection_versions")
+      Repo.query!("TRUNCATE event_store.events CASCADE")
     end)
 
     admin_id = UUID.uuid7()
     org_id = UUID.uuid7()
 
     admin =
-      %User{
-        id: admin_id,
-        org_id: org_id,
-        email: "test_admin@nexus.app",
-        display_name: "Test Admin",
-        roles: ["admin"],
-        credential_id: "mock_cred",
-        cose_key: "mock_key"
-      }
-      |> Repo.insert!()
+      unboxed_run(fn ->
+        %User{
+          id: admin_id,
+          org_id: org_id,
+          email: "test_admin@nexus.app",
+          display_name: "Test Admin",
+          roles: ["admin"],
+          credential_id: "mock_cred",
+          cose_key: "mock_key"
+        }
+        |> Repo.insert!()
+      end)
 
     conn =
       conn
