@@ -153,6 +153,16 @@ defmodule Nexus.Router do
     identity: :portfolio_id
   )
 
+  dispatch(Nexus.Treasury.Commands.InitializeNettingCycle,
+    to: Nexus.Treasury.Aggregates.Netting,
+    identity: :netting_id
+  )
+
+  dispatch(Nexus.Treasury.Commands.AddInvoiceToNetting,
+    to: Nexus.Treasury.Aggregates.Netting,
+    identity: :netting_id
+  )
+
   dispatch(
     [
       Nexus.Treasury.Commands.RegisterVault,

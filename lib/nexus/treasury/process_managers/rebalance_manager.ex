@@ -55,10 +55,8 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
 
   defp initiate_rebalance(org_id, target_currency, amount) do
     # Find a source vault with a different currency (e.g. "EUR" to "USD" rebalance)
-    # In a real app, this would be more complex hedging logic.
     source_currency = if target_currency == "USD", do: "EUR", else: "USD"
 
-    # Check if we have a vault for the source currency
     vault_query = Application.get_env(:nexus, :vault_query_module, Nexus.Treasury.Queries.VaultQuery)
 
     case vault_query.find_vault_for_currency(org_id, source_currency) do
@@ -68,7 +66,7 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
 
       vault ->
         # Dispatch the RequestTransfer command to Treasury
-        transfer_id = "rebalance-#{org_id}-#{Nexus.Schema.generate_uuidv7()}"
+        transfer_id = "rebalance-" <> Nexus.Schema.generate_uuidv7()
 
         [
           %RequestTransfer{
@@ -79,7 +77,6 @@ defmodule Nexus.Treasury.ProcessManagers.RebalanceManager do
             to_currency: target_currency,
             amount: amount,
             requested_at: Nexus.Schema.utc_now(),
-            # In rebalance, we debit the source vault
             recipient_data: %{type: "vault", vault_id: vault.id, from_vault_id: vault.id}
           }
         ]
