@@ -2,8 +2,8 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   @moduledoc """
   The Invoice aggregate handles ingestion and validation of external ERP invoices.
   """
-  alias Nexus.ERP.Commands.{IngestInvoice, MatchInvoice}
-  alias Nexus.ERP.Events.{InvoiceIngested, InvoiceRejected, InvoiceMatched}
+  alias Nexus.ERP.Commands.{IngestInvoice, MatchInvoice, MarkInvoiceAsNetted}
+  alias Nexus.ERP.Events.{InvoiceIngested, InvoiceRejected, InvoiceMatched, InvoiceNetted}
 
   @derive Jason.Encoder
   defstruct [:id, :status]
@@ -11,7 +11,7 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   @type t :: %__MODULE__{}
 
   # Idempotency: If the invoice is already ingested or rejected, we silently accept the duplicate payload
-  @spec execute(t(), IngestInvoice.t() | MatchInvoice.t()) ::
+  @spec execute(t(), IngestInvoice.t() | MatchInvoice.t() | MarkInvoiceAsNetted.t()) ::
           struct() | [struct()] | {:error, any()}
   def execute(%__MODULE__{status: status}, %IngestInvoice{}) when not is_nil(status) do
     []
@@ -20,14 +20,6 @@ defmodule Nexus.ERP.Aggregates.Invoice do
   # Processing a new invoice
   def execute(%__MODULE__{status: nil}, %IngestInvoice{} = cmd) do
     cond do
-      Decimal.compare(cmd.amount, Decimal.new("0.0")) != :gt ->
-        %InvoiceRejected{
-          org_id: cmd.org_id,
-          invoice_id: cmd.invoice_id,
-          reason: "Invoice amount must be positive",
-          rejected_at: cmd.ingested_at
-        }
-
       Enum.empty?(List.wrap(cmd.line_items)) ->
         %InvoiceRejected{
           org_id: cmd.org_id,
@@ -69,6 +61,19 @@ defmodule Nexus.ERP.Aggregates.Invoice do
     }
   end
 
+  def execute(%__MODULE__{status: status}, %MarkInvoiceAsNetted{} = cmd)
+      when status in [:ingested, :matched] do
+    %InvoiceNetted{
+      invoice_id: cmd.invoice_id,
+      org_id: cmd.org_id,
+      netting_id: cmd.netting_id,
+      netted_at: DateTime.utc_now()
+    }
+  end
+
+  # Idempotency: If already netted, do nothing
+  def execute(%__MODULE__{status: :netted}, %MarkInvoiceAsNetted{}), do: []
+
   # Fallback for MatchInvoice if status is nil or rejected
   def execute(%__MODULE__{}, %MatchInvoice{}) do
     # For now, we ignore matching if the invoice isn't in a valid state
@@ -88,5 +93,9 @@ defmodule Nexus.ERP.Aggregates.Invoice do
 
   def apply(%__MODULE__{} = state, %InvoiceMatched{} = event) do
     %{state | id: event.invoice_id, status: :matched}
+  end
+
+  def apply(%__MODULE__{} = state, %InvoiceNetted{} = _event) do
+    %{state | status: :netted}
   end
 end

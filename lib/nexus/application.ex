@@ -131,6 +131,7 @@ defmodule Nexus.Application do
             Nexus.Treasury.ProcessManagers.TransferManager,
             Nexus.Treasury.ProcessManagers.RebalanceManager,
             Nexus.Treasury.ProcessManagers.PortfolioManager,
+            Nexus.Treasury.ProcessManagers.NettingSettlementSaga,
             Nexus.Payments.ProcessManagers.BulkPaymentSaga,
             Nexus.Payments.ProcessManagers.PaymentExecutionSaga,
             Nexus.Reporting.ProcessManagers.ComplianceRemediationManager

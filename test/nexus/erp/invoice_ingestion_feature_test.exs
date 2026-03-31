@@ -158,18 +158,6 @@ defmodule Nexus.ERP.InvoiceIngestionTest do
     {:ok, state}
   end
 
-  defthen ~r/^the invoice should be rejected$/, _vars, state do
-    assert :ok = state.result
-    {:ok, state}
-  end
-
-  defthen ~r/^an InvoiceRejected event should be emitted$/, _vars, state do
-    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-      assert Repo.get(Invoice, state.command.invoice_id) == nil
-    end)
-    {:ok, state}
-  end
-
   defthen ~r/^the system should gracefully accept the payload without error$/, _vars, state do
     assert :ok = state.result
     {:ok, state}

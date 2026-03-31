@@ -72,7 +72,7 @@ defmodule Nexus.Router do
     identity: :statement_id
   )
 
-  dispatch(Nexus.ERP.Commands.MatchInvoice,
+  dispatch([Nexus.ERP.Commands.MatchInvoice, Nexus.ERP.Commands.MarkInvoiceAsNetted],
     to: Nexus.ERP.Aggregates.Invoice,
     identity: :invoice_id
   )
@@ -153,17 +153,14 @@ defmodule Nexus.Router do
     identity: :portfolio_id
   )
 
-  dispatch(Nexus.Treasury.Commands.InitializeNettingCycle,
-    to: Nexus.Treasury.Aggregates.Netting,
-    identity: :netting_id
-  )
-
-  dispatch(Nexus.Treasury.Commands.ScanInvoicesForNetting,
-    to: Nexus.Treasury.Aggregates.Netting,
-    identity: :netting_id
-  )
-
-  dispatch(Nexus.Treasury.Commands.AddInvoiceToNetting,
+  dispatch(
+    [
+      Nexus.Treasury.Commands.InitializeNettingCycle,
+      Nexus.Treasury.Commands.ScanInvoicesForNetting,
+      Nexus.Treasury.Commands.AddInvoiceToNetting,
+      Nexus.Treasury.Commands.SettleNettingCycle,
+      Nexus.Treasury.Commands.CompleteNettingCycleSettlement
+    ],
     to: Nexus.Treasury.Aggregates.Netting,
     identity: :netting_id
   )

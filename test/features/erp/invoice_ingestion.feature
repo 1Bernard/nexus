@@ -9,11 +9,11 @@ Feature: Invoice Ingestion Engine
         Then the invoice should be accepted and recorded
         And an InvoiceIngested event should be emitted
 
-    Scenario: Reject an invoice with a negative amount
+    Scenario: Successfully ingest a credit note (negative amount)
         Given a registered tenant "Munich HQ" exists
         When the ERP system pushes an invoice payload with amount "-500 EUR"
-        Then the invoice should be rejected
-        And an InvoiceRejected event should be emitted
+        Then the invoice should be accepted and recorded
+        And an InvoiceIngested event should be emitted
 
     Scenario: Idempotent handling of duplicate invoices
         Given a registered tenant "Munich HQ" exists

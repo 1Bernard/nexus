@@ -3,10 +3,10 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   The Netting aggregate manages the lifecycle of an intercompany netting cycle.
   It tracks which invoices are included and calculates total positions.
   """
-  alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting, ScanInvoicesForNetting}
-  alias Nexus.Treasury.Events.{NettingCycleInitialized, NettingCycleScanInitiated, InvoiceAddedToNetting}
+  alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting, ScanInvoicesForNetting, SettleNettingCycle, CompleteNettingCycleSettlement}
+  alias Nexus.Treasury.Events.{NettingCycleInitialized, NettingCycleScanInitiated, InvoiceAddedToNetting, NettingCycleSettled, NettingCycleSettlementCompleted}
 
-  defstruct [:id, :org_id, :currency, :status, :invoice_ids, :total_amount]
+  defstruct [:id, :org_id, :currency, :status, :invoice_ids, :invoice_details, :total_amount]
 
   # --- Commands ---
 
@@ -15,6 +15,8 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   1. InitializeNettingCycle: Starts a new intercompany netting process.
   2. AddInvoiceToNetting: Links an ERP invoice to an active cycle.
   3. ScanInvoicesForNetting: Initiates an automated scan for eligible invoices.
+  4. SettleNettingCycle: Calculates net positions and initiates global settlement.
+  5. CompleteNettingCycleSettlement: Finalizes the cycle after orchestrating transfers.
   """
   def execute(%__MODULE__{id: nil}, %InitializeNettingCycle{} = cmd) do
     %NettingCycleInitialized{
@@ -40,8 +42,6 @@ defmodule Nexus.Treasury.Aggregates.Netting do
     if Enum.member?(netting.invoice_ids, cmd.invoice_id) do
       {:error, :already_added}
     else
-      # In a real scenario, we'd fetch invoice details from the ERP context.
-      # For now, we emit the event which will be handled by the projector.
       %InvoiceAddedToNetting{
         netting_id: netting.id,
         org_id: netting.org_id,
@@ -52,6 +52,37 @@ defmodule Nexus.Treasury.Aggregates.Netting do
         added_at: DateTime.utc_now()
       }
     end
+  end
+
+  def execute(%__MODULE__{status: :active} = netting, %SettleNettingCycle{} = cmd) do
+    if Enum.empty?(netting.invoice_ids) do
+      {:error, :empty_cycle}
+    else
+      # Calculate net positions per subsidiary
+      net_positions =
+        netting.invoice_details
+        |> Map.values()
+        |> Enum.reduce(%{}, fn item, acc ->
+          Map.update(acc, item.subsidiary, item.amount, &Decimal.add(&1, item.amount))
+        end)
+
+      %NettingCycleSettled{
+        netting_id: netting.id,
+        org_id: netting.org_id,
+        user_id: cmd.user_id,
+        net_positions: net_positions,
+        invoice_ids: netting.invoice_ids,
+        settled_at: DateTime.utc_now()
+      }
+    end
+  end
+
+  def execute(%__MODULE__{status: :settling} = netting, %CompleteNettingCycleSettlement{} = _cmd) do
+    %NettingCycleSettlementCompleted{
+      netting_id: netting.id,
+      org_id: netting.org_id,
+      completed_at: DateTime.utc_now()
+    }
   end
 
   def execute(_, _), do: {:error, :invalid_operation}
@@ -66,6 +97,7 @@ defmodule Nexus.Treasury.Aggregates.Netting do
         currency: event.currency,
         status: :active,
         invoice_ids: [],
+        invoice_details: %{},
         total_amount: Decimal.new(0)
     }
   end
@@ -77,7 +109,16 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   def apply(%__MODULE__{} = netting, %InvoiceAddedToNetting{} = evt) do
     %__MODULE__{netting |
       invoice_ids: [evt.invoice_id | netting.invoice_ids],
+      invoice_details: Map.put(netting.invoice_details, evt.invoice_id, %{subsidiary: evt.subsidiary, amount: evt.amount}),
       total_amount: Decimal.add(netting.total_amount, evt.amount)
     }
+  end
+
+  def apply(%__MODULE__{} = netting, %NettingCycleSettled{} = _event) do
+    %__MODULE__{netting | status: :settling}
+  end
+
+  def apply(%__MODULE__{} = netting, %NettingCycleSettlementCompleted{} = _event) do
+    %__MODULE__{netting | status: :settled}
   end
 end
