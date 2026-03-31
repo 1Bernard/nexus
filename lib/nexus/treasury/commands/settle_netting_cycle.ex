@@ -12,11 +12,12 @@ defmodule Nexus.Treasury.Commands.SettleNettingCycle do
     field :netting_id, :binary_id
     field :org_id, :binary_id
     field :user_id, :binary_id
+    field :fx_rates, :map, default: %{}
   end
 
   def changeset(struct, attrs) do
     struct
-    |> cast(attrs, [:netting_id, :org_id, :user_id])
+    |> cast(attrs, [:netting_id, :org_id, :user_id, :fx_rates])
     |> validate_required([:netting_id, :org_id, :user_id])
   end
 end

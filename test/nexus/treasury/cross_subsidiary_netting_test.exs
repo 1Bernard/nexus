@@ -6,13 +6,12 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
   use Cabbage.Feature, file: "treasury/cross_subsidiary_netting.feature"
   use Nexus.DataCase
 
-  import Commanded.Assertions.EventAssertions
   @moduletag :no_sandbox
 
   alias Nexus.App
   alias Nexus.Repo
   alias Nexus.Treasury.Commands.{InitializeNettingCycle, AddInvoiceToNetting}
-  alias Nexus.Treasury.Events.{NettingCycleInitialized, InvoiceAddedToNetting}
+  alias Nexus.Treasury.Events.InvoiceAddedToNetting
   alias Nexus.Treasury.Projections.{NettingCycle, NettingEntry}
   alias Nexus.ERP.Projections.Invoice
   alias Nexus.Treasury.Projectors.NettingProjector
@@ -121,6 +120,7 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
         invoice_id: inv.id,
         subsidiary: inv.subsidiary,
         amount: Nexus.Schema.parse_decimal(inv.amount),
+        currency: Map.get(inv, :currency, "EUR"),
         user_id: user_id
       }
 
@@ -165,7 +165,7 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
           amount: Decimal.new("100.00"),
           subsidiary: "Subsidiary #{i}",
           sap_document_number: "SAP-#{i}",
-          due_date: Nexus.Schema.utc_now(),
+          due_date: DateTime.add(Nexus.Schema.utc_now(), 5, :day),
           status: "ingested"
         }
       end)
@@ -229,7 +229,7 @@ defmodule Nexus.Treasury.CrossSubsidiaryNettingTest do
     }
 
     Sandbox.unboxed_run(Nexus.Repo, fn ->
-      NettingProjector.handle(event, metadata)
+      assert :ok = NettingProjector.handle(event, metadata)
     end)
 
     event

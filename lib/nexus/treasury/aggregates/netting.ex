@@ -48,7 +48,7 @@ defmodule Nexus.Treasury.Aggregates.Netting do
         invoice_id: cmd.invoice_id,
         subsidiary: cmd.subsidiary,
         amount: cmd.amount,
-        currency: netting.currency,
+        currency: cmd.currency,
         added_at: DateTime.utc_now()
       }
     end
@@ -58,12 +58,23 @@ defmodule Nexus.Treasury.Aggregates.Netting do
     if Enum.empty?(netting.invoice_ids) do
       {:error, :empty_cycle}
     else
-      # Calculate net positions per subsidiary
+      # Calculate net positions per subsidiary in the cycle's target currency
       net_positions =
         netting.invoice_details
         |> Map.values()
         |> Enum.reduce(%{}, fn item, acc ->
-          Map.update(acc, item.subsidiary, item.amount, &Decimal.add(&1, item.amount))
+          # Convert amount to target currency if necessary
+          converted_amount =
+            if item.currency == netting.currency do
+              item.amount
+            else
+              # Use the provided fx_rates from the command
+              # Rate is assumed to be SOURCE/TARGET (e.g. price of 1 Source in Target)
+              rate = Map.get(cmd.fx_rates, "#{item.currency}/#{netting.currency}") || Decimal.new(1)
+              Decimal.mult(item.amount, Decimal.new(rate))
+            end
+
+          Map.update(acc, item.subsidiary, converted_amount, &Decimal.add(&1, converted_amount))
         end)
 
       %NettingCycleSettled{
@@ -72,6 +83,7 @@ defmodule Nexus.Treasury.Aggregates.Netting do
         user_id: cmd.user_id,
         net_positions: net_positions,
         invoice_ids: netting.invoice_ids,
+        target_currency: netting.currency,
         settled_at: DateTime.utc_now()
       }
     end
@@ -109,7 +121,7 @@ defmodule Nexus.Treasury.Aggregates.Netting do
   def apply(%__MODULE__{} = netting, %InvoiceAddedToNetting{} = evt) do
     %__MODULE__{netting |
       invoice_ids: [evt.invoice_id | netting.invoice_ids],
-      invoice_details: Map.put(netting.invoice_details, evt.invoice_id, %{subsidiary: evt.subsidiary, amount: evt.amount}),
+      invoice_details: Map.put(netting.invoice_details, evt.invoice_id, %{subsidiary: evt.subsidiary, amount: evt.amount, currency: evt.currency}),
       total_amount: Decimal.add(netting.total_amount, evt.amount)
     }
   end

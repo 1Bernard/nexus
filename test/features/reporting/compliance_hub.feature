@@ -1,24 +1,23 @@
-Feature: Compliance & Audit Hub
-    As an Auditor
-    I want to monitor system controls and Segregation of Duties in real-time
-    So that I can ensure the organization remains compliant and secure
+@feature
+@no_sandbox
+Feature: Compliance & Audit Hub (CCM)
+  As a Compliance Officer
+  I want real-time Continuous Control Monitoring (CCM)
+  So that I can detect and remediate policy drifts immediately
 
-    Scenario: Continuous Control Monitoring indicates system health
-        Given the organization "Corporate Ops" has active risk policies
-        And no policy bypasses have occurred in the last 24 hours
-        When I view the compliance hub
-        Then I should see the "Auth Integrity" gauge at "100%"
-        And the "Drift Protection" gauge should be "Healthy"
+  @scenario
+  Scenario: Real-time detection of high-risk Segregation of Duties (SoD) violation
+    Given a standardized organization with a "Strict" treasury policy
+    And a user "Alice" with the "trader" role
+    When I assign the "admin" role to "Alice"
+    Then a "High" severity "Segregation of Duties" drift should be detected
+    And the system should automatically revoke the "admin" role from "Alice"
+    And a system notification should be sent to "Alice" for remediation
 
-    Scenario: Detecting Segregation of Duties conflicts
-        Given a user "trader@corp.com" has the "Trader" role
-        And the same user "trader@corp.com" is assigned the "Admin" role
-        When I view the Segregation of Duties matrix
-        Then I should see a "Toxic Combination" alert for "Initiate + Approve"
-        And the user "trader@corp.com" should be listed as a conflict
-
-    Scenario: Verifying Immutable Lineage for a Transfer
-        Given a transfer "TRF_123" was initiated and verified via biometric
-        When I search for the correlation ID of "TRF_123"
-        Then I should see the complete "Chain of Custody" flow
-        And every event node should display a "Cryptographically Sealed" status
+  @scenario
+  Scenario: Real-time detection of treasury policy deviation
+    Given a standardized organization with a "Standard" treasury policy
+    And the current euro exposure is "healthy"
+    When an unauthorized high-value transfer of 2000000.0 "EUR" is detected by AI Sentinel
+    Then a "Critical" severity "Unauthorized Movement" drift should be detected in the Compliance Hub
+    And the "ComplianceRemediationManager" should trigger a manual audit escalation

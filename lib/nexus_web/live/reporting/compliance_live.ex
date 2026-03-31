@@ -317,7 +317,7 @@ defmodule NexusWeb.Reporting.ComplianceLive do
               <%= if Enum.empty?(@sample_list) do %>
                 <div class="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-white/5 rounded-2xl">
                   <span class="hero-beaker w-10 h-10 text-slate-700 mb-4"></span>
-                  <p class="text-xs text-slate-500">Configure parameters and click "Generate Sample" to begin. sonora.</p>
+                  <p class="text-xs text-slate-500">Configure parameters and click "Generate Sample" to begin.</p>
                 </div>
               <% else %>
                 <.sample_table samples={@sample_list} />
@@ -331,7 +331,7 @@ defmodule NexusWeb.Reporting.ComplianceLive do
             <div class="mb-8">
               <h3 class="text-sm font-bold text-slate-100 mb-2">Autonomous Remediation History</h3>
               <p class="text-xs text-slate-500">
-                Log of automated security actions taken by the Self-Healing Control Loops. sonora.
+                Log of automated security actions taken by the Self-Healing Control Loops.
               </p>
             </div>
 
@@ -360,7 +360,7 @@ defmodule NexusWeb.Reporting.ComplianceLive do
                         <p class="text-[11px] text-slate-400">
                           Revoked role <span class="text-slate-200 font-bold">{log.details["role"]}</span>
                           from user <span class="text-slate-200">{log.details["user_id"]}</span>
-                          due to SoD conflict. sonora.
+                          due to SoD conflict.
                         </p>
                         <p class="text-[10px] text-slate-500 mt-2 font-mono">
                           {Calendar.strftime(log.recorded_at, "%Y-%m-%d %H:%M:%S UTC")}

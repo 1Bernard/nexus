@@ -16,7 +16,8 @@ defmodule Nexus.Treasury do
     ForecastQuery,
     ReconciliationQuery,
     LiquidityPositionQuery,
-    PolicyAuditLogQuery
+    PolicyAuditLogQuery,
+    NettingQuery
   }
 
   alias Nexus.ERP.Queries.{InvoiceQuery, StatementLineQuery}
@@ -30,10 +31,13 @@ defmodule Nexus.Treasury do
     AuthorizeTransfer,
     ExecuteTransfer,
     RegisterVault,
-    SyncVaultBalance
+    RegisterVault,
+    SyncVaultBalance,
+    InitializeNettingCycle,
+    SettleNettingCycle
   }
 
-  alias Nexus.Treasury.Projections.Reconciliation
+  alias Nexus.Treasury.Projections.{Reconciliation, NettingCycle}
   alias Nexus.ERP.Projections.{Invoice, StatementLine}
   alias Nexus.Treasury.Services.ForecastEngine
 
@@ -737,5 +741,99 @@ defmodule Nexus.Treasury do
     }
 
     Nexus.App.dispatch(command, opts)
+  end
+
+  # --- Netting API ---
+
+  @doc """
+  Starts a new intercompany netting cycle for a specific currency and period.
+  """
+  @spec initialize_netting_cycle(Types.org_id(), Types.currency(), Date.t(), Date.t(), String.t()) ::
+          {:ok, binary()} | {:error, any()}
+  def initialize_netting_cycle(org_id, currency, period_start, period_end, user_id) do
+    netting_id = Nexus.Schema.generate_uuidv7()
+
+    command = %InitializeNettingCycle{
+      netting_id: netting_id,
+      org_id: org_id,
+      currency: currency,
+      period_start: period_start,
+      period_end: period_end,
+      user_id: user_id
+    }
+
+    case Nexus.App.dispatch(command, consistency: :strong) do
+      :ok -> {:ok, netting_id}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Triggers the calculation and settlement of a netting cycle.
+  Automatically resolves FX rates for all included currencies before dispatching.
+  """
+  @spec settle_netting_cycle(Types.org_id(), binary(), String.t()) :: :ok | {:error, any()}
+  def settle_netting_cycle(org_id, netting_id, user_id) do
+    import Ecto.Query
+    # 1. Fetch the cycle to see its entries and target currency
+    case get_netting_cycle(org_id, netting_id) do
+      nil ->
+        {:error, :not_found}
+
+      cycle ->
+        # 2. Extract unique currencies from the cycle's entries (this is typically in the aggregate,
+        # but for elite purity, we feed FX rates from the API layer)
+        entries = Repo.all(from(e in Nexus.Treasury.Projections.NettingEntry, where: e.netting_id == ^netting_id))
+        currencies = Enum.map(entries, & &1.currency) |> Enum.uniq()
+
+        # 3. Build FX rate map for all source -> target pairs
+        fx_rates =
+          Enum.reduce(currencies, %{}, fn source, acc ->
+            if source == cycle.currency do
+              acc
+            else
+              pair = "#{source}/#{cycle.currency}"
+              # Try direct or inverse via price cache
+              case PriceCache.get_price(pair) do
+                {:ok, price} -> Map.put(acc, pair, price)
+                _ ->
+                  # Fallback to inverse
+                  inv_pair = "#{cycle.currency}/#{source}"
+                  case PriceCache.get_price(inv_pair) do
+                    {:ok, price} -> Map.put(acc, pair, Decimal.div(Decimal.new(1), Decimal.new(price)))
+                    _ -> acc
+                  end
+              end
+            end
+          end)
+
+        command = %SettleNettingCycle{
+          netting_id: netting_id,
+          org_id: org_id,
+          user_id: user_id,
+          fx_rates: fx_rates
+        }
+
+        Nexus.App.dispatch(command, consistency: :strong)
+    end
+  end
+
+  @doc """
+  Retrieves a specific netting cycle.
+  """
+  @spec get_netting_cycle(Types.org_id(), binary()) :: NettingCycle.t() | nil
+  def get_netting_cycle(org_id, netting_id) do
+    NettingQuery.get_query(org_id, netting_id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Lists all active netting cycles for an organization.
+  """
+  @spec list_active_netting_cycles(Types.org_id()) :: [NettingCycle.t()]
+  def list_active_netting_cycles(org_id) do
+    NettingQuery.active_query(org_id)
+    |> NettingQuery.newest_first()
+    |> Repo.all()
   end
 end

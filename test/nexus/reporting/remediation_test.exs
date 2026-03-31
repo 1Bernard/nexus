@@ -77,7 +77,9 @@ defmodule Nexus.Reporting.RemediationTest do
     end)
 
     # 2. Invoke PM handle
-    case ComplianceRemediationManager.handle(pm_state, change_event.data) do
+    actions = List.wrap(ComplianceRemediationManager.handle(pm_state, change_event.data))
+
+    Enum.each(actions, fn
       %RevokeUserRole{} = revoke_cmd ->
         assert :ok = App.dispatch(revoke_cmd)
 
@@ -87,7 +89,7 @@ defmodule Nexus.Reporting.RemediationTest do
         project_identity_event(rev_event.data, rev_event.event_number)
 
       _ -> :ok
-    end
+    end)
 
     {:ok, state}
   end

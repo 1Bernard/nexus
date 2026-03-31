@@ -87,8 +87,14 @@ defmodule Nexus.Application do
         children ++
           [
             Nexus.Intelligence.Projectors.AnalysisProjector,
+            Nexus.Reporting.Projectors.ControlDriftProjector,
             Nexus.Reporting.Projectors.AuditProjector,
-            Nexus.Reporting.Projectors.ControlProjector,
+            Nexus.Reporting.Projectors.SodProjector,
+            Nexus.Reporting.Projectors.AuthIntegrityProjector,
+            Nexus.Reporting.Projectors.TransferPolicyProjector,
+            Nexus.Reporting.Projectors.LiquidityAccuracyProjector,
+            Nexus.Reporting.Projectors.EscalationIntegrityProjector,
+            Nexus.Reporting.Handlers.ComplianceHandler,
             # WebSocket gateway — requires live network; excluded in test env
             # Nexus.Treasury.Gateways.PolygonClient,
             # Nexus.Treasury.Gateways.MarketSimulator,

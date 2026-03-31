@@ -8,7 +8,7 @@ defmodule Nexus.Treasury.Projectors.NettingProjector do
     repo: Nexus.Repo,
     name: "Treasury.NettingProjector"
 
-  alias Nexus.Treasury.Events.{NettingCycleInitialized, InvoiceAddedToNetting}
+  alias Nexus.Treasury.Events.{NettingCycleInitialized, InvoiceAddedToNetting, NettingCycleSettled, NettingCycleSettlementCompleted}
   alias Nexus.Treasury.Projections.{NettingCycle, NettingEntry}
   require Logger
 
@@ -45,6 +45,20 @@ defmodule Nexus.Treasury.Projectors.NettingProjector do
     |> Ecto.Multi.update_all(:update_cycle_total,
       Ecto.Query.from(c in NettingCycle, where: c.id == ^event.netting_id),
       inc: [total_amount: event.amount]
+    )
+  end)
+
+  project(%NettingCycleSettled{} = event, _metadata, fn multi ->
+    Ecto.Multi.update_all(multi, :settle_cycle,
+      Ecto.Query.from(c in NettingCycle, where: c.id == ^event.netting_id),
+      set: [status: "settling"]
+    )
+  end)
+
+  project(%NettingCycleSettlementCompleted{} = event, _metadata, fn multi ->
+    Ecto.Multi.update_all(multi, :complete_cycle,
+      Ecto.Query.from(c in NettingCycle, where: c.id == ^event.netting_id),
+      set: [status: "settled"]
     )
   end)
 end

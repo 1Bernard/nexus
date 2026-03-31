@@ -23,12 +23,15 @@ defmodule Nexus.Identity.Projectors.UserProjector do
 
   project(%UserRoleChanged{} = event, _metadata, fn multi ->
     multi
-    |> Ecto.Multi.update_all(
-      :update_roles,
-      from(u in User, where: u.id == ^event.user_id),
-      # Replacing the array with the new role as a single-item list
-      set: [roles: [event.role], updated_at: Nexus.Schema.utc_now()]
-    )
+    |> Ecto.Multi.run(:update_roles, fn repo, _ ->
+      user = repo.get!(User, event.user_id)
+      new_roles = Enum.uniq([event.role | user.roles || []])
+
+      from(u in User, where: u.id == ^event.user_id)
+      |> repo.update_all(set: [roles: new_roles, updated_at: Nexus.Schema.utc_now()])
+
+      {:ok, nil}
+    end)
   end)
 
   project(%UserRoleRevoked{} = event, _metadata, fn multi ->

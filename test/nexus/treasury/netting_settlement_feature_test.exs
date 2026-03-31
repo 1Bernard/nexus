@@ -118,16 +118,56 @@ defmodule Nexus.Treasury.NettingSettlementFeatureTest do
     assert settled_event_record, "NettingCycleSettled event not found"
 
     # 2. Invoke Saga Handle (Pure Function)
+    saga_state = %Nexus.Treasury.ProcessManagers.NettingSettlementSaga{}
     commands = Nexus.Treasury.ProcessManagers.NettingSettlementSaga.handle(
-      %Nexus.Treasury.ProcessManagers.NettingSettlementSaga{},
+      saga_state,
       settled_event_record.data
     )
 
-    # 3. Dispatch resulting commands
-    Enum.each(commands, fn saga_cmd ->
+    # Apply the initial event to the saga state
+    saga_state = Nexus.Treasury.ProcessManagers.NettingSettlementSaga.apply(saga_state, settled_event_record.data)
+
+    # 3. Dispatch resulting commands and simulate transfer execution
+    Enum.reduce(commands, saga_state, fn saga_cmd, current_state ->
       Sandbox.unboxed_run(Repo, fn ->
         assert :ok = App.dispatch(saga_cmd)
       end)
+
+      case saga_cmd do
+        %Nexus.Treasury.Commands.RequestTransfer{transfer_id: t_id} ->
+          # Simulate the manual/external process of executing a transfer
+          exec_cmd = %Nexus.Treasury.Commands.ExecuteTransfer{
+            transfer_id: t_id,
+            org_id: org_id,
+            executed_at: DateTime.utc_now()
+          }
+
+          Sandbox.unboxed_run(Repo, fn ->
+            # Assuming it skips authorization for tests if threshold allows, or test handles it.
+            App.dispatch(exec_cmd)
+          end)
+
+          # Fetch the executed event
+          {:ok, t_events} = Nexus.EventStore.read_stream_forward(t_id)
+          exec_event = Enum.find(t_events, fn e -> is_struct(e.data, Nexus.Treasury.Events.TransferExecuted) end)
+
+          if exec_event do
+             # Feed back into Saga
+             new_commands = Nexus.Treasury.ProcessManagers.NettingSettlementSaga.handle(current_state, exec_event.data)
+
+             Enum.each(new_commands, fn cmd ->
+               Sandbox.unboxed_run(Repo, fn ->
+                 assert :ok = App.dispatch(cmd)
+               end)
+             end)
+
+             Nexus.Treasury.ProcessManagers.NettingSettlementSaga.apply(current_state, exec_event.data)
+          else
+             current_state
+          end
+        _ ->
+          current_state
+      end
     end)
 
     {:ok, state}

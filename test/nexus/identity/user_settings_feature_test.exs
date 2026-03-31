@@ -210,11 +210,6 @@ defmodule Nexus.Identity.UserSettingsFeatureTest do
             event_number: num
           })
 
-          Nexus.Identity.Projectors.UserProjector.handle(event, %{
-            handler_name: "Identity.Projectors.UserProjector",
-            event_number: num
-          })
-
         %Nexus.Identity.Events.SettingsUpdated{} ->
           Nexus.Identity.Projectors.UserProjector.handle(event, %{
             handler_name: "Identity.Projectors.UserProjector",

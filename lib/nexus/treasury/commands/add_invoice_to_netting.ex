@@ -12,12 +12,13 @@ defmodule Nexus.Treasury.Commands.AddInvoiceToNetting do
     field :invoice_id, :binary_id
     field :subsidiary, :string
     field :amount, :decimal
+    field :currency, :string
     field :user_id, :binary_id
   end
 
   def changeset(struct, attrs) do
     struct
-    |> cast(attrs, [:netting_id, :org_id, :invoice_id, :subsidiary, :amount, :user_id])
-    |> validate_required([:netting_id, :org_id, :invoice_id, :subsidiary, :amount, :user_id])
+    |> cast(attrs, [:netting_id, :org_id, :invoice_id, :subsidiary, :amount, :currency, :user_id])
+    |> validate_required([:netting_id, :org_id, :invoice_id, :subsidiary, :amount, :currency, :user_id])
   end
 end

@@ -8,15 +8,23 @@ defmodule Nexus.Treasury.ProcessManagers.NettingSettlementSaga do
     name: "Treasury.NettingSettlementSaga"
 
   @derive Jason.Encoder
-  defstruct [:netting_id, :org_id, :user_id]
+  defstruct [:netting_id, :org_id, :user_id, :target_currency, :pending_count]
   @type t :: %__MODULE__{}
 
-  alias Nexus.Treasury.Events.{NettingCycleSettled, NettingCycleSettlementCompleted}
+  alias Nexus.Treasury.Events.{NettingCycleSettled, NettingCycleSettlementCompleted, TransferExecuted}
   alias Nexus.Treasury.Commands.{RequestTransfer, CompleteNettingCycleSettlement}
   alias Nexus.ERP.Commands.MarkInvoiceAsNetted
 
   @spec interested?(struct()) :: {:start | :continue!, binary()} | false
   def interested?(%NettingCycleSettled{netting_id: id}), do: {:start, id}
+
+  def interested?(%TransferExecuted{recipient_data: data}) do
+    case data[:netting_id] || data["netting_id"] do
+      nil -> false
+      id -> {:continue!, id}
+    end
+  end
+
   def interested?(%NettingCycleSettlementCompleted{netting_id: id}), do: {:stop, id}
   def interested?(_event), do: false
 
@@ -27,20 +35,18 @@ defmodule Nexus.Treasury.ProcessManagers.NettingSettlementSaga do
     # 1. Dispatch transfers for each subsidiary net position
     transfer_commands =
       Enum.map(evt.net_positions, fn {subsidiary, amount} ->
-        # If amount > 0, Subsidiary owes Treasury EUR
-        # (This is a simplified assumption for the foundation phase)
         %RequestTransfer{
           transfer_id: Nexus.Schema.generate_uuidv7(),
           org_id: evt.org_id,
           user_id: evt.user_id,
-          from_currency: "EUR",
-          to_currency: "EUR",
+          from_currency: evt.target_currency,
+          to_currency: evt.target_currency,
           amount: amount,
           requested_at: DateTime.utc_now(),
           recipient_data: %{
-            subsidiary: subsidiary,
-            type: "netting_settlement",
-            netting_id: evt.netting_id
+            "subsidiary" => subsidiary,
+            "type" => "netting_settlement",
+            "netting_id" => evt.netting_id
           }
         }
       end)
@@ -55,13 +61,21 @@ defmodule Nexus.Treasury.ProcessManagers.NettingSettlementSaga do
         }
       end)
 
-    # 3. Finalize the cycle
-    completion_command = %CompleteNettingCycleSettlement{
-      netting_id: evt.netting_id,
-      org_id: evt.org_id
-    }
+    transfer_commands ++ invoice_commands
+  end
 
-    transfer_commands ++ invoice_commands ++ [completion_command]
+  def handle(%__MODULE__{} = saga, %TransferExecuted{}) do
+    # Check if this was our last pending transfer
+    if saga.pending_count == 1 do
+      [
+        %CompleteNettingCycleSettlement{
+          netting_id: saga.netting_id,
+          org_id: saga.org_id
+        }
+      ]
+    else
+      []
+    end
   end
 
   # --- Mutate State ---
@@ -71,7 +85,13 @@ defmodule Nexus.Treasury.ProcessManagers.NettingSettlementSaga do
       saga
       | netting_id: evt.netting_id,
         org_id: evt.org_id,
-        user_id: evt.user_id
+        user_id: evt.user_id,
+        target_currency: evt.target_currency,
+        pending_count: map_size(evt.net_positions)
     }
+  end
+
+  def apply(%__MODULE__{} = saga, %TransferExecuted{}) do
+    %__MODULE__{saga | pending_count: saga.pending_count - 1}
   end
 end

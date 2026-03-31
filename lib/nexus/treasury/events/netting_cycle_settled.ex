@@ -3,5 +3,5 @@ defmodule Nexus.Treasury.Events.NettingCycleSettled do
   Event emitted when a netting cycle's net positions have been calculated.
   """
   @derive Jason.Encoder
-  defstruct [:netting_id, :org_id, :user_id, :net_positions, :invoice_ids, :settled_at]
+  defstruct [:netting_id, :org_id, :user_id, :net_positions, :invoice_ids, :target_currency, :settled_at]
 end

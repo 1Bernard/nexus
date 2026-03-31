@@ -20,7 +20,9 @@ defmodule Nexus.Reporting do
 
     # 2. Calculate real-time SoD score
     sod_conflicts = list_sod_conflicts(org_id)
-    sod_score = if Enum.empty?(sod_conflicts), do: 100, else: max(0, 100 - length(sod_conflicts) * 10)
+
+    sod_score =
+      if Enum.empty?(sod_conflicts), do: 100, else: max(0, 100 - length(sod_conflicts) * 10)
 
     # 3. Merge real-time scores into the scorecard
     sod_metric = %{metric_key: "sod_cleanliness", score: Decimal.new(sod_score)}
@@ -68,8 +70,12 @@ defmodule Nexus.Reporting do
       conflicts = []
 
       conflicts =
-        if Enum.member?(roles, "trader") && (Enum.member?(roles, "approver") || Enum.member?(roles, "admin")) do
-          [%{conflict_type: "Toxic Combination: Initiate + Authorize", severity: "High"} | conflicts]
+        if Enum.member?(roles, "trader") &&
+             (Enum.member?(roles, "approver") || Enum.member?(roles, "admin")) do
+          [
+            %{conflict_type: "Toxic Combination: Initiate + Authorize", severity: "High"}
+            | conflicts
+          ]
         else
           conflicts
         end
@@ -83,7 +89,10 @@ defmodule Nexus.Reporting do
 
       conflicts =
         if Enum.member?(roles, "approver") && Enum.member?(roles, "admin") do
-          [%{conflict_type: "Toxic Combination: Authorize + Policy", severity: "Medium"} | conflicts]
+          [
+            %{conflict_type: "Toxic Combination: Authorize + Policy", severity: "Medium"}
+            | conflicts
+          ]
         else
           conflicts
         end
@@ -126,6 +135,7 @@ defmodule Nexus.Reporting do
 
         "high_value" ->
           threshold = Decimal.new(params["threshold"] || "100000")
+
           query
           |> AuditLogQuery.high_value_sample(threshold)
           |> AuditLogQuery.newest_first()
@@ -143,5 +153,55 @@ defmodule Nexus.Reporting do
       end
 
     Repo.all(query)
+  end
+
+  # --- CCM & DRIFT QUERIES ---
+
+  @doc """
+  Returns a specific control drift for an organization.
+  """
+  @spec get_control_drift_by_type(Types.org_id(), String.t(), String.t()) ::
+          {:ok, map()} | {:error, :not_found}
+  def get_control_drift_by_type(org_id, type, _severity) do
+    # For now, we match on control_key (the type in BDD)
+    case Repo.get_by(Nexus.Reporting.Projections.ControlDrift, org_id: org_id, control_key: type) do
+      nil -> {:error, :not_found}
+      drift -> {:ok, drift}
+    end
+  end
+
+  @doc """
+  Lists all remediation escalations for an organization.
+  """
+  @spec list_remediation_escalations(Types.org_id()) :: {:ok, [map()]}
+  def list_remediation_escalations(org_id) do
+    # We query the ControlMetric table for 'escalation_integrity' entries
+    escalations =
+      from(m in Nexus.Reporting.Projections.ControlMetric,
+        where: m.org_id == ^org_id,
+        where: m.metric_key == "escalation_integrity",
+        select: m.metadata
+      )
+      |> Repo.all()
+      |> Enum.map(fn meta ->
+        # Map keys are strings when retrieved from JSONB metadata
+        action = Map.get(meta, "action") || Map.get(meta, :action, "manual_audit")
+        %{type: action, metadata: meta}
+      end)
+
+    {:ok, escalations}
+  end
+
+  @doc """
+  Lists system notifications for a given user.
+  Delegates to the CrossDomain context if necessary, but provided here for context unity.
+  """
+  @spec list_user_notifications(Types.user_id()) :: [map()]
+  def list_user_notifications(user_id) do
+    from(n in Nexus.CrossDomain.Projections.Notification,
+      where: n.user_id == ^user_id,
+      order_by: [desc: n.created_at]
+    )
+    |> Repo.all()
   end
 end

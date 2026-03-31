@@ -32,6 +32,7 @@ defmodule Nexus.Treasury.Services.NettingScanner do
           invoice_id: inv.id,
           subsidiary: inv.subsidiary,
           amount: inv.amount,
+          currency: inv.currency,
           user_id: user_id
         }
 

@@ -20,7 +20,7 @@ defmodule Nexus.Identity.Projectors.UserRegistrationProjector do
           id: event.user_id,
           org_id: event.org_id,
           email: event.email,
-          display_name: event.display_name,
+          display_name: event.display_name || String.split(event.email || "", "@") |> List.first() || "Unknown",
           roles: [event.role || "trader"],
           status: event.status || "active",
           cose_key: safe_decode64(event.cose_key),
