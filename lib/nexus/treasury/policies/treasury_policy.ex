@@ -8,6 +8,11 @@ defmodule Nexus.Treasury.Policies.TreasuryPolicy do
   @spec can?(Nexus.Shared.Policy.user() | nil, atom(), any()) :: boolean()
   def can?(nil, _action, _resource), do: false
 
+  # --- General Treasury Ops ---
+  def can?(user, _action, :treasury_ops) do
+    Nexus.Shared.Policy.has_role?(user, "treasury_ops")
+  end
+
   # --- Vault Permissions ---
   def can?(user, _action, :vaults) do
     Nexus.Shared.Policy.has_role?(user, "treasury_ops")

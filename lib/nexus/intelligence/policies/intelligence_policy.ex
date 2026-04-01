@@ -9,7 +9,7 @@ defmodule Nexus.Intelligence.Policies.IntelligencePolicy do
   def can?(nil, _action, _resource), do: false
 
   # Compliance / Intelligence access
-  def can?(user, _action, :compliance) do
+  def can?(user, _action, resource) when resource in [:compliance, :intelligence] do
     Nexus.Shared.Policy.has_role?(user, "auditor")
   end
 

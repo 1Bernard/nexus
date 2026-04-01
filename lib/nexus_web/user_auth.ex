@@ -177,8 +177,8 @@ defmodule NexusWeb.UserAuth do
         Nexus.Organization.Policies.OrganizationPolicy.can?(user, action, resource)
 
       # --- Intelligence Domain ---
-      :compliance ->
-        Nexus.Intelligence.Policies.IntelligencePolicy.can?(user, action, resource)
+      res when res in [:compliance, :intelligence] ->
+        Nexus.Intelligence.Policies.IntelligencePolicy.can?(user, action, res)
 
       # --- ERP Domain ---
       :erp ->

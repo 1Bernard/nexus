@@ -15,7 +15,7 @@ defmodule Nexus.Intelligence.Services.AnomalyDetector do
   end
 
   def analyze(%AnalyzeTreasuryMovement{} = cmd) do
-    if Mix.env() == :test do
+    if @env == :test do
       # Test detection: Flag anything over 1M in test
       if Decimal.to_float(cmd.amount) > 1_000_000.0 do
         {:ok, %{is_anomaly: true, score: 0.99, reason: "High-value treasury movement detected"}}

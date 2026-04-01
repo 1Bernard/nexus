@@ -10,6 +10,8 @@ defmodule NexusWeb.Identity.BiometricLive do
   alias Nexus.Identity.AuthChallengeStore
   alias Nexus.Identity.WebAuthn
 
+  @env Mix.env()
+
   @impl true
   def mount(params, _session, socket) do
     action_type = params["type"] || "login"
@@ -35,7 +37,7 @@ defmodule NexusWeb.Identity.BiometricLive do
        action_type: action_type,
        consent_checked: false,
        screening: %{fuzzy: :scanning, ofac: :scanning, pep: :scanning},
-       is_dev: Mix.env() == :dev
+       is_dev: @env == :dev
      )}
   end
 

@@ -46,6 +46,7 @@ defmodule Nexus.Release do
         password: password
       )
 
+    EventStore.Tasks.Create.exec(config, [])
     :ok = EventStore.Tasks.Init.exec(config, [])
     IO.puts("[Release] EventStore initialised successfully.")
   end
@@ -63,7 +64,7 @@ defmodule Nexus.Release do
   Idempotent — will skip users that are already registered.
 
   Run via:
-    docker compose exec app /app/bin/nexus eval "Nexus.Release.seed"
+    docker compose exec app /app/bin/nexus rpc "Nexus.Release.seed"
   """
   @spec seed() :: :ok
   def seed do
